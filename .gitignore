@@ -1,0 +1,35 @@
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.out
+*.ipr
+*.iws
+*.iml
+atms.txt
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Visual Studio Code
+.vscode/
+
+# Minecraft / Forge / Fabric
+run/
+logs/
+bin/
+out/
+gradle.properties
+# プロジェクト固有の設定が含まれる可能性があるため除外（必要に応じて追加）
+# local.properties
+
+# OS generated files
+.DS_Store
+Thumbs.db
+nul
