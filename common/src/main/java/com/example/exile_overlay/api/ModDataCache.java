@@ -5,13 +5,23 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import java.lang.ref.WeakReference;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * MODデータのキャッシュ管理クラス
  * プレイヤー単位でデータをキャッシュし、TTL（生存時間）管理を行う
+ * 
+ * 【スレッド安全性】
+ * - このクラスはConcurrentHashMapを使用してスレッド安全性を確保
+ * - 複数スレッドから安全に読み書き可能
+ * - データ更新とレンダリングの競合を防止
+ * 
+ * 【アーキテクチャ】
+ * - ネットワークスレッド（パケット受信）→ 書き込み
+ * - レンダースレッド → 読み込み
+ * - ConcurrentHashMapによりロックフリーな並行アクセスを実現
  */
 public class ModDataCache {
     
@@ -24,18 +34,20 @@ public class ModDataCache {
     private static final ModDataCache INSTANCE = new ModDataCache();
     
     // キャッシュエントリのマップ（プレイヤーUUID -> エントリ）
-    private final Map<String, CacheEntry> cache = new HashMap<>();
+    // ConcurrentHashMapを使用してスレッド安全性を確保
+    private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
     
     /**
      * キャッシュエントリ内部クラス
+     * スレッド安全性: データマップはConcurrentHashMapとして管理
      */
     private static class CacheEntry {
         final WeakReference<Player> playerRef;
-        final Map<String, Object> data;
+        final ConcurrentHashMap<String, Object> data;
         final long timestamp;
         final long durationMs;
         
-        CacheEntry(Player player, Map<String, Object> data, long durationMs) {
+        CacheEntry(Player player, ConcurrentHashMap<String, Object> data, long durationMs) {
             this.playerRef = new WeakReference<>(player);
             this.data = data;
             this.timestamp = System.currentTimeMillis();
@@ -61,6 +73,7 @@ public class ModDataCache {
     
     /**
      * データをキャッシュに保存
+     * スレッド安全性: このメソッドは複数スレッドから安全に呼び出せます
      * 
      * @param player プレイヤー
      * @param data 保存するデータマップ
@@ -72,7 +85,9 @@ public class ModDataCache {
         }
         
         String key = getPlayerKey(player);
-        cache.put(key, new CacheEntry(player, new HashMap<>(data), durationMs));
+        // ConcurrentHashMapを使用してスレッド安全にデータをコピー
+        ConcurrentHashMap<String, Object> threadSafeData = new ConcurrentHashMap<>(data);
+        cache.put(key, new CacheEntry(player, threadSafeData, durationMs));
         
         LOGGER.debug("Cached data for player: {} ({} entries, {}ms TTL)", 
                 player.getName().getString(), data.size(), durationMs);

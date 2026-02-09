@@ -12,7 +12,16 @@ import java.util.List;
 
 /**
  * オーブのレジストリ
- * ここに登録されたオーブが描画されます
+ * 
+ * 【スロットベース設計】
+ * このレジストリは、HUD上の物理的なスロット位置に基づいてオーブを管理します。
+ * 各スロットはデータプロバイダーからのデータを表示します。
+ * 
+ * スロット配置:
+ * - ORB_1: 画面左下のメインスロット
+ * - ORB_1_OVERLAY: ORB_1に重なるオーバーレイ
+ * - ORB_2: 画面右下のメインスロット
+ * - ORB_3: 画面左上のサブスロット
  */
 public class OrbRegistry {
 
@@ -46,12 +55,12 @@ public class OrbRegistry {
      * デフォルトのオーブを登録する
      */
     private static void registerDefaultOrbs() {
-        // デフォルトで登録されるオーブ
-        register(OrbType.HEALTH);
-        register(OrbType.MAGIC_SHIELD);
-        register(OrbType.ENERGY);
-        register(OrbType.MANA);
-        register(OrbType.BLOOD);
+        // スロットベースのオーブを登録
+        register(OrbType.ORB_1);           // 左下メイン
+        register(OrbType.ORB_1_OVERLAY);   // ORB_1上のオーバーレイ
+        register(OrbType.ORB_3);           // 左上サブ
+        register(OrbType.ORB_2);           // 右下メイン（通常時）
+        register(OrbType.ORB_2_BLOOD);     // 右下メイン（Bloodモード時）
     }
 
     /**
@@ -131,6 +140,25 @@ public class OrbRegistry {
             }
         }
         return visible;
+    }
+
+    /**
+     * 指定されたオーブが表示されるかチェック
+     *
+     * @param player 対象プレイヤー
+     * @param orbType チェックするオーブ
+     * @return 表示可能な場合true
+     */
+    public static boolean isOrbVisible(Player player, OrbType orbType) {
+        if (player == null || orbType == null) {
+            return false;
+        }
+        try {
+            return orbType.getConfig().isVisible(player);
+        } catch (Exception e) {
+            LOGGER.debug("Error checking visibility for orb {}: {}", orbType.getId(), e.getMessage());
+            return false;
+        }
     }
 
     /**

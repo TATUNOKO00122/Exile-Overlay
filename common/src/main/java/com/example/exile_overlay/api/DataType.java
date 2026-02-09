@@ -4,31 +4,87 @@ import net.minecraft.world.entity.player.Player;
 import java.util.function.BiFunction;
 
 /**
- * MODデータの種類を定義するenum
- * 新しいデータタイプを追加する場合はここに定義
+ * HUDスロットに表示されるデータの種類を定義するenum
+ * 
+ * このenumはHUD上の「どの位置に」データを表示するかを定義します。
+ * 具体的な「何を」表示するかは、各IModDataProvider実装が決定します。
+ * 
+ * スロット配置:
+ * - ORB_1: 画面左下のメインスロット（デフォルト: HP）
+ * - ORB_1_OVERLAY: ORB_1に重なる属性（デフォルト: Shield）
+ * - ORB_2: 画面右下のメインスロット（デフォルト: Mana/Blood）
+ * - ORB_3: 画面左上のサブスロット（デフォルト: Stamina/Energy）
  */
 public enum DataType {
-    // 基本ステータス
-    CURRENT_HEALTH("health.current", 0.0f, Float.class),
-    MAX_HEALTH("health.max", 1.0f, Float.class),
-    CURRENT_MANA("mana.current", 0.0f, Float.class),
-    MAX_MANA("mana.max", 1.0f, Float.class),
+    // ========== ORB 1: 左下メインスロット ==========
+    /**
+     * ORB_1の現在値（デフォルト: HP）
+     */
+    ORB_1_CURRENT("orb1.current", 0.0f, Float.class),
+    /**
+     * ORB_1の最大値（デフォルト: 最大HP）
+     */
+    ORB_1_MAX("orb1.max", 1.0f, Float.class),
     
-    // 拡張ステータス
-    CURRENT_MAGIC_SHIELD("magic_shield.current", 0.0f, Float.class),
-    MAX_MAGIC_SHIELD("magic_shield.max", 0.0f, Float.class),
-    CURRENT_ENERGY("energy.current", 0.0f, Float.class),
-    MAX_ENERGY("energy.max", 0.0f, Float.class),
-    CURRENT_BLOOD("blood.current", 0.0f, Float.class),
-    MAX_BLOOD("blood.max", 0.0f, Float.class),
+    // ========== ORB 1 OVERLAY: ORB_1上のオーバーレイ ==========
+    /**
+     * ORB_1_OVERLAYの現在値（デフォルト: Magic Shield）
+     */
+    ORB_1_OVERLAY_CURRENT("orb1_overlay.current", 0.0f, Float.class),
+    /**
+     * ORB_1_OVERLAYの最大値（デフォルト: 最大Magic Shield）
+     */
+    ORB_1_OVERLAY_MAX("orb1_overlay.max", 0.0f, Float.class),
     
-    // 経験値・レベル
+    // ========== ORB 2: 右下メインスロット ==========
+    /**
+     * ORB_2の現在値（デフォルト: Mana / Blood）
+     */
+    ORB_2_CURRENT("orb2.current", 0.0f, Float.class),
+    /**
+     * ORB_2の最大値（デフォルト: 最大Mana / Blood）
+     */
+    ORB_2_MAX("orb2.max", 1.0f, Float.class),
+    
+    // ========== ORB 3: 左上サブスロット ==========
+    /**
+     * ORB_3の現在値（デフォルト: Energy / Stamina）
+     */
+    ORB_3_CURRENT("orb3.current", 0.0f, Float.class),
+    /**
+     * ORB_3の最大値（デフォルト: 最大Energy / Stamina）
+     */
+    ORB_3_MAX("orb3.max", 0.0f, Float.class),
+    
+    // ========== 追加スロット（将来的な拡張用） ==========
+    /**
+     * ORB_4の現在値（将来の拡張用）
+     */
+    ORB_4_CURRENT("orb4.current", 0.0f, Float.class),
+    /**
+     * ORB_4の最大値（将来の拡張用）
+     */
+    ORB_4_MAX("orb4.max", 0.0f, Float.class),
+    
+    // ========== その他のデータ ==========
+    /**
+     * プレイヤーレベル
+     */
     LEVEL("level", 1, Integer.class),
+    /**
+     * 現在の経験値
+     */
     EXP("exp.current", 0.0f, Float.class),
+    /**
+     * 次のレベルアップに必要な経験値
+     */
     EXP_REQUIRED("exp.required", 1.0f, Float.class),
     
-    // 特殊フラグ
-    BLOOD_MAGIC_ACTIVE("blood_magic.active", false, Boolean.class);
+    // ========== 特殊フラグ ==========
+    /**
+     * ORB_2がBlood（血魔法）モードかどうか
+     */
+    ORB_2_IS_BLOOD("orb2.is_blood", false, Boolean.class);
     
     private final String key;
     private final Object defaultValue;

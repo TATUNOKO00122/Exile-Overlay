@@ -11,14 +11,24 @@ import java.util.List;
 /**
  * MODデータプロバイダーのレジストリ
  * 利用可能なデータプロバイダーを管理し、優先度順にデータを提供する
+ * 
+ * 【スロットベース設計について】
+ * このレジストリは、HUD上の「どのスロットに」データを表示するかを管理します。
+ * アクティブなプロバイダーが、各スロットに表示するデータの「意味」を決定します。
+ * 
+ * スロット配置:
+ * - ORB_1: 画面左下のメインスロット（デフォルト: HP）
+ * - ORB_1_OVERLAY: ORB_1に重なるオーバーレイ（デフォルト: Shield）
+ * - ORB_2: 画面右下のメインスロット（デフォルト: Mana/Blood）
+ * - ORB_3: 画面左上のサブスロット（デフォルト: Stamina/Energy）
  */
 public class ModDataProviderRegistry {
-    
+
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final List<IModDataProvider> providers = new ArrayList<>();
     private static IModDataProvider activeProvider = null;
     private static boolean initialized = false;
-    
+
     /**
      * データプロバイダーを登録する
      */
@@ -27,18 +37,18 @@ public class ModDataProviderRegistry {
             LOGGER.warn("Attempted to register null provider");
             return;
         }
-        
+
         providers.add(provider);
-        LOGGER.debug("Registered data provider: {} (priority: {})", 
+        LOGGER.debug("Registered data provider: {} (priority: {})",
                 provider.getId(), provider.getPriority());
-        
+
         // 優先度順にソート
         providers.sort(Comparator.comparingInt(IModDataProvider::getPriority).reversed());
-        
+
         // アクティブプロバイダーを再評価
         updateActiveProvider();
     }
-    
+
     /**
      * データプロバイダーの登録を解除する
      */
@@ -46,7 +56,7 @@ public class ModDataProviderRegistry {
         providers.remove(provider);
         updateActiveProvider();
     }
-    
+
     /**
      * アクティブなデータプロバイダーを取得する
      * 優先度の高い利用可能なプロバイダーを返す
@@ -57,7 +67,7 @@ public class ModDataProviderRegistry {
         }
         return activeProvider;
     }
-    
+
     /**
      * 特定のデータプロバイダーを取得する
      */
@@ -69,28 +79,28 @@ public class ModDataProviderRegistry {
         }
         return null;
     }
-    
+
     /**
      * 全ての登録済みプロバイダーを取得する
      */
     public static List<IModDataProvider> getAllProviders() {
         return new ArrayList<>(providers);
     }
-    
+
     /**
      * アクティブプロバイダーを更新する
      */
     private static void updateActiveProvider() {
         IModDataProvider previous = activeProvider;
         activeProvider = null;
-        
+
         for (IModDataProvider provider : providers) {
             if (provider.isAvailable()) {
                 activeProvider = provider;
                 break;
             }
         }
-        
+
         if (activeProvider != previous) {
             if (activeProvider != null) {
                 LOGGER.info("Active data provider changed to: {} (priority: {})",
@@ -100,95 +110,60 @@ public class ModDataProviderRegistry {
             }
         }
     }
-    
+
     /**
      * デフォルトのプロバイダーを初期化する
      */
     private static void initializeDefaults() {
-        if (initialized) return;
-        
+        if (initialized)
+            return;
+
         // バニラプロバイダーを最低優先度で登録
         register(new VanillaDataProvider());
-        
+
         // Mine and Slashプロバイダーを登録（利用可能な場合のみ有効）
         register(new MineAndSlashDataProvider());
-        
+
         initialized = true;
     }
-    
+
     /**
      * リフレッシュして利用可能なプロバイダーを再評価する
      */
     public static void refresh() {
         updateActiveProvider();
     }
-    
-    // ========== ヘルパーメソッド ==========
-    
+
+    // ========== 汎用データ取得ヘルパー ==========
+
     private static IModDataProvider getProviderOrDefault() {
         IModDataProvider provider = getActiveProvider();
         return provider != null ? provider : VanillaDataProvider.INSTANCE;
     }
-    
-    // 各種データ取得メソッド
-    public static float getCurrentHealth(Player player) {
-        return getProviderOrDefault().getCurrentHealth(player);
+
+    /**
+     * 指定されたデータタイプの現在値をアクティブプロバイダーから取得
+     */
+    public static float getValue(Player player, DataType type) {
+        return getProviderOrDefault().getValue(player, type);
     }
-    
-    public static float getMaxHealth(Player player) {
-        return getProviderOrDefault().getMaxHealth(player);
+
+    /**
+     * 指定されたデータタイプの最大値をアクティブプロバイダーから取得
+     */
+    public static float getMaxValue(Player player, DataType type) {
+        return getProviderOrDefault().getMaxValue(player, type);
     }
-    
-    public static float getCurrentMana(Player player) {
-        return getProviderOrDefault().getCurrentMana(player);
+
+    /**
+     * 指定された属性フラグを取得
+     */
+    public static boolean getAttribute(Player player, String attributeKey) {
+        return getProviderOrDefault().getAttribute(player, attributeKey);
     }
-    
-    public static float getMaxMana(Player player) {
-        return getProviderOrDefault().getMaxMana(player);
-    }
-    
-    public static float getCurrentMagicShield(Player player) {
-        return getProviderOrDefault().getCurrentMagicShield(player);
-    }
-    
-    public static float getMaxMagicShield(Player player) {
-        return getProviderOrDefault().getMaxMagicShield(player);
-    }
-    
-    public static float getCurrentEnergy(Player player) {
-        return getProviderOrDefault().getCurrentEnergy(player);
-    }
-    
-    public static float getMaxEnergy(Player player) {
-        return getProviderOrDefault().getMaxEnergy(player);
-    }
-    
-    public static float getCurrentBlood(Player player) {
-        return getProviderOrDefault().getCurrentBlood(player);
-    }
-    
-    public static float getMaxBlood(Player player) {
-        return getProviderOrDefault().getMaxBlood(player);
-    }
-    
-    public static int getLevel(Player player) {
-        return getProviderOrDefault().getLevel(player);
-    }
-    
-    public static float getExp(Player player) {
-        return getProviderOrDefault().getExp(player);
-    }
-    
-    public static float getExpRequiredForLevelUp(Player player) {
-        return getProviderOrDefault().getExpRequiredForLevelUp(player);
-    }
-    
-    public static boolean isBloodMagicActive(Player player) {
-        return getProviderOrDefault().isBloodMagicActive(player);
-    }
-    
+
     // ========== ModData サポート ==========
-    
+
     /**
      * アクティブプロバイダーから全データをModDataとして取得
      */
@@ -196,7 +171,7 @@ public class ModDataProviderRegistry {
         IModDataProvider provider = getProviderOrDefault();
         return ModData.fromPlayer(provider, player);
     }
-    
+
     /**
      * 指定プロバイダーから全データをModDataとして取得
      */

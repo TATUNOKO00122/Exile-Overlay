@@ -5,6 +5,17 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * オーブの設定を保持するクラス
+ * 
+ * 【スロットベース設計】
+ * このクラスはHUD上の物理的なスロットに表示されるオーブの設定を管理します。
+ * 
+ * 【オーバーレイ機能】
+ * overlayFor: このオーブが「どのオーブの上に」重なるかを指定
+ * overlayProvider: オーバーレイとして表示するデータプロバイダー
+ * 
+ * 使用例:
+ * - ORB_1 (メインオーブ): overlayFor=null, overlayProvider=null
+ * - ORB_1_OVERLAY (オーバーレイ): overlayFor="orb_1", overlayProvider=データプロバイダー
  */
 public class OrbConfig {
     
@@ -18,6 +29,10 @@ public class OrbConfig {
     private final OrbDataProvider dataProvider;
     private final Predicate<Player> visibilityPredicate;
     
+    // オーバーレイ関連
+    private final String overlayFor;              // 重なる先のオーブID
+    private final OrbDataProvider overlayProvider; // オーバーレイのデータプロバイダー
+    
     private OrbConfig(Builder builder) {
         this.id = builder.id;
         this.x = builder.x;
@@ -28,6 +43,8 @@ public class OrbConfig {
         this.showReflection = builder.showReflection;
         this.dataProvider = builder.dataProvider;
         this.visibilityPredicate = builder.visibilityPredicate;
+        this.overlayFor = builder.overlayFor;
+        this.overlayProvider = builder.overlayProvider;
     }
     
     public String getId() {
@@ -67,6 +84,38 @@ public class OrbConfig {
     }
     
     /**
+     * このオーブがオーバーレイかどうか
+     * @return 他のオーブの上に重なる場合はtrue
+     */
+    public boolean isOverlay() {
+        return overlayFor != null;
+    }
+    
+    /**
+     * 重なる先のオーブIDを取得
+     * @return 重なる先のオーブID、オーバーレイでない場合はnull
+     */
+    public String getOverlayFor() {
+        return overlayFor;
+    }
+    
+    /**
+     * オーバーレイのデータプロバイダーを取得
+     * @return オーバーレイのデータプロバイダー、設定されていない場合はnull
+     */
+    public OrbDataProvider getOverlayProvider() {
+        return overlayProvider;
+    }
+    
+    /**
+     * このオーブにオーバーレイが定義されているか
+     * @return overlayColorが設定されている場合はtrue
+     */
+    public boolean hasOverlayColor() {
+        return overlayColor != 0x00FFFFFF;
+    }
+    
+    /**
      * 円の中心X座標を取得
      */
     public int getCenterX() {
@@ -94,6 +143,10 @@ public class OrbConfig {
         private boolean showReflection = true;
         private OrbDataProvider dataProvider;
         private Predicate<Player> visibilityPredicate = p -> true;
+        
+        // オーバーレイ関連
+        private String overlayFor = null;
+        private OrbDataProvider overlayProvider = null;
         
         private Builder(String id) {
             this.id = id;
@@ -132,6 +185,28 @@ public class OrbConfig {
         
         public Builder visibleWhen(Predicate<Player> predicate) {
             this.visibilityPredicate = predicate;
+            return this;
+        }
+        
+        /**
+         * このオーブがオーバーレイとして動作するよう設定
+         * 
+         * @param targetOrbId 重なる先のオーブID
+         * @param overlayProvider オーバーレイのデータプロバイダー
+         */
+        public Builder asOverlayFor(String targetOrbId, OrbDataProvider overlayProvider) {
+            this.overlayFor = targetOrbId;
+            this.overlayProvider = overlayProvider;
+            return this;
+        }
+        
+        /**
+         * このオーブにオーバーレイを定義（ORB_1のようなメインオーブ用）
+         * 
+         * @param overlayColor オーバーレイの色
+         */
+        public Builder withOverlay(int overlayColor) {
+            this.overlayColor = overlayColor;
             return this;
         }
         

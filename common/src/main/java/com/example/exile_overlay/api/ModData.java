@@ -9,19 +9,28 @@ import java.util.Set;
 
 /**
  * MODデータをキー・バリュー形式で保持するクラス
- * 動的なデータ追加に対応
+ * 
+ * 【スロットベース設計】
+ * このクラスはHUDスロットに表示されるデータを管理します。
+ * DataTypeは「どのスロットに」データを表示するかを定義します。
+ * 
+ * スロット配置:
+ * - ORB_1: 画面左下のメインスロット
+ * - ORB_1_OVERLAY: ORB_1に重なるオーバーレイ
+ * - ORB_2: 画面右下のメインスロット
+ * - ORB_3: 画面左上のサブスロット
  */
 public class ModData {
-    
+
     private final Map<String, Object> data = new HashMap<>();
     private final long timestamp;
     private final String providerId;
-    
+
     public ModData(String providerId) {
         this.providerId = providerId;
         this.timestamp = System.currentTimeMillis();
     }
-    
+
     /**
      * 値を設定
      */
@@ -31,21 +40,21 @@ public class ModData {
         }
         return this;
     }
-    
+
     /**
      * DataTypeを使用して値を設定
      */
     public ModData set(DataType type, Object value) {
         return set(type.getKey(), value);
     }
-    
+
     /**
      * 値を取得
      */
     public Object get(String key) {
         return data.get(key);
     }
-    
+
     /**
      * DataTypeを使用して値を取得
      */
@@ -56,7 +65,7 @@ public class ModData {
         }
         return value;
     }
-    
+
     /**
      * 型指定で値を取得
      */
@@ -68,7 +77,7 @@ public class ModData {
         }
         return null;
     }
-    
+
     /**
      * DataTypeとデフォルト値を使用して値を取得
      */
@@ -80,7 +89,7 @@ public class ModData {
         }
         return defaultValue;
     }
-    
+
     /**
      * Float値を取得
      */
@@ -91,7 +100,7 @@ public class ModData {
         }
         return 0.0f;
     }
-    
+
     /**
      * Float値を取得（デフォルト値指定）
      */
@@ -102,7 +111,7 @@ public class ModData {
         }
         return defaultValue;
     }
-    
+
     /**
      * Int値を取得
      */
@@ -113,7 +122,7 @@ public class ModData {
         }
         return 0;
     }
-    
+
     /**
      * Int値を取得（デフォルト値指定）
      */
@@ -124,7 +133,7 @@ public class ModData {
         }
         return defaultValue;
     }
-    
+
     /**
      * Boolean値を取得
      */
@@ -135,7 +144,7 @@ public class ModData {
         }
         return false;
     }
-    
+
     /**
      * Boolean値を取得（デフォルト値指定）
      */
@@ -146,7 +155,7 @@ public class ModData {
         }
         return defaultValue;
     }
-    
+
     /**
      * String値を取得
      */
@@ -157,77 +166,77 @@ public class ModData {
         }
         return "";
     }
-    
+
     /**
      * キーが存在するかチェック
      */
     public boolean has(String key) {
         return data.containsKey(key);
     }
-    
+
     /**
      * DataTypeが存在するかチェック
      */
     public boolean has(DataType type) {
         return data.containsKey(type.getKey());
     }
-    
+
     /**
      * 全データを取得（読み取り専用）
      */
     public Map<String, Object> getAll() {
         return Collections.unmodifiableMap(data);
     }
-    
+
     /**
      * 全キーを取得
      */
     public Set<String> getKeys() {
         return Collections.unmodifiableSet(data.keySet());
     }
-    
+
     /**
      * データが空かチェック
      */
     public boolean isEmpty() {
         return data.isEmpty();
     }
-    
+
     /**
      * データサイズを取得
      */
     public int size() {
         return data.size();
     }
-    
+
     /**
      * データをクリア
      */
     public void clear() {
         data.clear();
     }
-    
+
     /**
      * タイムスタンプを取得
      */
     public long getTimestamp() {
         return timestamp;
     }
-    
+
     /**
      * データが古いかチェック（指定ミリ秒以上経過）
      */
     public boolean isStale(long maxAgeMs) {
         return (System.currentTimeMillis() - timestamp) > maxAgeMs;
     }
-    
+
     /**
      * プロバイダーIDを取得
      */
     public String getProviderId() {
         return providerId;
     }
-    
+
     /**
      * データをマージ
      */
@@ -237,38 +246,34 @@ public class ModData {
         }
         return this;
     }
-    
+
     /**
      * 全てのDataType値を一括取得
+     * 
+     * @param provider データプロバイダー
+     * @param player   対象プレイヤー
+     * @return プレイヤーデータを含むModData
      */
     public static ModData fromPlayer(IModDataProvider provider, Player player) {
         ModData modData = new ModData(provider.getId());
-        
-        // 基本ステータス
-        modData.set(DataType.CURRENT_HEALTH, provider.getCurrentHealth(player));
-        modData.set(DataType.MAX_HEALTH, provider.getMaxHealth(player));
-        modData.set(DataType.CURRENT_MANA, provider.getCurrentMana(player));
-        modData.set(DataType.MAX_MANA, provider.getMaxMana(player));
-        
-        // 拡張ステータス
-        modData.set(DataType.CURRENT_MAGIC_SHIELD, provider.getCurrentMagicShield(player));
-        modData.set(DataType.MAX_MAGIC_SHIELD, provider.getMaxMagicShield(player));
-        modData.set(DataType.CURRENT_ENERGY, provider.getCurrentEnergy(player));
-        modData.set(DataType.MAX_ENERGY, provider.getMaxEnergy(player));
-        modData.set(DataType.CURRENT_BLOOD, provider.getCurrentBlood(player));
-        modData.set(DataType.MAX_BLOOD, provider.getMaxBlood(player));
-        
-        // 経験値・レベル
-        modData.set(DataType.LEVEL, provider.getLevel(player));
-        modData.set(DataType.EXP, provider.getExp(player));
-        modData.set(DataType.EXP_REQUIRED, provider.getExpRequiredForLevelUp(player));
-        
-        // 特殊フラグ
-        modData.set(DataType.BLOOD_MAGIC_ACTIVE, provider.isBloodMagicActive(player));
-        
+
+        // 全てのDataType値を汎用的に取得
+        for (DataType type : DataType.values()) {
+            if (type.getType() == Float.class || type.getType() == Integer.class) {
+                modData.set(type, provider.getValue(player, type));
+                // 最大値も取得（DataTypeに最大値の概念がある場合）
+                // 現状の設計では DataType 自体に MAX 系が定義されているので個別設定
+                float max = provider.getMaxValue(player, type);
+                // 最大値がデフォルト1.0f出ない場合のみ保存、あるいは特定キーで保存する設計も検討可能だが
+                // 現状は type 自体が MAX を含んでいるため、ループ内で完結する
+            } else if (type.getType() == Boolean.class) {
+                modData.set(type, provider.getAttribute(player, type.getKey()));
+            }
+        }
+
         return modData;
     }
-    
+
     @Override
     public String toString() {
         return "ModData{" +

@@ -6,77 +6,69 @@ import net.minecraft.world.entity.player.Player;
  * バニラMinecraft用のデータプロバイダー
  * AbstractModDataProviderを継承し、キャッシュとエラーハンドリングを統一
  * 常に利用可能で、最も低い優先度を持つ
+ * 
+ * 【スロットマッピング】
+ * - ORB_1: Health（体力）
+ * - ORB_1_OVERLAY: なし（バニラにはシールド相当がない）
+ * - ORB_2: なし（バニラにはMana相当がない）
+ * - ORB_3: なし（バニラにはStamina相当がない）
+ * - ORB_4: 将来の拡張用
  */
 public class VanillaDataProvider extends AbstractModDataProvider {
-    
+
     public static final VanillaDataProvider INSTANCE = new VanillaDataProvider();
-    
+
     private static final int PRIORITY = 0; // 最低優先度
-    
+
     public VanillaDataProvider() {
         // バニラはキャッシュが不要なので0に設定
         setCacheDuration(0);
     }
-    
+
     @Override
     public boolean isAvailable() {
         // バニラは常に利用可能
         return true;
     }
-    
+
     @Override
     public int getPriority() {
         return PRIORITY;
     }
-    
+
     @Override
     public String getId() {
         return "vanilla";
     }
-    
+
+    // ========== 汎用データ取得の実装 ==========
     @Override
-    public float getCurrentHealth(Player player) {
-        return fetchVanillaSafely(player, DataType.CURRENT_HEALTH, 
-                p -> p != null ? p.getHealth() : 0);
+    public float getValue(Player player, DataType type) {
+        return fetchVanillaSafely(player, type, p -> {
+            if (p == null)
+                return 0f;
+            return switch (type) {
+                case ORB_1_CURRENT -> p.getHealth();
+                case LEVEL -> (float) p.experienceLevel;
+                case EXP -> p.experienceProgress;
+                default -> (Float) type.getDefaultValue();
+            };
+        });
     }
-    
+
     @Override
-    public float getMaxHealth(Player player) {
-        return fetchVanillaSafely(player, DataType.MAX_HEALTH, 
-                p -> p != null ? p.getMaxHealth() : 1);
+    public float getMaxValue(Player player, DataType type) {
+        return fetchVanillaSafely(player, type, p -> {
+            if (p == null)
+                return 1f;
+            return switch (type) {
+                case ORB_1_MAX -> p.getMaxHealth();
+                case EXP_REQUIRED -> 1.0f;
+                default -> (Float) type.getDefaultValue();
+            };
+        });
     }
-    
-    @Override
-    public float getCurrentMana(Player player) {
-        // バニラにはマナがない
-        return 0;
-    }
-    
-    @Override
-    public float getMaxMana(Player player) {
-        // バニラにはマナがない
-        return 0;
-    }
-    
-    @Override
-    public int getLevel(Player player) {
-        return fetchVanillaSafely(player, DataType.LEVEL, 
-                p -> p != null ? p.experienceLevel : 0);
-    }
-    
-    @Override
-    public float getExp(Player player) {
-        return fetchVanillaSafely(player, DataType.EXP, 
-                p -> p != null ? p.experienceProgress : 0);
-    }
-    
-    @Override
-    public float getExpRequiredForLevelUp(Player player) {
-        // バニラの場合、経験値バーは常に0-1の範囲
-        // 次のレベルに必要な経験値の割合として1.0fを返す
-        return 1.0f;
-    }
-    
+
     /**
      * バニラプロバイダーからModDataを作成
      */
