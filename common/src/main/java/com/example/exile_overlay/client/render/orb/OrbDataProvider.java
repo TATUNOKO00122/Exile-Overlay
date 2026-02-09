@@ -25,4 +25,12 @@ public interface OrbDataProvider {
     default boolean shouldShowValue() {
         return true;
     }
+
+    /**
+     * テキストのスケール（文字サイズ）
+     * @return スケール値（デフォルト: 0.8f）
+     */
+    default float getTextScale() {
+        return 0.8f;
+    }
 }

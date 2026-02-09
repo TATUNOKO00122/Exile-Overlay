@@ -59,8 +59,7 @@ public class OrbRegistry {
         register(OrbType.ORB_1);           // 左下メイン
         register(OrbType.ORB_1_OVERLAY);   // ORB_1上のオーバーレイ
         register(OrbType.ORB_3);           // 左上サブ
-        register(OrbType.ORB_2);           // 右下メイン（通常時）
-        register(OrbType.ORB_2_BLOOD);     // 右下メイン（Bloodモード時）
+        register(OrbType.ORB_2);           // 右下メイン（動的リソース切り替え対応）
     }
 
     /**

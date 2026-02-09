@@ -1,4 +1,4 @@
-package com.example.mixin;
+package com.example.exile_overlay.fabric.mixin;
 
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;

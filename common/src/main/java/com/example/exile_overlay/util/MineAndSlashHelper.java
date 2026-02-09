@@ -39,6 +39,7 @@ public class MineAndSlashHelper {
 
     /**
      * プレイヤーのEntityDataを取得します（内部用）。
+     * Mine and Slash 1.20.1 では Load.Unit(player) は EntityData を返します。
      */
     private static Object getCachedEntityData(Player player) {
         if (!isMnsLoaded())
@@ -54,7 +55,7 @@ public class MineAndSlashHelper {
         }
 
         try {
-            // リフレクションを使用してLoad.Unit(player)を呼び出す
+            // Load.Unit(player) を呼び出す
             Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
             var method = loadClass.getMethod("Unit", Player.class);
             cachedEntityData = method.invoke(null, player);
@@ -66,18 +67,26 @@ public class MineAndSlashHelper {
         }
     }
 
-    public static float getCurrentMana(Player player) {
-        if (!isMnsLoaded())
-            return 0;
+    private static Object getResources(Player player) {
         Object data = getCachedEntityData(player);
         if (data != null) {
             try {
                 var getResources = data.getClass().getMethod("getResources");
-                Object resources = getResources.invoke(data);
-                if (resources != null) {
-                    var getMana = resources.getClass().getMethod("getMana");
-                    return ((Number) getMana.invoke(resources)).floatValue();
-                }
+                return getResources.invoke(data);
+            } catch (Exception e) {
+            }
+        }
+        return null;
+    }
+
+    public static float getCurrentMana(Player player) {
+        if (!isMnsLoaded())
+            return 0;
+        Object resources = getResources(player);
+        if (resources != null) {
+            try {
+                var getMana = resources.getClass().getMethod("getMana");
+                return ((Number) getMana.invoke(resources)).floatValue();
             } catch (Exception e) {
             }
         }
@@ -104,15 +113,11 @@ public class MineAndSlashHelper {
     public static float getCurrentMagicShield(Player player) {
         if (!isMnsLoaded())
             return 0;
-        Object data = getCachedEntityData(player);
-        if (data != null) {
+        Object resources = getResources(player);
+        if (resources != null) {
             try {
-                var getResources = data.getClass().getMethod("getResources");
-                Object resources = getResources.invoke(data);
-                if (resources != null) {
-                    var getMagicShield = resources.getClass().getMethod("getMagicShield");
-                    return ((Number) getMagicShield.invoke(resources)).floatValue();
-                }
+                var getMagicShield = resources.getClass().getMethod("getMagicShield");
+                return ((Number) getMagicShield.invoke(resources)).floatValue();
             } catch (Exception e) {
             }
         }
@@ -139,15 +144,11 @@ public class MineAndSlashHelper {
     public static float getCurrentEnergy(Player player) {
         if (!isMnsLoaded())
             return 0;
-        Object data = getCachedEntityData(player);
-        if (data != null) {
+        Object resources = getResources(player);
+        if (resources != null) {
             try {
-                var getResources = data.getClass().getMethod("getResources");
-                Object resources = getResources.invoke(data);
-                if (resources != null) {
-                    var getEnergy = resources.getClass().getMethod("getEnergy");
-                    return ((Number) getEnergy.invoke(resources)).floatValue();
-                }
+                var getEnergy = resources.getClass().getMethod("getEnergy");
+                return ((Number) getEnergy.invoke(resources)).floatValue();
             } catch (Exception e) {
             }
         }
@@ -258,15 +259,11 @@ public class MineAndSlashHelper {
     public static float getCurrentBlood(Player player) {
         if (!isMnsLoaded())
             return 0;
-        Object data = getCachedEntityData(player);
-        if (data != null) {
+        Object resources = getResources(player);
+        if (resources != null) {
             try {
-                var getResources = data.getClass().getMethod("getResources");
-                Object resources = getResources.invoke(data);
-                if (resources != null) {
-                    var getBlood = resources.getClass().getMethod("getBlood");
-                    return ((Number) getBlood.invoke(resources)).floatValue();
-                }
+                var getBlood = resources.getClass().getMethod("getBlood");
+                return ((Number) getBlood.invoke(resources)).floatValue();
             } catch (Exception e) {
             }
         }
@@ -288,5 +285,29 @@ public class MineAndSlashHelper {
             }
         }
         return 0;
+    }
+
+    // スキル関連の取得メソッド（将来の拡張用）
+    public static Object getHotbarSpell(Player player, int slot) {
+        if (!isMnsLoaded())
+            return null;
+        try {
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var method = loadClass.getMethod("player", Player.class);
+            Object playerData = method.invoke(null, player);
+            if (playerData != null) {
+                var getSkillGemInventory = playerData.getClass().getMethod("getSkillGemInventory");
+                Object inv = getSkillGemInventory.invoke(playerData);
+                if (inv != null) {
+                    var getHotbarGem = inv.getClass().getMethod("getHotbarGem", int.class);
+                    Object gem = getHotbarGem.invoke(inv, slot);
+                    if (gem != null) {
+                        return gem.getClass().getMethod("getSpell").invoke(gem);
+                    }
+                }
+            }
+        } catch (Exception e) {
+        }
+        return null;
     }
 }

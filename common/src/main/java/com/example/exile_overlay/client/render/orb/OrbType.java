@@ -2,6 +2,7 @@ package com.example.exile_overlay.client.render.orb;
 
 import com.example.exile_overlay.api.DataType;
 import com.example.exile_overlay.api.ModDataProviderRegistry;
+import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.function.Predicate;
@@ -44,34 +45,25 @@ public final class OrbType {
                     .visibleWhen(p -> ModDataProviderRegistry.getMaxValue(p, DataType.ORB_1_OVERLAY_MAX) > 0)
                     .build());
 
-    // ========== ORB 2: 右下メインスロット（デフォルト: Mana / Blood）==========
+    // ========== ORB 2: 右下メインスロット（動的リソース切り替え）==========
+    // ResourceSlotManagerによる自動的なリソース切り替えに対応
     public static final OrbType ORB_2 = create("orb_2",
             OrbConfig.builder("orb_2")
                     .position(511, 199)
                     .size(85)
-                    .color(0xFF2222FF) // 青（デフォルト: Mana）
+                    .color(0xFF808080) // デフォルト色（動的に変更される）
                     .dataProvider(OrbDataProviders.ORB_2)
-                    .visibleWhen(p -> !ModDataProviderRegistry.getAttribute(p, DataType.ORB_2_IS_BLOOD.getKey()))
+                    .visibleWhen(p -> ResourceSlotManager.getInstance().getOrb2Slot().getActiveCandidate(p) != null)
                     .build());
 
-    // ========== ORB 2 BLOOD MODE: Blood魔法モード時のORB_2（赤色）==========
-    public static final OrbType ORB_2_BLOOD = create("orb_2_blood",
-            OrbConfig.builder("orb_2_blood")
-                    .position(511, 199)
-                    .size(85)
-                    .color(0xFFCC0000) // 赤（Blood）
-                    .dataProvider(OrbDataProviders.ORB_2_BLOOD)
-                    .visibleWhen(p -> ModDataProviderRegistry.getAttribute(p, DataType.ORB_2_IS_BLOOD.getKey()))
-                    .build());
-
-    // ========== ORB 3: 左上サブスロット（デフォルト: Energy / Stamina）==========
+    // ========== ORB 3: 左上サブスロット（動的リソース切り替え）==========
     public static final OrbType ORB_3 = create("orb_3",
             OrbConfig.builder("orb_3")
-                    .position(177, 169)
-                    .size(38)
-                    .color(0xFF00CC00) // 緑（デフォルト: Energy）
+                    .position(194, 187)
+                    .size(36)
+                    .color(0xFF808080) // デフォルト色（動的に変更される）
                     .dataProvider(OrbDataProviders.ORB_3)
-                    .visibleWhen(p -> ModDataProviderRegistry.getMaxValue(p, DataType.ORB_3_MAX) > 0)
+                    .visibleWhen(p -> ResourceSlotManager.getInstance().getOrb3Slot().getActiveCandidate(p) != null)
                     .build());
 
     private final String id;

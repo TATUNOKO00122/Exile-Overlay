@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.render.orb;
 
+import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -31,6 +32,38 @@ public class OrbRenderer {
         return !config.isVisible(player) || config.isOverlay();
     }
 
+    /**
+     * オーブ設定から動的な色を取得
+     * ResourceSlotManagerに対応するスロットがある場合はそこから色を取得
+     */
+    private static int getDynamicColor(OrbConfig config, Player player) {
+        String orbId = config.getId();
+        String slotId = mapOrbIdToSlotId(orbId);
+        
+        if (slotId != null) {
+            int dynamicColor = ResourceSlotManager.getInstance().getActiveColor(slotId, player);
+            // デフォルト色（グレー）でない場合は動的色を使用
+            if (dynamicColor != 0x808080) {
+                return dynamicColor;
+            }
+        }
+        
+        return config.getColor();
+    }
+
+    /**
+     * オーブIDをResourceSlotManagerのスロットIDにマッピング
+     */
+    private static String mapOrbIdToSlotId(String orbId) {
+        return switch (orbId) {
+            case "orb_1" -> "orb1";
+            case "orb_1_overlay" -> "orb1_overlay";
+            case "orb_2", "orb_2_blood" -> "orb2";
+            case "orb_3" -> "orb3";
+            default -> null;
+        };
+    }
+
     public static void render(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc) {
         if (shouldSkipRender(config, player))
             return;
@@ -50,8 +83,11 @@ public class OrbRenderer {
         int orbX = config.getCenterX();
         int orbY = config.getCenterY();
         int orbSize = config.getSize();
+        
+        // 動的な色を取得（ResourceSlotManagerから）
+        int color = getDynamicColor(config, player);
 
-        OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, config.getColor());
+        OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, color);
 
         if (config.hasOverlayColor() && config.getOverlayProvider() != null) {
             renderOverlayFillLayer(graphics, config, player);
@@ -59,7 +95,9 @@ public class OrbRenderer {
 
         if (config.shouldShowReflection()) {
             RenderSystem.enableBlend();
-            graphics.blit(REFLECTION_TEXTURE, orbX, orbY, 0, 0, 0, orbSize, orbSize, orbSize, orbSize);
+            // Orb３は左に2pxずらす
+            int reflectionOffsetX = "orb_3".equals(config.getId()) ? -2 : 0;
+            graphics.blit(REFLECTION_TEXTURE, orbX + reflectionOffsetX, orbY, 0, 0, 0, orbSize, orbSize, orbSize, orbSize);
         }
     }
 
@@ -75,7 +113,8 @@ public class OrbRenderer {
             int orbSize = config.getSize();
 
             String text = (int) current + " / " + (int) max;
-            renderCenteredScaledText(graphics, mc, text, orbX + orbSize / 2f, orbY + orbSize / 2f, 0.8f, 0xFFFFFFFF);
+            float textScale = config.getDataProvider().getTextScale();
+            renderCenteredScaledText(graphics, mc, text, orbX + orbSize / 2f, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
         }
     }
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "exile_overlay",
-  "version": "${version}",
+  "version": "1.0.0",
   "name": "Exile Overlay",
   "description": "This is an example description! Tell everyone what your mod is about!",
   "authors": [
@@ -12,19 +12,19 @@
     "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
   "license": "CC0-1.0",
+  "icon": "assets/exile_overlay/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.example.exile_overlay.fabric.ExampleModFabric"
+      "com.example.fabric.ExampleModFabric"
     ],
     "client": [
-      "com.example.exile_overlay.fabric.client.ExampleModFabricClient",
+      "com.example.fabric.client.ExampleModFabricClient",
       "com.example.exile_overlay.fabric.client.ExileOverlayFabricClient"
     ]
   },
   "mixins": [
-    "exile_overlay.mixins.json",
-    "exile_overlay-fabric.mixins.json"
+    "exile_overlay.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.18.4",

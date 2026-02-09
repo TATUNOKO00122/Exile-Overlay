@@ -1,8 +1,8 @@
-package com.example.fabric;
+package com.example.exile_overlay.fabric;
 
 import net.fabricmc.api.ModInitializer;
 
-import com.example.ExampleMod;
+import com.example.exile_overlay.ExampleMod;
 
 public final class ExampleModFabric implements ModInitializer {
     @Override

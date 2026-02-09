@@ -1,17 +1,17 @@
 package com.example.exile_overlay.api;
 
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Method;
 
 /**
  * Mine and Slash (M&S) MOD用のデータプロバイダー
- * AbstractModDataProviderを継承し、キャッシュとエラーハンドリングを統一
- * リフレクションを使用してM&Sのデータを取得する
+ * HJUD方式を参考に、シンプルかつ確実なデータ取得を実現
  * 
  * 【スロットマッピング】
  * Mine and SlashのデータをHUDスロットに以下のようにマッピングします:
@@ -20,34 +20,39 @@ import java.lang.invoke.MethodType;
  * - ORB_1_OVERLAY: M&S Magic Shield（魔法シールド）
  * - ORB_2: M&S Mana（マナ）または Blood（ブラッド魔法）
  * - ORB_3: M&S Energy（エネルギー/スタミナ）
- * 
- * このマッピングにより、HUDは「何を表示するか」を知る必要なく、
- * 「どのスロットにデータを供給するか」のみを管理できます。
  */
 public class MineAndSlashDataProvider extends AbstractModDataProvider {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final int PRIORITY = 100; // 高優先度
+    private static final int PRIORITY = 100;
     private static final long CACHE_DURATION_MS = 250;
 
-    // M&S利用可能性フラグ（遅延初期化）
+    // M&S利用可能性フラグ
     private static Boolean mnsAvailable = null;
 
-    // MethodHandles（キャッシュ済み）
-    private static final MethodHandle LOAD_UNIT;
-    private static final MethodHandle GET_RESOURCES;
-    private static final MethodHandle GET_MANA;
-    private static final MethodHandle GET_MAGIC_SHIELD;
-    private static final MethodHandle GET_ENERGY;
-    private static final MethodHandle GET_BLOOD;
-    private static final MethodHandle GET_MAXIMUM_RESOURCE;
-    private static final MethodHandle GET_EXP;
-    private static final MethodHandle GET_EXP_REQUIRED;
-    private static final MethodHandle GET_LEVEL;
-    private static final MethodHandle GET_UNIT;
-    private static final MethodHandle IS_BLOOD_MAGE;
-    private static final MethodHandle HEALTH_GET_CURRENT;
-    private static final MethodHandle HEALTH_GET_MAX;
+    // クラスキャッシュ
+    private static Class<?> loadClass = null;
+    private static Class<?> entityDataClass = null;
+    private static Class<?> resourcesDataClass = null;
+    private static Class<?> resourceTypeClass = null;
+    private static Class<?> unitClass = null;
+    private static Class<?> healthUtilsClass = null;
+
+    // メソッドキャッシュ
+    private static Method loadUnitMethod = null;
+    private static Method getResourcesMethod = null;
+    private static Method getManaMethod = null;
+    private static Method getMagicShieldMethod = null;
+    private static Method getEnergyMethod = null;
+    private static Method getBloodMethod = null;
+    private static Method getMaximumResourceMethod = null;
+    private static Method getExpMethod = null;
+    private static Method getExpRequiredMethod = null;
+    private static Method getLevelMethod = null;
+    private static Method getUnitMethod = null;
+    private static Method isBloodMageMethod = null;
+    private static Method getCurrentHealthMethod = null;
+    private static Method getMaxHealthMethod = null;
 
     // ResourceType enum values
     private static Object MANA_TYPE = null;
@@ -55,100 +60,145 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     private static Object ENERGY_TYPE = null;
     private static Object BLOOD_TYPE = null;
 
+    // シンプルなキャッシュ（HJUD方式）
+    private static WeakReference<Player> cachedPlayer = null;
+    private static Object cachedEntityData = null;
+    private static long cacheTime = 0;
+
+    // 初期化状態追跡
+    private static boolean initialized = false;
+
     static {
-        MethodHandle loadUnit = null;
-        MethodHandle getResources = null;
-        MethodHandle getMana = null;
-        MethodHandle getMagicShield = null;
-        MethodHandle getEnergy = null;
-        MethodHandle getBlood = null;
-        MethodHandle getMaximumResource = null;
-        MethodHandle getExp = null;
-        MethodHandle getExpRequired = null;
-        MethodHandle getLevel = null;
-        MethodHandle getUnit = null;
-        MethodHandle isBloodMage = null;
-        MethodHandle healthGetCurrent = null;
-        MethodHandle healthGetMax = null;
+        initialize();
+    }
 
+    private static void initialize() {
+        if (initialized) return;
+        
         try {
-            MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+            // クラスの存在確認
+            loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            entityDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityData");
+            resourcesDataClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourcesData");
+            resourceTypeClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourceType");
+            unitClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Unit");
+            healthUtilsClass = Class.forName("com.robertx22.mine_and_slash.uncommon.utilityclasses.HealthUtils");
 
-            // Load.Unitメソッド
-            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
-            loadUnit = lookup.findStatic(loadClass, "Unit",
-                    MethodType.methodType(Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Unit"),
-                            Player.class));
+            // メソッド取得（個別にtry-catch）
+            try {
+                loadUnitMethod = loadClass.getMethod("Unit", Entity.class);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get Load.Unit method: {}", e.getMessage());
+            }
 
-            // Unitクラスのメソッド
-            Class<?> unitClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Unit");
-            getResources = lookup.findVirtual(unitClass, "getResources",
-                    MethodType.methodType(Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Resources")));
-            getMaximumResource = lookup.findVirtual(unitClass, "getMaximumResource",
-                    MethodType.methodType(float.class,
-                            Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourceType")));
-            getExp = lookup.findVirtual(unitClass, "getExp",
-                    MethodType.methodType(float.class));
-            getExpRequired = lookup.findVirtual(unitClass, "getExpRequiredForLevelUp",
-                    MethodType.methodType(float.class));
-            getLevel = lookup.findVirtual(unitClass, "getLevel",
-                    MethodType.methodType(int.class));
+            try {
+                getResourcesMethod = entityDataClass.getMethod("getResources");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getResources method: {}", e.getMessage());
+            }
 
-            // Resourcesクラスのメソッド
-            Class<?> resourcesClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Resources");
-            getMana = lookup.findVirtual(resourcesClass, "getMana",
-                    MethodType.methodType(float.class));
-            getMagicShield = lookup.findVirtual(resourcesClass, "getMagicShield",
-                    MethodType.methodType(float.class));
-            getEnergy = lookup.findVirtual(resourcesClass, "getEnergy",
-                    MethodType.methodType(float.class));
-            getBlood = lookup.findVirtual(resourcesClass, "getBlood",
-                    MethodType.methodType(float.class));
+            try {
+                getManaMethod = resourcesDataClass.getMethod("getMana");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getMana method: {}", e.getMessage());
+            }
 
-            // Unitクラスの追加メソッド
-            getUnit = lookup.findVirtual(unitClass, "getUnit",
-                    MethodType.methodType(Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.UnitCore")));
+            try {
+                getMagicShieldMethod = resourcesDataClass.getMethod("getMagicShield");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getMagicShield method: {}", e.getMessage());
+            }
 
-            // UnitCoreクラスのメソッド
-            Class<?> unitCoreClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.UnitCore");
-            isBloodMage = lookup.findVirtual(unitCoreClass, "isBloodMage",
-                    MethodType.methodType(boolean.class));
+            try {
+                getEnergyMethod = resourcesDataClass.getMethod("getEnergy");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getEnergy method: {}", e.getMessage());
+            }
 
-            // ResourceType enum
-            Class<?> resourceTypeClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourceType");
-            MANA_TYPE = resourceTypeClass.getField("mana").get(null);
-            MAGIC_SHIELD_TYPE = resourceTypeClass.getField("magic_shield").get(null);
-            ENERGY_TYPE = resourceTypeClass.getField("energy").get(null);
-            BLOOD_TYPE = resourceTypeClass.getField("blood").get(null);
+            try {
+                getBloodMethod = resourcesDataClass.getMethod("getBlood");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getBlood method: {}", e.getMessage());
+            }
 
-            // HealthUtilsメソッド
-            Class<?> healthUtilsClass = Class
-                    .forName("com.robertx22.mine_and_slash.uncommon.utilityclasses.HealthUtils");
-            healthGetCurrent = lookup.findStatic(healthUtilsClass, "getCurrentHealth",
-                    MethodType.methodType(float.class, Player.class));
-            healthGetMax = lookup.findStatic(healthUtilsClass, "getMaxHealth",
-                    MethodType.methodType(float.class, Player.class));
+            try {
+                getMaximumResourceMethod = entityDataClass.getMethod("getMaximumResource", resourceTypeClass);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getMaximumResource method: {}", e.getMessage());
+            }
 
+            try {
+                getExpMethod = entityDataClass.getMethod("getExp");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getExp method: {}", e.getMessage());
+            }
+
+            try {
+                getExpRequiredMethod = entityDataClass.getMethod("getExpRequiredForLevelUp");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getExpRequiredForLevelUp method: {}", e.getMessage());
+            }
+
+            try {
+                getLevelMethod = entityDataClass.getMethod("getLevel");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getLevel method: {}", e.getMessage());
+            }
+
+            try {
+                getUnitMethod = entityDataClass.getMethod("getUnit");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getUnit method: {}", e.getMessage());
+            }
+
+            try {
+                isBloodMageMethod = unitClass.getMethod("isBloodMage");
+            } catch (Exception e) {
+                LOGGER.error("Failed to get isBloodMage method: {}", e.getMessage());
+            }
+
+            try {
+                getCurrentHealthMethod = healthUtilsClass.getMethod("getCurrentHealth", LivingEntity.class);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getCurrentHealth method: {}", e.getMessage());
+            }
+
+            try {
+                getMaxHealthMethod = healthUtilsClass.getMethod("getMaxHealth", LivingEntity.class);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get getMaxHealth method: {}", e.getMessage());
+            }
+
+            // ResourceType enum values
+            try {
+                MANA_TYPE = resourceTypeClass.getField("mana").get(null);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get MANA_TYPE: {}", e.getMessage());
+            }
+
+            try {
+                MAGIC_SHIELD_TYPE = resourceTypeClass.getField("magic_shield").get(null);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get MAGIC_SHIELD_TYPE: {}", e.getMessage());
+            }
+
+            try {
+                ENERGY_TYPE = resourceTypeClass.getField("energy").get(null);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get ENERGY_TYPE: {}", e.getMessage());
+            }
+
+            try {
+                BLOOD_TYPE = resourceTypeClass.getField("blood").get(null);
+            } catch (Exception e) {
+                LOGGER.error("Failed to get BLOOD_TYPE: {}", e.getMessage());
+            }
+
+            initialized = true;
             LOGGER.info("Mine and Slash integration initialized successfully");
-
         } catch (Exception e) {
-            LOGGER.debug("Mine and Slash not available or error during initialization: {}", e.getMessage());
+            LOGGER.error("Mine and Slash initialization failed: {}", e.getMessage());
         }
-
-        LOAD_UNIT = loadUnit;
-        GET_RESOURCES = getResources;
-        GET_MANA = getMana;
-        GET_MAGIC_SHIELD = getMagicShield;
-        GET_ENERGY = getEnergy;
-        GET_BLOOD = getBlood;
-        GET_MAXIMUM_RESOURCE = getMaximumResource;
-        GET_EXP = getExp;
-        GET_EXP_REQUIRED = getExpRequired;
-        GET_LEVEL = getLevel;
-        GET_UNIT = getUnit;
-        IS_BLOOD_MAGE = isBloodMage;
-        HEALTH_GET_CURRENT = healthGetCurrent;
-        HEALTH_GET_MAX = healthGetMax;
     }
 
     public MineAndSlashDataProvider() {
@@ -158,7 +208,7 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     @Override
     public boolean isAvailable() {
         if (mnsAvailable == null) {
-            mnsAvailable = LOAD_UNIT != null;
+            mnsAvailable = loadClass != null && loadUnitMethod != null;
             if (mnsAvailable) {
                 LOGGER.info("Mine and Slash detected, enabling integration.");
             } else {
@@ -179,107 +229,220 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     }
 
     /**
-     * M&SのUnitデータを取得（キャッシュ付き）
+     * HJUD方式のシンプルなキャッシュでEntityDataを取得
      */
-    private Object getUnitData(Player player) {
+    private Object getCachedEntityData(Player player) {
         if (!isAvailable() || player == null) {
             return null;
         }
 
-        // AbstractModDataProviderのキャッシュシステムを使用
-        if (cache.isCacheValid(player)) {
-            // キャッシュが有効な場合はnullを返して個別メソッドでキャッシュを使用
-            return null;
+        long now = System.currentTimeMillis();
+        Player cached = cachedPlayer != null ? cachedPlayer.get() : null;
+
+        if (cached == player && cachedEntityData != null && (now - cacheTime) < CACHE_DURATION_MS) {
+            return cachedEntityData;
         }
 
         try {
-            return LOAD_UNIT.invoke(player);
-        } catch (Throwable e) {
-            logger.debug("Error accessing Mine and Slash unit data: {}", e.getMessage());
+            cachedEntityData = loadUnitMethod.invoke(null, player);
+            cachedPlayer = new WeakReference<>(player);
+            cacheTime = now;
+            return cachedEntityData;
+        } catch (Exception e) {
+            LOGGER.debug("Error getting M&S EntityData: {}", e.getMessage());
             return null;
         }
     }
 
-    // ========== 汎用データ取得の実装 ==========
+    private Object getResources(Player player) {
+        Object data = getCachedEntityData(player);
+        if (data != null && getResourcesMethod != null) {
+            try {
+                return getResourcesMethod.invoke(data);
+            } catch (Exception e) {
+                LOGGER.debug("Error getting M&S Resources: {}", e.getMessage());
+            }
+        }
+        return null;
+    }
+
     @Override
     public float getValue(Player player, DataType type) {
-        if (!isAvailable())
-            return super.getValue(player, type);
+        if (!isAvailable() || player == null) {
+            return type.getDefaultValueTyped();
+        }
 
-        return fetchSafely(player, type, p -> {
-            try {
-                Object data = LOAD_UNIT.invoke(p);
-                if (data == null)
-                    return 0f;
-
-                Object resources = GET_RESOURCES.invoke(data);
-
-                return switch (type) {
-                    case ORB_1_CURRENT -> (float) HEALTH_GET_CURRENT.invoke(p);
-                    case ORB_1_OVERLAY_CURRENT -> resources != null ? (float) GET_MAGIC_SHIELD.invoke(resources) : 0f;
-                    case ORB_2_CURRENT -> {
-                        if (resources == null)
-                            yield 0f;
-                        yield getAttribute(p, DataType.ORB_2_IS_BLOOD.getKey()) ? (float) GET_BLOOD.invoke(resources)
-                                : (float) GET_MANA.invoke(resources);
+        try {
+            switch (type) {
+                case ORB_1_CURRENT:
+                    if (getCurrentHealthMethod != null) {
+                        Object result = getCurrentHealthMethod.invoke(null, player);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
                     }
-                    case ORB_3_CURRENT -> resources != null ? (float) GET_ENERGY.invoke(resources) : 0f;
-                    case LEVEL -> (float) (int) GET_LEVEL.invoke(data);
-                    case EXP -> (float) GET_EXP.invoke(data);
-                    default -> (Float) type.getDefaultValue();
-                };
-            } catch (Throwable e) {
-                return 0f;
+                    return 0f;
+                
+                case ORB_1_OVERLAY_CURRENT:
+                    if (getMagicShieldMethod != null) {
+                        Object resources = getResources(player);
+                        if (resources != null) {
+                            Object result = getMagicShieldMethod.invoke(resources);
+                            if (result instanceof Number) {
+                                return ((Number) result).floatValue();
+                            }
+                        }
+                    }
+                    return 0f;
+                
+                case ORB_2_CURRENT:
+                    Object resources = getResources(player);
+                    if (resources != null) {
+                        boolean isBlood = getAttribute(player, DataType.ORB_2_IS_BLOOD.getKey());
+                        Method method = isBlood ? getBloodMethod : getManaMethod;
+                        if (method != null) {
+                            Object result = method.invoke(resources);
+                            if (result instanceof Number) {
+                                return ((Number) result).floatValue();
+                            }
+                        }
+                    }
+                    return 0f;
+                
+                case ORB_3_CURRENT:
+                    resources = getResources(player);
+                    if (resources != null && getEnergyMethod != null) {
+                        Object result = getEnergyMethod.invoke(resources);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 0f;
+                
+                case LEVEL:
+                    Object data = getCachedEntityData(player);
+                    if (data != null && getLevelMethod != null) {
+                        Object result = getLevelMethod.invoke(data);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 0f;
+                
+                case EXP:
+                    data = getCachedEntityData(player);
+                    if (data != null && getExpMethod != null) {
+                        Object result = getExpMethod.invoke(data);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 0f;
+                
+                default:
+                    return type.getDefaultValueTyped();
             }
-        });
+        } catch (Exception e) {
+            LOGGER.debug("Error getting M&S value for {}: {}", type.getKey(), e.getMessage());
+            return type.getDefaultValueTyped();
+        }
     }
 
     @Override
     public float getMaxValue(Player player, DataType type) {
-        if (!isAvailable())
-            return super.getMaxValue(player, type);
+        if (!isAvailable() || player == null) {
+            return type == DataType.ORB_1_MAX || type == DataType.ORB_1_OVERLAY_MAX || 
+                   type == DataType.ORB_2_MAX || type == DataType.ORB_3_MAX ? 1f : type.getDefaultValueTyped();
+        }
 
-        return fetchSafely(player, type, p -> {
-            try {
-                Object data = LOAD_UNIT.invoke(p);
-                if (data == null)
-                    return 1f;
-
-                return switch (type) {
-                    case ORB_1_MAX -> (float) HEALTH_GET_MAX.invoke(p);
-                    case ORB_1_OVERLAY_MAX -> (float) GET_MAXIMUM_RESOURCE.invoke(data, MAGIC_SHIELD_TYPE);
-                    case ORB_2_MAX -> getAttribute(p, DataType.ORB_2_IS_BLOOD.getKey())
-                            ? (float) GET_MAXIMUM_RESOURCE.invoke(data, BLOOD_TYPE)
-                            : (float) GET_MAXIMUM_RESOURCE.invoke(data, MANA_TYPE);
-                    case ORB_3_MAX -> (float) GET_MAXIMUM_RESOURCE.invoke(data, ENERGY_TYPE);
-                    case EXP_REQUIRED -> (float) GET_EXP_REQUIRED.invoke(data);
-                    default -> (Float) type.getDefaultValue();
-                };
-            } catch (Throwable e) {
+        try {
+            Object data = getCachedEntityData(player);
+            if (data == null) {
                 return 1f;
             }
-        });
+
+            switch (type) {
+                case ORB_1_MAX:
+                    if (getMaxHealthMethod != null) {
+                        Object result = getMaxHealthMethod.invoke(null, player);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 1f;
+                
+                case ORB_1_OVERLAY_MAX:
+                    if (getMaximumResourceMethod != null && MAGIC_SHIELD_TYPE != null) {
+                        Object result = getMaximumResourceMethod.invoke(data, MAGIC_SHIELD_TYPE);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 1f;
+                
+                case ORB_2_MAX:
+                    if (getMaximumResourceMethod != null) {
+                        boolean isBlood = getAttribute(player, DataType.ORB_2_IS_BLOOD.getKey());
+                        Object resourceType = isBlood ? BLOOD_TYPE : MANA_TYPE;
+                        if (resourceType != null) {
+                            Object result = getMaximumResourceMethod.invoke(data, resourceType);
+                            if (result instanceof Number) {
+                                return ((Number) result).floatValue();
+                            }
+                        }
+                    }
+                    return 1f;
+                
+                case ORB_3_MAX:
+                    if (getMaximumResourceMethod != null && ENERGY_TYPE != null) {
+                        Object result = getMaximumResourceMethod.invoke(data, ENERGY_TYPE);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 1f;
+                
+                case EXP_REQUIRED:
+                    if (getExpRequiredMethod != null) {
+                        Object result = getExpRequiredMethod.invoke(data);
+                        if (result instanceof Number) {
+                            return ((Number) result).floatValue();
+                        }
+                    }
+                    return 1f;
+                
+                default:
+                    return type.getDefaultValueTyped();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Error getting M&S max value for {}: {}", type.getKey(), e.getMessage());
+            return 1f;
+        }
     }
 
     @Override
     public boolean getAttribute(Player player, String attributeKey) {
-        if (!isAvailable())
-            return super.getAttribute(player, attributeKey);
+        if (!isAvailable() || player == null) {
+            return false;
+        }
 
         if (DataType.ORB_2_IS_BLOOD.getKey().equals(attributeKey)) {
-            return fetchSafely(player, DataType.ORB_2_IS_BLOOD, p -> {
-                try {
-                    Object data = LOAD_UNIT.invoke(p);
-                    if (data != null) {
-                        Object unit = GET_UNIT.invoke(data);
-                        return unit != null && (boolean) IS_BLOOD_MAGE.invoke(unit);
+            try {
+                Object data = getCachedEntityData(player);
+                if (data != null && getUnitMethod != null) {
+                    Object unit = getUnitMethod.invoke(data);
+                    if (unit != null && isBloodMageMethod != null) {
+                        Object result = isBloodMageMethod.invoke(unit);
+                        if (result instanceof Boolean) {
+                            return (Boolean) result;
+                        }
                     }
-                } catch (Throwable ignored) {
                 }
-                return false;
-            });
+            } catch (Exception e) {
+                LOGGER.debug("Error checking blood mage status: {}", e.getMessage());
+            }
         }
-        return super.getAttribute(player, attributeKey);
+        return false;
     }
 
     /**
