@@ -28,9 +28,7 @@ public class GuiMixin {
 
     @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
     private void onRenderEffects(GuiGraphics graphics, CallbackInfo ci) {
-        // カスタムバフ表示をレンダリング
-        BuffOverlayRenderer.render(graphics, 0.0f);
-        // バニラの効果表示をキャンセル
+        // HudRenderCallbackで描画するため、ここではバニラの効果表示のみをキャンセル
         ci.cancel();
     }
 }

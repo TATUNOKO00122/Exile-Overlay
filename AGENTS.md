@@ -9,13 +9,21 @@ Minecraft 1.20.1 mod using **Architectury** framework (Fabric + Forge).
 ## Build Commands
 
 ```bash
-./gradlew build                    # Build all platforms
+# Build all platforms
+./gradlew build                    # Unix/Mac
+gradlew.bat build                  # Windows
+
 ./gradlew clean build              # Clean and rebuild
 ./gradlew :fabric:build            # Build Fabric only
 ./gradlew :forge:build             # Build Forge only
-./gradlew test                     # Run all tests
-./gradlew test --tests "ClassName" # Run single test class
-./gradlew test --tests "com.example.ClassName.methodName"  # Run single test method
+
+# Run tests
+./gradlew test                                    # Run all tests
+./gradlew test --tests "ClassName"                # Run single test class
+./gradlew test --tests "com.example.ClassName.methodName"  # Run single method
+./gradlew test --tests "*Benchmark"               # Run benchmark tests
+
+# Development
 ./gradlew :fabric:runClient        # Run Fabric client
 ./gradlew :forge:runClient         # Run Forge client
 ```
@@ -73,10 +81,10 @@ import java.util.*;                 // Java standard library
 public abstract class DamageMixin {
     @Unique
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
-    
+
     @Unique
     private float exileOverlay$lastHealth = -1;
-    
+
     @Inject(method = "hurt", at = @At("HEAD"))
     private void exileOverlay$onHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         try {
@@ -107,7 +115,7 @@ public abstract class DamageMixin {
 
 ### Resource Locations
 ```java
-private static final ResourceLocation TEXTURE = 
+private static final ResourceLocation TEXTURE =
     new ResourceLocation("exile_overlay", "textures/gui/texture.png");
 ```
 

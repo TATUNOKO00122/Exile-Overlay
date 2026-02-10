@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.render;
 
+import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.IRenderPipeline;
 import com.example.exile_overlay.api.PooledRenderContext;
@@ -167,5 +168,30 @@ public class HudRenderManager {
      */
     public boolean hasCommand(String commandId) {
         return pipeline.hasCommand(commandId);
+    }
+
+    /**
+     * HUDレンダラーを取得
+     * IHudRendererを実装しているコマンドを取得する
+     *
+     * @param configKey 設定キー（getConfigKey()の戻り値）
+     * @return IHudRenderer、見つからない場合はnull
+     */
+    public IHudRenderer getHudRenderer(String configKey) {
+        if (configKey == null) {
+            return null;
+        }
+
+        // 全てのコマンドを検索
+        for (IRenderCommand command : pipeline.getCommands()) {
+            if (command instanceof IHudRenderer) {
+                IHudRenderer renderer = (IHudRenderer) command;
+                if (configKey.equals(renderer.getConfigKey())) {
+                    return renderer;
+                }
+            }
+        }
+
+        return null;
     }
 }

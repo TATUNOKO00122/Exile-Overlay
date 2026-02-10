@@ -2,9 +2,12 @@ package com.example.exile_overlay.client.render;
 
 import com.example.exile_overlay.api.DataType;
 import com.example.exile_overlay.api.IRenderCommand;
+import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.ModDataProviderRegistry;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.client.config.position.HudPosition;
+import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.orb.OrbRenderer;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
@@ -22,19 +25,23 @@ import static com.example.exile_overlay.client.render.orb.OrbType.ORB_3;
 
 /**
  * ホットバー描画コマンド
- * 
+ *
  * 【Layered Sandwich Rendering Architecture】
  * 描画順序（下から上）：
  * 1. Background Layer (背面): 経験値バーなど
  * 2. Fill Layer (中間): オーブ液面（シェーダーで描画）
  * 3. Frame Layer (前面): 背景フレーム（透明マスクで円形を形成）
  * 4. Overlay Layer (最前面): 反射、テキスト、スロット
- * 
+ *
  * 【パフォーマンス最適化】
  * - StringBuilder再利用によるGCプレッシャー低減
  * - 可視性チェックで不要な描画をスキップ
+ *
+ * 【位置設定対応】
+ * - IHudRendererを実装してドラッグ設定に対応
+ * - HudPositionManagerから位置を取得
  */
-public class HotbarRenderCommand implements IRenderCommand {
+public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     
     private static final String COMMAND_ID = "hotbar";
     private static final int PRIORITY = 100;
@@ -132,6 +139,11 @@ public class HotbarRenderCommand implements IRenderCommand {
     
     @Override
     public void execute(GuiGraphics graphics, RenderContext ctx) {
+        render(graphics, ctx);
+    }
+    
+    @Override
+    public void render(GuiGraphics graphics, RenderContext ctx) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         
@@ -142,9 +154,13 @@ public class HotbarRenderCommand implements IRenderCommand {
         // 表示中のオーブを取得
         List<OrbType> visibleOrbs = OrbRegistry.getVisibleOrbs(player);
         
-        // デフォルト位置（画面下部中央）
-        int bgX = (int) (screenWidth / 2 - (BG_WIDTH * RENDER_SCALE) / 2);
-        int bgY = screenHeight - (int) (BG_HEIGHT * RENDER_SCALE) + screenOffsetY;
+        // 位置設定を取得
+        HudPosition position = getPosition();
+        int[] pos = position.resolve(screenWidth, screenHeight);
+        
+        // ホットバーは中央基準で描画するため、オフセットを計算
+        int bgX = pos[0] - (int) (BG_WIDTH * RENDER_SCALE) / 2;
+        int bgY = pos[1] - (int) (BG_HEIGHT * RENDER_SCALE) + screenOffsetY;
         
         OrbShaderRenderer.updateAnimationTime(0.016f);
         
@@ -240,5 +256,36 @@ public class HotbarRenderCommand implements IRenderCommand {
         graphics.renderItem(stack, 0, 0);
         graphics.renderItemDecorations(mc.font, stack, 0, 0);
         graphics.pose().popPose();
+    }
+    
+    // IHudRenderer implementation
+    
+    @Override
+    public String getConfigKey() {
+        return "hotbar";
+    }
+    
+    @Override
+    public int getWidth() {
+        return 230;
+    }
+
+    @Override
+    public int getHeight() {
+        return 60;
+    }
+    
+    @Override
+    public boolean isDraggable() {
+        return true;
+    }
+
+    @Override
+    public HudRenderMetadata getRenderMetadata() {
+        return new HudRenderMetadata(
+            CoordinateSystem.CENTER_BASED,  // 中心基準
+            new Insets(-30, 0, 0, 0),       // 上に30pxオフセット
+            new Insets(0, 4, 0, 4)          // 左右に4px拡張
+        );
     }
 }

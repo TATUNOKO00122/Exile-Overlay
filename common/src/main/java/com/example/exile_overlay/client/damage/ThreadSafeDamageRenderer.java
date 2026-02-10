@@ -384,7 +384,7 @@ public class ThreadSafeDamageRenderer {
             poseStack.mulPose(mc.getEntityRenderDispatcher().cameraOrientation());
             
             float scale = damage.getScale();
-            poseStack.scale(-scale, -scale, scale);
+            poseStack.scale(-scale, scale, scale);
             
             int alpha = (int) (damage.getAlpha() * 255);
             int colorWithAlpha = (alpha << 24) | (damage.getColor() & 0xFFFFFF);

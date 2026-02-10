@@ -1,5 +1,9 @@
 package com.example.exile_overlay.client.render.effect;
 
+import com.example.exile_overlay.api.IHudRenderer;
+import com.example.exile_overlay.api.RenderContext;
+import com.example.exile_overlay.client.config.position.HudPosition;
+import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,8 +15,9 @@ import java.util.List;
 
 /**
  * バフ/デバフオーバーレイのレンダリングクラス
+ * IHudRendererを実装して設定画面に対応
  */
-public class BuffOverlayRenderer {
+public class BuffOverlayRenderer implements IHudRenderer {
 
     // テクスチャリソース
     private static final ResourceLocation EFFECT_FRAME = new ResourceLocation("exile_overlay",
@@ -26,10 +31,17 @@ public class BuffOverlayRenderer {
     private static final int ICON_SIZE = 20;
 
     // 配置設定
-    private static final int BUFFS_X = 10;
-    private static final int BUFFS_Y = 10;
     private static final boolean HORIZONTAL = true;
     private static final double SCALE = 1.0;
+    private static final String CONFIG_KEY = "buff_overlay";
+
+    // キャッシュ
+    private static final List<EffectRenderHelper.DisplayableEffect> effectCache = new ArrayList<>(32);
+    private static int cachedScreenWidth = -1;
+    private static int cachedScreenHeight = -1;
+    private static int cachedX = 0;
+    private static int cachedY = 0;
+    private static long lastEffectChangeTime = 0;
 
     public static void render(GuiGraphics graphics, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
@@ -39,27 +51,90 @@ public class BuffOverlayRenderer {
         List<EffectRenderHelper.DisplayableEffect> buffs = EffectRenderHelper.getUnifiedEffects(mc.player, true);
         List<EffectRenderHelper.DisplayableEffect> debuffs = EffectRenderHelper.getUnifiedEffects(mc.player, false);
 
-        List<EffectRenderHelper.DisplayableEffect> allEffects = new ArrayList<>();
-        allEffects.addAll(buffs);
-        allEffects.addAll(debuffs);
+        // リストをクリアして再利用（アロケーション削減）
+        effectCache.clear();
+        effectCache.addAll(buffs);
+        effectCache.addAll(debuffs);
 
-        // 統合リストをソート（無限→長期間→短期間）
-        allEffects.sort((a, b) -> {
-            boolean aInfinite = a.isInfinite();
-            boolean bInfinite = b.isInfinite();
-
-            if (aInfinite && !bInfinite) return -1;
-            if (!aInfinite && bInfinite) return 1;
-            if (aInfinite && bInfinite) return 0;
-
-            return Integer.compare(b.getDuration(), a.getDuration());
-        });
+        // 変更検出：リストの内容が変わったかチェック
+        boolean hasChanged = hasEffectListChanged(effectCache);
+        if (hasChanged) {
+            lastEffectChangeTime = System.currentTimeMillis();
+            // 変更があった場合のみソート
+            effectCache.sort(EFFECT_COMPARATOR);
+        }
 
         // レンダリング
-        if (!allEffects.isEmpty()) {
-            renderUnifiedEffectList(graphics, mc, allEffects, BUFFS_X, BUFFS_Y, HORIZONTAL, SCALE, partialTick);
+        if (!effectCache.isEmpty()) {
+            int[] pos = getCachedPosition(mc);
+            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE, partialTick);
         }
     }
+
+    /**
+     * エフェクトリストの変更検出
+     */
+    private static boolean hasEffectListChanged(List<EffectRenderHelper.DisplayableEffect> current) {
+        // サイズが異なる場合は変更あり
+        if (current.size() != effectCache.size()) {
+            return true;
+        }
+        // 内容を比較（IDと持続時間で比較）
+        for (int i = 0; i < current.size(); i++) {
+            EffectRenderHelper.DisplayableEffect currentEffect = current.get(i);
+            // 前回のキャッシュと比較
+            if (i >= effectCache.size()) return true;
+            EffectRenderHelper.DisplayableEffect cachedEffect = effectCache.get(i);
+            if (!currentEffect.getId().equals(cachedEffect.getId()) ||
+                currentEffect.getDuration() != cachedEffect.getDuration()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 位置をキャッシュして取得
+     */
+    private static int[] getCachedPosition(Minecraft mc) {
+        int screenWidth = mc.getWindow().getGuiScaledWidth();
+        int screenHeight = mc.getWindow().getGuiScaledHeight();
+
+        // 画面サイズまたは設定が変わった場合のみ再計算
+        if (screenWidth != cachedScreenWidth ||
+            screenHeight != cachedScreenHeight ||
+            isPositionDirty()) {
+
+            HudPosition position = HudPositionManager.getInstance().getPosition(CONFIG_KEY);
+            int[] pos = position.resolve(screenWidth, screenHeight);
+            cachedX = pos[0];
+            cachedY = pos[1];
+            cachedScreenWidth = screenWidth;
+            cachedScreenHeight = screenHeight;
+        }
+
+        return new int[]{cachedX, cachedY};
+    }
+
+    /**
+     * 位置が変更されたかチェック
+     */
+    private static boolean isPositionDirty() {
+        // 最後の変更から一定時間経過したら再計算
+        // またはHudPositionManagerに変更通知メカニズムを実装
+        return false; // TODO: 実装
+    }
+
+    private static final java.util.Comparator<EffectRenderHelper.DisplayableEffect> EFFECT_COMPARATOR = (a, b) -> {
+        boolean aInfinite = a.isInfinite();
+        boolean bInfinite = b.isInfinite();
+
+        if (aInfinite && !bInfinite) return -1;
+        if (!aInfinite && bInfinite) return 1;
+        if (aInfinite && bInfinite) return 0;
+
+        return Integer.compare(b.getDuration(), a.getDuration());
+    };
 
     private static void renderUnifiedEffectList(GuiGraphics graphics, Minecraft mc,
                                                  List<EffectRenderHelper.DisplayableEffect> effects,
@@ -141,5 +216,38 @@ public class BuffOverlayRenderer {
                 graphics.pose().popPose();
             }
         }
+    }
+
+    // ========================================
+    // IHudRenderer インターフェース実装
+    // ========================================
+
+    @Override
+    public void render(GuiGraphics graphics, RenderContext ctx) {
+        render(graphics, ctx.getPartialTick());
+    }
+
+    @Override
+    public String getId() {
+        return CONFIG_KEY;
+    }
+
+    @Override
+    public int getWidth() {
+        return FRAME_WIDTH;
+    }
+
+    @Override
+    public int getHeight() {
+        return FRAME_HEIGHT;
+    }
+
+    @Override
+    public HudRenderMetadata getRenderMetadata() {
+        return new HudRenderMetadata(
+            CoordinateSystem.TOP_LEFT_BASED,  // 左上基準
+            new Insets(0, 0, 0, 0),           // オフセットなし
+            new Insets(0, 0, 0, 0)            // 拡張なし
+        );
     }
 }

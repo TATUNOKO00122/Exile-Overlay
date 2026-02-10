@@ -35,9 +35,7 @@ public class BuffOverlayForgeHandler {
     public static void onRenderGuiPost(RenderGuiEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
-        if (mc.screen != null) return; // GUI画面が開いている場合は描画しない
-
-        // バフ表示をレンダリング
+        // バフ表示をレンダリング（設定画面を開いていても描画する）
         BuffOverlayRenderer.render(event.getGuiGraphics(), event.getPartialTick());
     }
 }

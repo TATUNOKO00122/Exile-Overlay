@@ -115,6 +115,26 @@ public class SafeHudRenderer implements IHudRenderer {
         return delegate.getId();
     }
     
+    @Override
+    public String getConfigKey() {
+        return delegate.getConfigKey();
+    }
+    
+    @Override
+    public int getWidth() {
+        return delegate.getWidth();
+    }
+    
+    @Override
+    public int getHeight() {
+        return delegate.getHeight();
+    }
+    
+    @Override
+    public boolean isDraggable() {
+        return delegate.isDraggable();
+    }
+    
     /**
      * 全ての無効化状態をリセット
      */

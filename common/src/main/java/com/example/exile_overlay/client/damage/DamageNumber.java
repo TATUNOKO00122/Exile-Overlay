@@ -84,7 +84,8 @@ public class DamageNumber {
         int fadeOut = config.getFadeOutDuration();
         int fadeOutStart = config.getDisplayDuration() - fadeOut;
         if (life > fadeOutStart) {
-            return baseScale * ((config.getDisplayDuration() - life) / (float) fadeOut);
+            float fadeProgress = (config.getDisplayDuration() - life) / (float) fadeOut;
+            return baseScale * Math.max(0.0f, fadeProgress);
         }
 
         return baseScale;
@@ -99,7 +100,8 @@ public class DamageNumber {
         int fadeOut = config.getFadeOutDuration();
         int fadeOutStart = config.getDisplayDuration() - fadeOut;
         if (life > fadeOutStart) {
-            return (config.getDisplayDuration() - life) / (float) fadeOut;
+            float fadeProgress = (config.getDisplayDuration() - life) / (float) fadeOut;
+            return Math.max(0.0f, fadeProgress);
         }
 
         return 1.0f;

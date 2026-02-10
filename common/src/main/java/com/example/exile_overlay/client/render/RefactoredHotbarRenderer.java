@@ -92,6 +92,26 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
     public String getId() {
         return "refactored_hotbar";
     }
+    
+    @Override
+    public String getConfigKey() {
+        return "hotbar";
+    }
+    
+    @Override
+    public int getWidth() {
+        return (int) (BG_WIDTH * RENDER_SCALE);
+    }
+    
+    @Override
+    public int getHeight() {
+        return (int) (BG_HEIGHT * RENDER_SCALE);
+    }
+    
+    @Override
+    public boolean isDraggable() {
+        return true;
+    }
 
     @Override
     public void render(GuiGraphics graphics, RenderContext ctx) {
