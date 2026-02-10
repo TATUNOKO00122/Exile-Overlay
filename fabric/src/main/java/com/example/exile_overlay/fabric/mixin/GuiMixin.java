@@ -1,5 +1,6 @@
 package com.example.exile_overlay.fabric.mixin;
 
+import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,6 +23,14 @@ public class GuiMixin {
 
     @Inject(method = "renderPlayerHealth", at = @At("HEAD"), cancellable = true)
     private void onRenderPlayerHealth(GuiGraphics graphics, CallbackInfo ci) {
+        ci.cancel();
+    }
+
+    @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
+    private void onRenderEffects(GuiGraphics graphics, CallbackInfo ci) {
+        // カスタムバフ表示をレンダリング
+        BuffOverlayRenderer.render(graphics, 0.0f);
+        // バニラの効果表示をキャンセル
         ci.cancel();
     }
 }

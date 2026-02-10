@@ -11,16 +11,21 @@ import net.minecraft.world.entity.player.Player;
  * - レンダースレッド間で安全に共有可能
  */
 public class RenderContext {
-    
-    private final Minecraft minecraft;
-    private final Player player;
-    private final int screenWidth;
-    private final int screenHeight;
-    private final float partialTick;
-    private final long gameTick;
-    private final String elementId;
-    
-    private RenderContext(Builder builder) {
+
+    protected Minecraft minecraft;
+    protected Player player;
+    protected int screenWidth;
+    protected int screenHeight;
+    protected float partialTick;
+    protected long gameTick;
+    protected String elementId;
+
+    protected RenderContext() {
+        // サブクラス用デフォルトコンストラクタ
+        this.elementId = "unknown";
+    }
+
+    protected RenderContext(Builder builder) {
         this.minecraft = builder.minecraft;
         this.player = builder.player;
         this.screenWidth = builder.screenWidth;

@@ -4,9 +4,9 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * MODデータプロバイダーのレジストリ
@@ -25,7 +25,7 @@ import java.util.List;
 public class ModDataProviderRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final List<IModDataProvider> providers = new ArrayList<>();
+    private static final List<IModDataProvider> providers = new CopyOnWriteArrayList<>();
     private static IModDataProvider activeProvider = null;
     private static boolean initialized = false;
 
@@ -82,9 +82,10 @@ public class ModDataProviderRegistry {
 
     /**
      * 全ての登録済みプロバイダーを取得する
+     * CopyOnWriteArrayListを使用しているため、スレッド安全なスナップショットが返される
      */
     public static List<IModDataProvider> getAllProviders() {
-        return new ArrayList<>(providers);
+        return List.copyOf(providers);
     }
 
     /**

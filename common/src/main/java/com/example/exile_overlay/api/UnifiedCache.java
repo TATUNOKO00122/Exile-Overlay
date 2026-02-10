@@ -30,8 +30,8 @@ public class UnifiedCache {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final UnifiedCache INSTANCE = new UnifiedCache();
     
-    // プレイヤーID → データキャッシュマップ
-    private final Map<String, Map<DataType, CachedValue>> playerCaches = new ConcurrentHashMap<>();
+    // プレイヤーID → データキャッシュマップ（プリミティブlongキーで高速化）
+    private final Map<Long, Map<DataType, CachedValue>> playerCaches = new ConcurrentHashMap<>();
     
     // グローバルフレームカウンター（外部からincrementされる）
     private volatile long globalFrameCounter = 0;
@@ -72,14 +72,33 @@ public class UnifiedCache {
      */
     public float get(Player player, DataType type, Supplier<Float> fetcher) {
         if (player == null || type == null) {
-            return type != null ? type.getDefaultValueTyped() : 0f;
+            if (type != null) {
+                Object defaultVal = type.getDefaultValue();
+                if (defaultVal instanceof Number) {
+                    return ((Number) defaultVal).floatValue();
+                }
+            }
+            return 0f;
         }
-        
-        String playerKey = player.getUUID().toString();
+
+        // Boolean型はキャッシュせず直接取得（型衝突回避）
+        if (type.getType() == Boolean.class) {
+            try {
+                Float value = fetcher.get();
+                return value != null ? value : 0f;
+            } catch (Exception e) {
+                LOGGER.debug("Error fetching {} for player {}: {}",
+                        type.getKey(), player.getName().getString(), e.getMessage());
+                return 0f;
+            }
+        }
+
+        // UUID.getMostSignificantBits() を使用して文字列変換を回避
+        long playerKey = player.getUUID().getMostSignificantBits();
         Map<DataType, CachedValue> playerCache = playerCaches.computeIfAbsent(
             playerKey, k -> new ConcurrentHashMap<>()
         );
-        
+
         CachedValue cv = playerCache.computeIfAbsent(type, CachedValue::new);
         return cv.getOrCompute(fetcher, globalFrameCounter);
     }
@@ -89,14 +108,20 @@ public class UnifiedCache {
      */
     public float forceUpdate(Player player, DataType type, Supplier<Float> fetcher) {
         if (player == null || type == null) {
-            return type != null ? type.getDefaultValueTyped() : 0f;
+            if (type != null) {
+                Object defaultVal = type.getDefaultValue();
+                if (defaultVal instanceof Number) {
+                    return ((Number) defaultVal).floatValue();
+                }
+            }
+            return 0f;
         }
-        
-        String playerKey = player.getUUID().toString();
+
+        long playerKey = player.getUUID().getMostSignificantBits();
         Map<DataType, CachedValue> playerCache = playerCaches.computeIfAbsent(
             playerKey, k -> new ConcurrentHashMap<>()
         );
-        
+
         CachedValue cv = playerCache.computeIfAbsent(type, CachedValue::new);
         cv.invalidate();
         return cv.getOrCompute(fetcher, globalFrameCounter);
@@ -107,8 +132,8 @@ public class UnifiedCache {
      */
     public void invalidate(Player player, DataType type) {
         if (player == null) return;
-        
-        String playerKey = player.getUUID().toString();
+
+        long playerKey = player.getUUID().getMostSignificantBits();
         Map<DataType, CachedValue> playerCache = playerCaches.get(playerKey);
         if (playerCache != null) {
             CachedValue cv = playerCache.get(type);
@@ -123,8 +148,8 @@ public class UnifiedCache {
      */
     public void invalidateAll(Player player) {
         if (player == null) return;
-        
-        String playerKey = player.getUUID().toString();
+
+        long playerKey = player.getUUID().getMostSignificantBits();
         Map<DataType, CachedValue> playerCache = playerCaches.get(playerKey);
         if (playerCache != null) {
             playerCache.values().forEach(CachedValue::invalidate);
@@ -137,8 +162,8 @@ public class UnifiedCache {
      */
     public void removePlayer(Player player) {
         if (player == null) return;
-        
-        String playerKey = player.getUUID().toString();
+
+        long playerKey = player.getUUID().getMostSignificantBits();
         playerCaches.remove(playerKey);
         LOGGER.debug("Removed cache for player: {}", player.getName().getString());
     }
@@ -177,7 +202,13 @@ public class UnifiedCache {
             this.type = type;
             // DataTypeから頻度を取得（デフォルトNORMAL）
             this.frequency = type.getUpdateFrequency();
-            this.value = type.getDefaultValueTyped();
+            // デフォルト値をfloatに変換（Integer/Doubleなどに対応）
+            Object defaultVal = type.getDefaultValue();
+            if (defaultVal instanceof Number) {
+                this.value = ((Number) defaultVal).floatValue();
+            } else {
+                this.value = 0.0f;
+            }
         }
         
         /**

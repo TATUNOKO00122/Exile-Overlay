@@ -2,8 +2,10 @@ package com.example.exile_overlay.client.render;
 
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.IRenderPipeline;
-import com.example.exile_overlay.api.RenderContext;
+import com.example.exile_overlay.api.PooledRenderContext;
+import com.example.exile_overlay.api.RenderContextPool;
 import com.example.exile_overlay.api.UnifiedCache;
+import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.slf4j.Logger;
@@ -52,6 +54,9 @@ public class HudRenderManager {
         
         LOGGER.info("Initializing HudRenderManager...");
         
+        // OrbRegistryを初期化
+        OrbRegistry.initialize();
+        
         // デフォルトコマンドを登録
         registerDefaultCommands();
         
@@ -92,18 +97,24 @@ public class HudRenderManager {
         // フレームカウンターを更新
         UnifiedCache.getInstance().incrementFrame();
         
-        // レンダリングコンテキストを構築
-        RenderContext ctx = RenderContext.builder()
-            .minecraft(mc)
-            .player(mc.player)
-            .screenSize(screenWidth, screenHeight)
-            .partialTick(mc.getFrameTime())
-            .gameTick(mc.level != null ? mc.level.getGameTime() : 0)
-            .elementId("hud")
-            .build();
+        // レンダリングコンテキストをプールから取得（オブジェクト再利用）
+        PooledRenderContext ctx = RenderContextPool.getInstance().acquire(
+            mc,
+            mc.player,
+            screenWidth,
+            screenHeight,
+            mc.getFrameTime(),
+            mc.level != null ? mc.level.getGameTime() : 0,
+            "hud"
+        );
         
-        // パイプラインを実行
-        pipeline.render(graphics, ctx);
+        try {
+            // パイプラインを実行
+            pipeline.render(graphics, ctx);
+        } finally {
+            // コンテキストをプールに戻す
+            RenderContextPool.getInstance().release(ctx);
+        }
     }
     
     /**

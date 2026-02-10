@@ -47,6 +47,7 @@ public final class OrbType {
     private static final List<OrbType> ALL_TYPES;
 
     // ========== ORB 1: 左下メインスロット（デフォルト: Health）==========
+    // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_1 = create("orb_1",
             OrbConfig.builder("orb_1")
                     .position(129, 199)
@@ -54,10 +55,11 @@ public final class OrbType {
                     .color(0xFFFF0000) // 赤（デフォルト: HP）
                     .withOverlay(0xB000FFFF) // シアン（シールドの色）
                     .dataProvider(OrbDataProviders.ORB_1)
+                    .visibleWhen(p -> true) // 常に表示
                     .build());
 
     // ========== ORB 1 OVERLAY: ORB_1上のオーバーレイ（デフォルト: Shield）==========
-    // asOverlayFor("orb_1", ...) で、orb_1の上に重なることを明示
+    // シールドデータがある場合のみ表示
     public static final OrbType ORB_1_OVERLAY = create("orb_1_overlay",
             OrbConfig.builder("orb_1_overlay")
                     .position(129, 199)
@@ -69,25 +71,26 @@ public final class OrbType {
                     .visibleWhen(p -> ModDataProviderRegistry.getMaxValue(p, DataType.ORB_1_OVERLAY_MAX) > 0)
                     .build());
 
-    // ========== ORB 2: 右下メインスロット（動的リソース切り替え）==========
-    // ResourceSlotManagerによる自動的なリソース切り替えに対応
+    // ========== ORB 2: 右下メインスロット（マナ/血/空腹度）==========
+    // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_2 = create("orb_2",
             OrbConfig.builder("orb_2")
                     .position(511, 199)
                     .size(85)
-                    .color(0xFF808080) // デフォルト色（動的に変更される）
+                    .color(0xFF0000FF) // 青（マナの色）
                     .dataProvider(OrbDataProviders.ORB_2)
-                    .visibleWhen(p -> ResourceSlotManager.getInstance().getOrb2Slot().getActiveCandidate(p) != null)
+                    .visibleWhen(p -> true) // 常に表示
                     .build());
 
-    // ========== ORB 3: 左上サブスロット（動的リソース切り替え）==========
+    // ========== ORB 3: 左上サブスロット（エネルギー/酸素）==========
+    // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_3 = create("orb_3",
             OrbConfig.builder("orb_3")
                     .position(197, 188)
                     .size(36)
-                    .color(0xFF808080) // デフォルト色（動的に変更される）
+                    .color(0xFFFFFF00) // 黄（エネルギーの色）
                     .dataProvider(OrbDataProviders.ORB_3)
-                    .visibleWhen(p -> ResourceSlotManager.getInstance().getOrb3Slot().getActiveCandidate(p) != null)
+                    .visibleWhen(p -> true) // 常に表示
                     .build());
 
     private final String id;

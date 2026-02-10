@@ -1,9 +1,12 @@
 package com.example.exile_overlay.util;
 
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mine and Slash (M&S) モッドとの連携を担当するヘルパークラス。
@@ -309,5 +312,154 @@ public class MineAndSlashHelper {
         } catch (Exception e) {
         }
         return null;
+    }
+
+    // ========== Exile Effect (Buff/Debuff) Data Classes ==========
+    
+    /**
+     * ExileEffectの情報を保持するデータクラス
+     */
+    public static class ExileEffectInfo {
+        public final String id;
+        public final String name;
+        public final ResourceLocation texture;
+        public final int duration; // in ticks
+        public final int stacks;
+        public final boolean isBeneficial;
+        public final boolean isNegative;
+        public final boolean isInfinite;
+        public final String durationText;
+
+        public ExileEffectInfo(String id, String name, ResourceLocation texture, int duration, int stacks,
+                              boolean isBeneficial, boolean isNegative, boolean isInfinite, String durationText) {
+            this.id = id;
+            this.name = name;
+            this.texture = texture;
+            this.duration = duration;
+            this.stacks = stacks;
+            this.isBeneficial = isBeneficial;
+            this.isNegative = isNegative;
+            this.isInfinite = isInfinite;
+            this.durationText = durationText;
+        }
+    }
+
+    // ========== Exile Effect API ==========
+
+    /**
+     * Get all active ExileEffects (Mine and Slash buffs/debuffs) on the player.
+     */
+    public static List<ExileEffectInfo> getExileEffects(Player player) {
+        List<ExileEffectInfo> result = new ArrayList<>();
+        if (!isMnsLoaded()) return result;
+
+        Object data = getCachedEntityData(player);
+        if (data == null) return result;
+
+        try {
+            var getStatusEffectsData = data.getClass().getMethod("getStatusEffectsData");
+            Object statusData = getStatusEffectsData.invoke(data);
+            if (statusData == null) return result;
+
+            var getEffects = statusData.getClass().getMethod("getEffects");
+            List<?> effects = (List<?>) getEffects.invoke(statusData);
+            if (effects == null || effects.isEmpty()) return result;
+
+            for (Object effect : effects) {
+                if (effect == null) continue;
+
+                var getId = effect.getClass().getMethod("GUID");
+                String id = (String) getId.invoke(effect);
+
+                var getTexture = effect.getClass().getMethod("getTexture");
+                ResourceLocation texture = (ResourceLocation) getTexture.invoke(effect);
+
+                var getType = effect.getClass().getMethod("getEffectType");
+                Object effectType = getType.invoke(effect);
+
+                boolean isBeneficial = false;
+                boolean isNegative = false;
+                if (effectType != null) {
+                    String typeName = effectType.toString();
+                    isBeneficial = typeName.contains("beneficial");
+                    isNegative = typeName.contains("negative");
+                }
+
+                var getLocName = effect.getClass().getMethod("locName");
+                Object nameComponent = getLocName.invoke(effect);
+                String name = nameComponent != null ? nameComponent.toString() : id;
+
+                // Get instance data for duration and stacks
+                var getInstanceData = statusData.getClass().getMethod("get", effect.getClass());
+                Object instanceData = getInstanceData.invoke(statusData, effect);
+
+                int duration = 0;
+                int stacks = 1;
+                boolean isInfinite = false;
+
+                if (instanceData != null) {
+                    try {
+                        var getDuration = instanceData.getClass().getMethod("getRemainingDurationInSeconds");
+                        duration = ((Number) getDuration.invoke(instanceData)).intValue() * 20;
+                        
+                        var getStacks = instanceData.getClass().getMethod("getStacks");
+                        stacks = ((Number) getStacks.invoke(instanceData)).intValue();
+                        
+                        isInfinite = duration <= 0 || duration > 1000000;
+                    } catch (Exception e) {
+                        // Duration method might not exist or return differently
+                    }
+                }
+
+                String durationText = formatDuration(duration / 20);
+
+                result.add(new ExileEffectInfo(id, name, texture, duration, stacks, 
+                    isBeneficial, isNegative, isInfinite, durationText));
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to get ExileEffects", e);
+        }
+
+        return result;
+    }
+
+    /**
+     * Get only beneficial ExileEffects (buffs)
+     */
+    public static List<ExileEffectInfo> getExileBuffs(Player player) {
+        List<ExileEffectInfo> all = getExileEffects(player);
+        List<ExileEffectInfo> buffs = new ArrayList<>();
+        for (ExileEffectInfo info : all) {
+            if (info.isBeneficial) {
+                buffs.add(info);
+            }
+        }
+        return buffs;
+    }
+
+    /**
+     * Get only negative ExileEffects (debuffs)
+     */
+    public static List<ExileEffectInfo> getExileDebuffs(Player player) {
+        List<ExileEffectInfo> all = getExileEffects(player);
+        List<ExileEffectInfo> debuffs = new ArrayList<>();
+        for (ExileEffectInfo info : all) {
+            if (info.isNegative) {
+                debuffs.add(info);
+            }
+        }
+        return debuffs;
+    }
+
+    private static String formatDuration(int seconds) {
+        if (seconds >= 3600) {
+            return (seconds / 3600) + "h";
+        } else if (seconds >= 60) {
+            return (seconds / 60) + "m";
+        } else if (seconds <= 0) {
+            return "**";
+        } else {
+            return seconds + "s";
+        }
     }
 }

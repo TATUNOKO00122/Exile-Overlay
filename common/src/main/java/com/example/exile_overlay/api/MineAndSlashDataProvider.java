@@ -4,7 +4,7 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-import java.lang.ref.WeakReference;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mine and Slash (M&S) MOD用のデータプロバイダー
@@ -30,11 +30,8 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     // 利用可能性フラグ（MethodHandlesUtilに委譲）
     private static final boolean AVAILABLE = MethodHandlesUtil.isAvailable();
 
-    // シンプルなキャッシュ（HJUD方式）
-    private WeakReference<Player> cachedPlayer = null;
-    private Object cachedEntityData = null;
-    private long cacheTime = 0;
-    private boolean cacheValid = false;
+    // UnifiedCache経由でデータを一元管理（独自キャッシュは廃止）
+    // EntityDataとResourcesのキャッシュはUnifiedCacheに委譲
 
     public MineAndSlashDataProvider() {
         // UnifiedCacheはDataTypeのUpdateFrequencyを自動的に使用
@@ -56,44 +53,30 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     }
 
     /**
-     * キャッシュされたEntityDataを取得
-     * MethodHandlesを使用して高速化
+     * EntityDataを取得
+     * UnifiedCacheに委譲（データ型別の更新頻度を自動適用）
      */
-    private Object getCachedEntityData(Player player) {
+    private Object getEntityData(Player player) {
         if (!isAvailable() || player == null) {
             return null;
         }
 
-        long now = System.currentTimeMillis();
-        Player cached = cachedPlayer != null ? cachedPlayer.get() : null;
-
-        // キャッシュが有効かチェック
-        if (cached == player && cachedEntityData != null && cacheValid 
-                && (now - cacheTime) < CACHE_DURATION_MS) {
-            return cachedEntityData;
-        }
-
-        // キャッシュ更新
         try {
-            cachedEntityData = MethodHandlesUtil.loadUnit(player);
-            cachedPlayer = new WeakReference<>(player);
-            cacheTime = now;
-            cacheValid = true;
-            return cachedEntityData;
+            return MethodHandlesUtil.loadUnit(player);
         } catch (Throwable t) {
             LOGGER.debug("Error getting M&S EntityData: {}", t.getMessage());
-            cacheValid = false;
             return null;
         }
     }
 
     /**
      * ResourcesDataを取得
+     * UnifiedCacheに委譲
      */
     private Object getResources(Player player) {
-        Object data = getCachedEntityData(player);
+        Object data = getEntityData(player);
         if (data == null) return null;
-        
+
         try {
             return MethodHandlesUtil.getResources(data);
         } catch (Throwable t) {
@@ -171,7 +154,7 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
                 }
                 
                 case LEVEL -> {
-                    Object data = getCachedEntityData(player);
+                    Object data = getEntityData(player);
                     if (data == null) yield 0f;
                     try {
                         yield MethodHandlesUtil.getLevel(data);
@@ -179,9 +162,9 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
                         yield 0f;
                     }
                 }
-                
+
                 case EXP -> {
-                    Object data = getCachedEntityData(player);
+                    Object data = getEntityData(player);
                     if (data == null) yield 0f;
                     try {
                         yield MethodHandlesUtil.getExp(data);
@@ -204,7 +187,7 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
             return 1f;
         }
 
-        Object data = getCachedEntityData(player);
+        Object data = getEntityData(player);
         if (data == null) {
             return 1f;
         }
@@ -271,15 +254,16 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
 
     @Override
     public boolean getAttribute(Player player, String attributeKey) {
+        // M&Sが利用不可な場合は即座にfalseを返す（キャッシュ問題を回避）
         if (!isAvailable() || player == null) {
             return false;
         }
 
         if (DataType.ORB_2_IS_BLOOD.getKey().equals(attributeKey)) {
-            Object data = getCachedEntityData(player);
-            if (data == null) return false;
-            
+            // キャッシュを使わず直接取得（Boolean/Float型衝突回避）
             try {
+                Object data = MethodHandlesUtil.loadUnit(player);
+                if (data == null) return false;
                 Object unit = MethodHandlesUtil.getUnit(data);
                 if (unit == null) return false;
                 return MethodHandlesUtil.isBloodMage(unit);
@@ -299,11 +283,12 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     }
     
     /**
-     * キャッシュを無効化
+     * キャッシュを無効化（UnifiedCacheに委譲）
+     * @deprecated UnifiedCache.invalidateAll() を使用してください
      */
+    @Deprecated
     public void invalidateCache() {
-        cacheValid = false;
-        cachedEntityData = null;
-        cachedPlayer = null;
+        // UnifiedCacheに一元化されたため、個別のキャッシュ無効化は不要
+        LOGGER.debug("invalidateCache() is deprecated. Use UnifiedCache.invalidateAll() instead.");
     }
 }

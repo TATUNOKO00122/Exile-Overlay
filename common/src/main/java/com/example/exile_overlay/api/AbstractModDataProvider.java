@@ -76,17 +76,18 @@ public abstract class AbstractModDataProvider implements IModDataProvider {
      */
     protected float fetchFloat(Player player, DataType dataType, Function<Player, Float> fetcher) {
         if (player == null) {
-            return dataType.getDefaultValueTyped();
+            Object defaultVal = dataType.getDefaultValue();
+            return defaultVal instanceof Number ? ((Number) defaultVal).floatValue() : 0f;
         }
 
         return unifiedCache.get(player, dataType, () -> {
             try {
                 Float value = fetcher.apply(player);
-                return value != null ? value : dataType.getDefaultValueTyped();
+                return value != null ? value : 0f;
             } catch (Exception e) {
                 logger.debug("Error fetching {} for player {}: {}",
                         dataType.getKey(), player.getName().getString(), e.getMessage());
-                return dataType.getDefaultValueTyped();
+                return 0f;
             }
         });
     }
@@ -101,18 +102,19 @@ public abstract class AbstractModDataProvider implements IModDataProvider {
      */
     protected int fetchInt(Player player, DataType dataType, Function<Player, Integer> fetcher) {
         if (player == null) {
-            return dataType.getDefaultValueTyped();
+            Object defaultVal = dataType.getDefaultValue();
+            return defaultVal instanceof Number ? ((Number) defaultVal).intValue() : 0;
         }
 
         // UnifiedCacheはfloatを返すので、DataTypeに応じて変換
         float cached = unifiedCache.get(player, dataType, () -> {
             try {
                 Integer value = fetcher.apply(player);
-                return value != null ? value.floatValue() : dataType.getDefaultValueTyped();
+                return value != null ? value.floatValue() : 0f;
             } catch (Exception e) {
                 logger.debug("Error fetching {} for player {}: {}",
                         dataType.getKey(), player.getName().getString(), e.getMessage());
-                return dataType.getDefaultValueTyped();
+                return 0f;
             }
         });
 
@@ -120,7 +122,7 @@ public abstract class AbstractModDataProvider implements IModDataProvider {
     }
 
     /**
-     * boolean値を安全に取得（UnifiedCache連携）
+     * boolean値を安全に取得（キャッシュなし - BooleanとFloatの型衝突を回避）
      *
      * @param player   プレイヤー
      * @param dataType データタイプ
@@ -129,21 +131,19 @@ public abstract class AbstractModDataProvider implements IModDataProvider {
      */
     protected boolean fetchBoolean(Player player, DataType dataType, Function<Player, Boolean> fetcher) {
         if (player == null) {
-            return dataType.getDefaultValueTyped();
+            Object defaultValue = dataType.getDefaultValue();
+            return defaultValue instanceof Boolean ? (Boolean) defaultValue : false;
         }
 
-        float cached = unifiedCache.get(player, dataType, () -> {
-            try {
-                Boolean value = fetcher.apply(player);
-                return value != null ? (value ? 1.0f : 0.0f) : dataType.getDefaultValueTyped();
-            } catch (Exception e) {
-                logger.debug("Error fetching {} for player {}: {}",
-                        dataType.getKey(), player.getName().getString(), e.getMessage());
-                return dataType.getDefaultValueTyped();
-            }
-        });
-
-        return cached >= 0.5f;
+        // BooleanはFloatキャッシュと互換性がないため、キャッシュを使わず直接取得
+        try {
+            Boolean value = fetcher.apply(player);
+            return value != null ? value : false;
+        } catch (Exception e) {
+            logger.debug("Error fetching {} for player {}: {}",
+                    dataType.getKey(), player.getName().getString(), e.getMessage());
+            return false;
+        }
     }
 
     /**

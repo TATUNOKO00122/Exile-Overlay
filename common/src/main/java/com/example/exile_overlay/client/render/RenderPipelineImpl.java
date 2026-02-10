@@ -1,5 +1,7 @@
 package com.example.exile_overlay.client.render;
 
+import com.example.exile_overlay.api.CircuitBreaker;
+import com.example.exile_overlay.api.ErrorLogCache;
 import com.example.exile_overlay.api.HudError;
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.IRenderPipeline;
@@ -11,10 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
- * レンダリングパイプラインの実装クラス
+ * レンダリングパイプラインの実装クラス（改良版）
  * 
  * 【設計思想】
  * - レイヤー別にコマンドを管理
@@ -29,28 +32,46 @@ import java.util.stream.Collectors;
  * 【エラーハンドリング】
  * - RuntimeException: 回復可能、次のコマンドを続行
  * - Error: 致命的、再スローしてクラッシュさせる
+ * - CircuitBreaker: 連続失敗時の保護
+ * 
+ * 【スレッド安全性】
+ * - CopyOnWriteArrayListによるスレッド安全なコマンド管理
+ * - ConcurrentHashMapによるエラー追跡
+ * - TTL付きエラーログによるメモリ保護
  */
 public class RenderPipelineImpl implements IRenderPipeline {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RenderPipelineImpl.class);
+    
+    // サーキットブレイカー設定
+    private static final int CIRCUIT_BREAKER_THRESHOLD = 10;
+    private static final long CIRCUIT_BREAKER_TIMEOUT_MS = 5000; // 5秒
 
     // レイヤー → 優先度付きコマンドリスト
     private final Map<RenderLayer, List<PrioritizedCommand>> commandsByLayer = new EnumMap<>(RenderLayer.class);
 
     // ID → コマンドのマップ（高速検索用）
-    private final Map<String, IRenderCommand> commandsById = new HashMap<>();
+    private final Map<String, IRenderCommand> commandsById = new ConcurrentHashMap<>();
 
-    // ソート済みフラグ
-    private boolean needsSorting = true;
+    // ソート済みフラグ（volatileでスレッド間可視性確保）
+    private volatile boolean needsSorting = true;
+    
+    // コマンドリスト変更用ロック
+    private final Object commandLock = new Object();
 
-    // エラー追跡
-    private final Map<String, List<HudError>> errorLog = new ConcurrentHashMap<>();
-    private static final int MAX_ERROR_HISTORY = 10;
+    // エラー追跡（TTL付きキャッシュ）
+    private final ErrorLogCache errorLog = new ErrorLogCache();
+    
+    // サーキットブレイカー（コマンドごとに独立）
+    private final Map<String, CircuitBreaker> circuitBreakers = new ConcurrentHashMap<>();
+    
+    // ブロックされたコマンドのログ抑制用
+    private final Set<String> blockedCommandsLogged = ConcurrentHashMap.newKeySet();
     
     public RenderPipelineImpl() {
         // 各レイヤーを初期化
         for (RenderLayer layer : RenderLayer.values()) {
-            commandsByLayer.put(layer, new ArrayList<>());
+            commandsByLayer.put(layer, new CopyOnWriteArrayList<>());
         }
     }
     
@@ -59,21 +80,29 @@ public class RenderPipelineImpl implements IRenderPipeline {
         Objects.requireNonNull(command, "Command cannot be null");
         
         String id = command.getId();
-        if (commandsById.containsKey(id)) {
-            LOGGER.warn("Command with id '{}' is already registered, replacing", id);
-            unregister(id);
+        
+        synchronized (commandLock) {
+            if (commandsById.containsKey(id)) {
+                LOGGER.warn("Command with id '{}' is already registered, replacing", id);
+                unregister(id);
+            }
+            
+            RenderLayer layer = command.getLayer();
+            List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+            
+            PrioritizedCommand pc = new PrioritizedCommand(command, priority);
+            layerCommands.add(pc);
+            commandsById.put(id, command);
+            
+            needsSorting = true;
         }
         
-        RenderLayer layer = command.getLayer();
-        List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+        // サーキットブレイカーを初期化
+        circuitBreakers.computeIfAbsent(id, k -> 
+            new CircuitBreaker(CIRCUIT_BREAKER_THRESHOLD, CIRCUIT_BREAKER_TIMEOUT_MS));
         
-        PrioritizedCommand pc = new PrioritizedCommand(command, priority);
-        layerCommands.add(pc);
-        commandsById.put(id, command);
-        
-        needsSorting = true;
         LOGGER.debug("Registered render command: {} (layer: {}, priority: {})", 
-            id, layer, priority);
+            id, command.getLayer(), priority);
     }
     
     @Override
@@ -84,28 +113,45 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public boolean unregister(String commandId) {
-        IRenderCommand command = commandsById.remove(commandId);
-        if (command == null) {
-            return false;
+        IRenderCommand command;
+        
+        synchronized (commandLock) {
+            command = commandsById.remove(commandId);
+            if (command == null) {
+                return false;
+            }
+            
+            RenderLayer layer = command.getLayer();
+            List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+            
+            boolean removed = layerCommands.removeIf(pc -> pc.command.getId().equals(commandId));
+            
+            if (removed) {
+                LOGGER.debug("Unregistered render command: {}", commandId);
+            }
         }
         
-        RenderLayer layer = command.getLayer();
-        List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+        // 関連リソースをクリーンアップ
+        circuitBreakers.remove(commandId);
+        errorLog.clear(commandId);
+        blockedCommandsLogged.remove(commandId);
         
-        boolean removed = layerCommands.removeIf(pc -> pc.command.getId().equals(commandId));
-        
-        if (removed) {
-            LOGGER.debug("Unregistered render command: {}", commandId);
-        }
-        
-        return removed;
+        return true;
     }
     
     @Override
     public void clear() {
-        commandsByLayer.values().forEach(List::clear);
-        commandsById.clear();
-        needsSorting = true;
+        synchronized (commandLock) {
+            commandsByLayer.values().forEach(List::clear);
+            commandsById.clear();
+            needsSorting = true;
+        }
+        
+        // 全リソースをクリーンアップ
+        circuitBreakers.clear();
+        errorLog.clearAll();
+        blockedCommandsLogged.clear();
+        
         LOGGER.debug("Cleared all render commands");
     }
     
@@ -144,6 +190,17 @@ public class RenderPipelineImpl implements IRenderPipeline {
                 IRenderCommand command = pc.command;
                 String commandId = command.getId();
                 
+                // サーキットブレイカーチェック
+                CircuitBreaker cb = circuitBreakers.get(commandId);
+                if (cb != null && !cb.allowExecution()) {
+                    // ブロックされている場合はログ抑制しながらスキップ
+                    if (blockedCommandsLogged.add(commandId)) {
+                        LOGGER.warn("Command '{}' is blocked due to repeated failures (circuit breaker OPEN)", 
+                            commandId);
+                    }
+                    continue;
+                }
+                
                 // 可視性チェック
                 if (!command.isVisible(ctx)) {
                     continue;
@@ -151,13 +208,24 @@ public class RenderPipelineImpl implements IRenderPipeline {
                 
                 try {
                     command.execute(graphics, ctx);
+                    
+                    // 成功を記録
+                    if (cb != null) {
+                        cb.recordSuccess();
+                        blockedCommandsLogged.remove(commandId);
+                    }
+                    
                 } catch (RuntimeException e) {
-                    // 回復可能なエラー - ログに記録して続行
+                    // 回復可能なエラー - サーキットブレイカーに記録
+                    if (cb != null) {
+                        cb.recordFailure();
+                    }
+                    
                     LOGGER.error("Recoverable error in render command '{}': {}", 
                         commandId, e.getMessage(), e);
                     
-                    // エラー追跡（将来の失敗監視用）
-                    trackError(commandId, new HudError(
+                    // エラー追跡
+                    errorLog.add(commandId, new HudError(
                         commandId,
                         HudError.ErrorType.RECOVERABLE,
                         "Render execution failed: " + e.getMessage(),
@@ -166,12 +234,17 @@ public class RenderPipelineImpl implements IRenderPipeline {
                     
                     // 次のコマンドを続行
                     continue;
+                    
                 } catch (Error e) {
-                    // 致命的エラー - 再スロー
+                    // 致命的エラー - サーキットブレイカー記録後に再スロー
+                    if (cb != null) {
+                        cb.recordFailure();
+                    }
+                    
                     LOGGER.error("Critical error in render command '{}': {}", 
                         commandId, e.getMessage(), e);
                     
-                    trackError(commandId, new HudError(
+                    errorLog.add(commandId, new HudError(
                         commandId,
                         HudError.ErrorType.CRITICAL,
                         "Critical error: " + e.getMessage(),
@@ -189,8 +262,9 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public List<IRenderCommand> getCommands() {
-        return commandsById.values().stream()
-            .collect(Collectors.toUnmodifiableList());
+        synchronized (commandLock) {
+            return List.copyOf(commandsById.values());
+        }
     }
     
     @Override
@@ -219,11 +293,17 @@ public class RenderPipelineImpl implements IRenderPipeline {
      * コマンドを優先度順にソート
      */
     private void sortCommands() {
-        for (List<PrioritizedCommand> commands : commandsByLayer.values()) {
-            commands.sort(Comparator.comparingInt(pc -> pc.priority));
+        synchronized (commandLock) {
+            for (List<PrioritizedCommand> commands : commandsByLayer.values()) {
+                // CopyOnWriteArrayListはソートできないため、一時リストを使用
+                List<PrioritizedCommand> sorted = new ArrayList<>(commands);
+                sorted.sort(Comparator.comparingInt(pc -> pc.priority));
+                commands.clear();
+                commands.addAll(sorted);
+            }
+            needsSorting = false;
+            LOGGER.debug("Sorted {} render commands", commandsById.size());
         }
-        needsSorting = false;
-        LOGGER.debug("Sorted {} render commands", commandsById.size());
     }
     
     /**
@@ -242,51 +322,81 @@ public class RenderPipelineImpl implements IRenderPipeline {
     // ========== エラー追跡メソッド ==========
     
     /**
-     * エラーを追跡
-     */
-    private void trackError(String commandId, HudError error) {
-        errorLog.computeIfAbsent(commandId, k -> new ArrayList<>()).add(error);
-        
-        // 古いエラーを削除
-        List<HudError> errors = errorLog.get(commandId);
-        if (errors.size() > MAX_ERROR_HISTORY) {
-            errors.remove(0);
-        }
-    }
-    
-    /**
      * コマンドのエラー履歴を取得
      */
     public List<HudError> getErrorHistory(String commandId) {
-        return List.copyOf(errorLog.getOrDefault(commandId, List.of()));
+        return errorLog.get(commandId);
     }
     
     /**
      * 全エラー履歴をクリア
      */
     public void clearErrorHistory() {
-        errorLog.clear();
+        errorLog.clearAll();
     }
     
     /**
      * コマンドのエラー履歴をクリア
      */
     public void clearErrorHistory(String commandId) {
-        errorLog.remove(commandId);
+        errorLog.clear(commandId);
     }
     
     /**
      * エラー統計を取得
      */
     public ErrorStats getErrorStats() {
-        int totalErrors = errorLog.values().stream().mapToInt(List::size).sum();
-        int criticalErrors = errorLog.values().stream()
-            .flatMap(List::stream)
-            .filter(e -> e.type() == HudError.ErrorType.CRITICAL)
-            .mapToInt(e -> 1)
-            .sum();
+        // TTL付きキャッシュはサイズが動的に変わるため、
+        // 現在のスナップショットを取得
+        int totalErrors = 0;
+        int criticalErrors = 0;
+        int affectedCommands = errorLog.size();
         
-        return new ErrorStats(totalErrors, criticalErrors, errorLog.size());
+        for (String commandId : commandsById.keySet()) {
+            List<HudError> errors = errorLog.get(commandId);
+            totalErrors += errors.size();
+            criticalErrors += errors.stream()
+                .filter(e -> e.type() == HudError.ErrorType.CRITICAL)
+                .count();
+        }
+        
+        return new ErrorStats(totalErrors, criticalErrors, affectedCommands);
+    }
+    
+    /**
+     * サーキットブレイカーの状態を取得
+     */
+    public CircuitBreaker.State getCircuitBreakerState(String commandId) {
+        CircuitBreaker cb = circuitBreakers.get(commandId);
+        return cb != null ? cb.getState() : null;
+    }
+    
+    /**
+     * サーキットブレイカーを手動でリセット
+     */
+    public void resetCircuitBreaker(String commandId) {
+        CircuitBreaker cb = circuitBreakers.get(commandId);
+        if (cb != null) {
+            cb.reset();
+            blockedCommandsLogged.remove(commandId);
+            LOGGER.info("Circuit breaker reset for command: {}", commandId);
+        }
+    }
+    
+    /**
+     * 全サーキットブレイカーをリセット
+     */
+    public void resetAllCircuitBreakers() {
+        circuitBreakers.values().forEach(CircuitBreaker::reset);
+        blockedCommandsLogged.clear();
+        LOGGER.info("All circuit breakers reset");
+    }
+    
+    /**
+     * リソース解放（シャットダウン時に呼び出し）
+     */
+    public void shutdown() {
+        errorLog.shutdown();
     }
     
     /**

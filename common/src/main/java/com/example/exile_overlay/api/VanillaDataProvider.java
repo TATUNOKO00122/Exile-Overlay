@@ -10,8 +10,8 @@ import net.minecraft.world.entity.player.Player;
  * 【スロットマッピング】
  * - ORB_1: Health（体力）
  * - ORB_1_OVERLAY: なし（バニラにはシールド相当がない）
- * - ORB_2: なし（バニラにはMana相当がない）
- * - ORB_3: なし（バニラにはStamina相当がない）
+ * - ORB_2: Food Level（空腹度）
+ * - ORB_3: Air Supply（酸素量）
  * - ORB_4: 将来の拡張用
  */
 public class VanillaDataProvider extends AbstractModDataProvider {
@@ -48,6 +48,8 @@ public class VanillaDataProvider extends AbstractModDataProvider {
                 return 0f;
             return switch (type) {
                 case ORB_1_CURRENT -> p.getHealth();
+                case ORB_2_CURRENT -> (float) p.getFoodData().getFoodLevel();  // 空腹度
+                case ORB_3_CURRENT -> (float) p.getAirSupply();               // 酸素量
                 case LEVEL -> (float) p.experienceLevel;
                 case EXP -> p.experienceProgress;
                 default -> (Float) type.getDefaultValue();
@@ -62,6 +64,8 @@ public class VanillaDataProvider extends AbstractModDataProvider {
                 return 1f;
             return switch (type) {
                 case ORB_1_MAX -> p.getMaxHealth();
+                case ORB_2_MAX -> 20.0f;  // 空腹度の最大値
+                case ORB_3_MAX -> (float) p.getMaxAirSupply();  // 最大酸素量
                 case EXP_REQUIRED -> 1.0f;
                 default -> (Float) type.getDefaultValue();
             };

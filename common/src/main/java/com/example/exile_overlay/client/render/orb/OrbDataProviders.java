@@ -102,7 +102,7 @@ public class OrbDataProviders {
 
         @Override
         public float getTextScale() {
-            return 0.7f;
+            return 0.35f;
         }
     };
 
