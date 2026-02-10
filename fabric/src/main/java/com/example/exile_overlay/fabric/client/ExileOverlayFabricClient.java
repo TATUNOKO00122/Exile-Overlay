@@ -14,5 +14,8 @@ public class ExileOverlayFabricClient implements ClientModInitializer {
             var mc = net.minecraft.client.Minecraft.getInstance();
             HotbarRenderer.render(graphics, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         });
+
+        // ダメージポップアップの登録
+        DamagePopupFabricHandler.register();
     }
 }

@@ -3,7 +3,9 @@
   "package": "com.example.exile_overlay.mixin",
   "compatibilityLevel": "JAVA_17",
   "minVersion": "0.8",
-  "client": [],
+  "client": [
+    "DamageMixin"
+  ],
   "mixins": [],
   "injectors": {
     "defaultRequire": 1

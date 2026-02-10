@@ -1,5 +1,6 @@
 package com.example.exile_overlay;
 
+import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.orb.OrbDataProviders;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 
@@ -12,5 +13,8 @@ public final class ExampleMod {
 
         // リソース候補の初期化
         OrbDataProviders.initializeDefaults();
+
+        // ダメージポップアップ設定の初期化
+        DamagePopupConfig.getInstance();
     }
 }

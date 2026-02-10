@@ -95,9 +95,8 @@ public class OrbRenderer {
 
         if (config.shouldShowReflection()) {
             RenderSystem.enableBlend();
-            // Orb３は左に2pxずらす
-            int reflectionOffsetX = "orb_3".equals(config.getId()) ? -2 : 0;
-            graphics.blit(REFLECTION_TEXTURE, orbX + reflectionOffsetX, orbY, 0, 0, 0, orbSize, orbSize, orbSize, orbSize);
+            // 反射テクスチャを1px拡大、左に1pxずらす
+            graphics.blit(REFLECTION_TEXTURE, orbX - 1, orbY, 0, 0, 0, orbSize + 1, orbSize + 1, orbSize + 1, orbSize + 1);
         }
     }
 

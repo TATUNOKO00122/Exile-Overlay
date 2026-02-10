@@ -59,7 +59,7 @@ public final class OrbType {
     // ========== ORB 3: 左上サブスロット（動的リソース切り替え）==========
     public static final OrbType ORB_3 = create("orb_3",
             OrbConfig.builder("orb_3")
-                    .position(194, 187)
+                    .position(197, 188)
                     .size(36)
                     .color(0xFF808080) // デフォルト色（動的に変更される）
                     .dataProvider(OrbDataProviders.ORB_3)
