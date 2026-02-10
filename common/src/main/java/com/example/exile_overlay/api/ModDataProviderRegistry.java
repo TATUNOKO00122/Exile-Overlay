@@ -145,14 +145,24 @@ public class ModDataProviderRegistry {
      * 指定されたデータタイプの現在値をアクティブプロバイダーから取得
      */
     public static float getValue(Player player, DataType type) {
-        return getProviderOrDefault().getValue(player, type);
+        IModDataProvider provider = getProviderOrDefault();
+        float value = provider.getValue(player, type);
+        if (type == DataType.ORB_1_CURRENT || type == DataType.ORB_1_MAX) {
+            LOGGER.debug("ModDataProviderRegistry.getValue({}): provider={}, value={}", type, provider.getId(), value);
+        }
+        return value;
     }
 
     /**
      * 指定されたデータタイプの最大値をアクティブプロバイダーから取得
      */
     public static float getMaxValue(Player player, DataType type) {
-        return getProviderOrDefault().getMaxValue(player, type);
+        IModDataProvider provider = getProviderOrDefault();
+        float value = provider.getMaxValue(player, type);
+        if (type == DataType.ORB_1_CURRENT || type == DataType.ORB_1_MAX) {
+            LOGGER.debug("ModDataProviderRegistry.getMaxValue({}): provider={}, value={}", type, provider.getId(), value);
+        }
+        return value;
     }
 
     /**

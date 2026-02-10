@@ -20,7 +20,31 @@ import java.util.function.Predicate;
  * - ORB_2: 画面右下のメインスロット
  * - ORB_3: 画面左上のサブスロット
  */
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * HUDオーブスロットの種類を定義するクラス
+ * 
+ * 【スロットベース設計】
+ * このクラスでは、HUD上の物理的なスロット位置に基づいてオーブを定義します。
+ * 各スロットが「何を」表示するかは、データプロバイダーが決定します。
+ * 
+ * 【パフォーマンス最適化】
+ * - values()で変更不可リストを返し、反復処理を高速化
+ * - static finalインスタンスでメモリ効率を最適化
+ * 
+ * スロット配置:
+ * - ORB_1: 画面左下のメインスロット
+ * - ORB_1_OVERLAY: ORB_1に重なるオーバーレイ
+ * - ORB_2: 画面右下のメインスロット
+ * - ORB_3: 画面左上のサブスロット
+ */
 public final class OrbType {
+    
+    // 全オーブタイプのリスト（反復処理用）
+    private static final List<OrbType> ALL_TYPES;
 
     // ========== ORB 1: 左下メインスロット（デフォルト: Health）==========
     public static final OrbType ORB_1 = create("orb_1",
@@ -124,5 +148,24 @@ public final class OrbType {
     @Override
     public String toString() {
         return "OrbType{" + id + '}';
+    }
+    
+    /**
+     * 全てのオーブタイプを取得
+     * 
+     * @return 変更不可のオーブタイプリスト
+     */
+    public static List<OrbType> values() {
+        return ALL_TYPES;
+    }
+    
+    // 静的初期化ブロック
+    static {
+        ALL_TYPES = Collections.unmodifiableList(Arrays.asList(
+            ORB_1,
+            ORB_1_OVERLAY,
+            ORB_2,
+            ORB_3
+        ));
     }
 }

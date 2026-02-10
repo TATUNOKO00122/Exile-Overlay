@@ -1,7 +1,7 @@
 package com.example.exile_overlay.mixin;
 
-import com.example.exile_overlay.client.damage.DamageRenderer;
 import com.example.exile_overlay.client.damage.DamageType;
+import com.example.exile_overlay.client.damage.ThreadSafeDamageRenderer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
@@ -9,6 +9,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -20,6 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 @Mixin(LivingEntity.class)
 public abstract class DamageMixin {
+
+    @Unique
+    private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
 
     @Shadow
     public abstract float getHealth();
@@ -38,78 +43,99 @@ public abstract class DamageMixin {
 
     @Inject(method = "hurt", at = @At("HEAD"))
     private void exileOverlay$onHurtStart(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        if (!((LivingEntity) (Object) this).level().isClientSide()) {
-            return;
+        try {
+            if (!((LivingEntity) (Object) this).level().isClientSide()) {
+                return;
+            }
+            
+            // 防御的なnullチェック
+            if (source == null) {
+                LOGGER.debug("Null damage source received, skipping tracking");
+                return;
+            }
+            
+            // ダメージソースを記録
+            exileOverlay$lastDamageSource = source;
+            exileOverlay$lastDamageTime = System.currentTimeMillis();
+        } catch (Exception e) {
+            LOGGER.error("Failed to track damage start", e);
+            // 例外をキャッチしてゲームを継続
         }
-        // ダメージソースを記録
-        exileOverlay$lastDamageSource = source;
-        exileOverlay$lastDamageTime = System.currentTimeMillis();
     }
 
     @Inject(method = "setHealth", at = @At("TAIL"))
     private void exileOverlay$onSetHealth(float health, CallbackInfo ci) {
-        LivingEntity entity = (LivingEntity) (Object) this;
+        try {
+            LivingEntity entity = (LivingEntity) (Object) this;
 
-        // クライアント側のみで処理
-        if (!entity.level().isClientSide()) {
-            return;
-        }
-
-        // プレイヤー自身のダメージは表示しない（オプション）
-        if (entity instanceof Player && entity == Minecraft.getInstance().player) {
-            exileOverlay$lastHealth = health;
-            return;
-        }
-
-        // 初期化時はスキップ
-        if (exileOverlay$lastHealth < 0) {
-            exileOverlay$lastHealth = health;
-            return;
-        }
-
-        // ダメージを計算
-        float damage = exileOverlay$lastHealth - health;
-        if (damage > 0.1f) {
-            // ダメージを表示
-            Vec3 position = entity.position().add(0, entity.getBbHeight() * 1.2, 0);
-            int color = exileOverlay$getColorForDamageSource(exileOverlay$lastDamageSource);
-            boolean isCrit = false;
-
-            // クリティカル判定（直近100ms以内のダメージソースがあれば使用）
-            if (exileOverlay$lastDamageSource != null && 
-                System.currentTimeMillis() - exileOverlay$lastDamageTime < 100) {
-                if (exileOverlay$lastDamageSource.getEntity() instanceof Player) {
-                    Player attacker = (Player) exileOverlay$lastDamageSource.getEntity();
-                    isCrit = attacker.getAttackStrengthScale(0.5f) > 0.9f;
-                }
+            // クライアント側のみで処理
+            if (!entity.level().isClientSide()) {
+                return;
             }
 
-            System.out.println("[ExileOverlay] Damage detected: " + damage + " to " + entity.getType().getDescription().getString());
+            // プレイヤー自身のダメージは表示しない（オプション）
+            if (entity instanceof Player && entity == Minecraft.getInstance().player) {
+                exileOverlay$lastHealth = health;
+                return;
+            }
 
-            DamageRenderer.getInstance().addDamageNumber(
-                    position,
-                    damage,
-                    color,
-                    isCrit,
-                    DamageType.NORMAL,
-                    entity.getId()
-            );
+            // 初期化時はスキップ
+            if (exileOverlay$lastHealth < 0) {
+                exileOverlay$lastHealth = health;
+                return;
+            }
+
+            // ダメージを計算
+            float damage = exileOverlay$lastHealth - health;
+            if (damage > 0.1f) {
+                // ダメージを表示
+                Vec3 position = entity.position().add(0, entity.getBbHeight() * 1.2, 0);
+                int color = exileOverlay$getColorForDamageSource(exileOverlay$lastDamageSource);
+                boolean isCrit = false;
+
+                // クリティカル判定（直近100ms以内のダメージソースがあれば使用）
+                if (exileOverlay$lastDamageSource != null && 
+                    System.currentTimeMillis() - exileOverlay$lastDamageTime < 100) {
+                    if (exileOverlay$lastDamageSource.getEntity() instanceof Player) {
+                        Player attacker = (Player) exileOverlay$lastDamageSource.getEntity();
+                        isCrit = attacker.getAttackStrengthScale(0.5f) > 0.9f;
+                    }
+                }
+
+                LOGGER.debug("Damage detected: {} to {}", damage, entity.getType().getDescription().getString());
+
+                ThreadSafeDamageRenderer.getInstance().addDamageNumber(
+                        position,
+                        damage,
+                        color,
+                        isCrit,
+                        DamageType.NORMAL,
+                        entity.getId()
+                );
+            }
+
+            exileOverlay$lastHealth = health;
+        } catch (Exception e) {
+            LOGGER.error("Failed to display damage popup", e);
+            // 例外をキャッチしてゲームを継続
         }
-
-        exileOverlay$lastHealth = health;
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void exileOverlay$onTick(CallbackInfo ci) {
-        LivingEntity entity = (LivingEntity) (Object) this;
+        try {
+            LivingEntity entity = (LivingEntity) (Object) this;
 
-        if (!entity.level().isClientSide()) {
-            return;
-        }
+            if (!entity.level().isClientSide()) {
+                return;
+            }
 
-        // ヘルスの初期化
-        if (exileOverlay$lastHealth < 0) {
-            exileOverlay$lastHealth = entity.getHealth();
+            // ヘルスの初期化
+            if (exileOverlay$lastHealth < 0) {
+                exileOverlay$lastHealth = entity.getHealth();
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to initialize health tracking", e);
         }
     }
 

@@ -43,8 +43,7 @@ public class ExampleModDataProvider {
         private static Boolean modAvailable = null;
 
         public MyModProvider() {
-            // キャッシュ有効期限を設定（ミリ秒）
-            setCacheDuration(200);
+            // UnifiedCacheはDataTypeのUpdateFrequencyを自動的に使用
         }
 
         @Override
@@ -73,7 +72,7 @@ public class ExampleModDataProvider {
         @Override
         public float getValue(Player player, DataType type) {
             if (type == DataType.ORB_2_CURRENT) {
-                return fetchSafely(player, type, p -> 100.0f); // ダミー値
+                return fetchFloat(player, type, p -> 100.0f); // ダミー値
             }
             return super.getValue(player, type);
         }
@@ -81,7 +80,7 @@ public class ExampleModDataProvider {
         @Override
         public float getMaxValue(Player player, DataType type) {
             if (type == DataType.ORB_2_MAX) {
-                return fetchSafely(player, type, p -> 100.0f); // ダミー値
+                return fetchFloat(player, type, p -> 100.0f); // ダミー値
             }
             return super.getMaxValue(player, type);
         }

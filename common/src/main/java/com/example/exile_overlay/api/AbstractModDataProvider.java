@@ -4,17 +4,21 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 
 /**
  * MODデータプロバイダーの抽象基底クラス
- * キャッシュ管理、エラーハンドリング、共通処理を提供
- * 
+ * UnifiedCache連携、エラーハンドリング、共通処理を提供
+ *
  * 【スロットベース設計について】
  * このクラスでは、HUD上の「どのスロットに」データを表示するかを定義します。
  * 具体的なデータの「意味」（HP、Manaなど）はサブクラスが決定します。
- * 
+ *
+ * 【アーキテクチャ変更】
+ * ModDataCache → UnifiedCacheに移行
+ * - フレームベースのキャッシュ管理
+ * - データ型別の更新頻度サポート
+ *
  * スロット配置:
  * - ORB_1: 画面左下のメインスロット
  * - ORB_1_OVERLAY: ORB_1に重なるオーバーレイ
@@ -25,10 +29,9 @@ import java.util.Map;
 public abstract class AbstractModDataProvider implements IModDataProvider {
 
     protected final Logger logger = LogUtils.getLogger();
-    protected final ModDataCache cache = ModDataCache.getInstance();
 
-    // キャッシュ有効期限（ミリ秒）- デフォルト250ms
-    protected long cacheDurationMs = 250;
+    // UnifiedCacheへの参照（ModDataCacheは廃止予定）
+    protected final UnifiedCache unifiedCache = UnifiedCache.getInstance();
 
     // 利用可能性のキャッシュ（パフォーマンス最適化）
     private Boolean availabilityCache = null;
@@ -64,120 +67,120 @@ public abstract class AbstractModDataProvider implements IModDataProvider {
     }
 
     /**
-     * キャッシュ有効期限を設定
-     */
-    public void setCacheDuration(long durationMs) {
-        this.cacheDurationMs = durationMs;
-    }
-
-    /**
-     * キャッシュ有効期限を取得
-     */
-    public long getCacheDuration() {
-        return cacheDurationMs;
-    }
-
-    /**
-     * データを安全に取得（エラーハンドリング付き）
-     * 
+     * float値を安全に取得（UnifiedCache連携）
+     *
      * @param player   プレイヤー
      * @param dataType データタイプ
      * @param fetcher  データ取得関数
-     * @return 取得したデータ、エラー時はデフォルト値
+     * @return 取得した値、エラー時はデフォルト値
      */
-    protected <T> T fetchSafely(Player player, DataType dataType, DataFetcher<T> fetcher) {
+    protected float fetchFloat(Player player, DataType dataType, Function<Player, Float> fetcher) {
         if (player == null) {
             return dataType.getDefaultValueTyped();
         }
 
-        try {
-            // キャッシュチェック
-            T cached = cache.getCachedData(player, dataType);
-            if (cached != null && !cached.equals(dataType.getDefaultValue())) {
-                return cached;
+        return unifiedCache.get(player, dataType, () -> {
+            try {
+                Float value = fetcher.apply(player);
+                return value != null ? value : dataType.getDefaultValueTyped();
+            } catch (Exception e) {
+                logger.debug("Error fetching {} for player {}: {}",
+                        dataType.getKey(), player.getName().getString(), e.getMessage());
+                return dataType.getDefaultValueTyped();
             }
-
-            // データ取得
-            T value = fetcher.fetch(player);
-
-            // キャッシュに保存
-            if (value != null) {
-                cacheValue(player, dataType.getKey(), value);
-            }
-
-            return value != null ? value : dataType.getDefaultValueTyped();
-
-        } catch (Exception e) {
-            logger.debug("Error fetching {} for player {}: {}",
-                    dataType.getKey(), player.getName().getString(), e.getMessage());
-            return dataType.getDefaultValueTyped();
-        }
+        });
     }
 
     /**
-     * バニラの値を安全に取得（エラーハンドリング付き）
+     * int値を安全に取得（UnifiedCache連携）
+     *
+     * @param player   プレイヤー
+     * @param dataType データタイプ
+     * @param fetcher  データ取得関数
+     * @return 取得した値、エラー時はデフォルト値
      */
-    protected <T> T fetchVanillaSafely(Player player, DataType dataType, DataFetcher<T> fetcher) {
+    protected int fetchInt(Player player, DataType dataType, Function<Player, Integer> fetcher) {
         if (player == null) {
             return dataType.getDefaultValueTyped();
         }
 
-        try {
-            T value = fetcher.fetch(player);
-            return value != null ? value : dataType.getDefaultValueTyped();
-        } catch (Exception e) {
-            logger.debug("Error fetching vanilla {}: {}", dataType.getKey(), e.getMessage());
+        // UnifiedCacheはfloatを返すので、DataTypeに応じて変換
+        float cached = unifiedCache.get(player, dataType, () -> {
+            try {
+                Integer value = fetcher.apply(player);
+                return value != null ? value.floatValue() : dataType.getDefaultValueTyped();
+            } catch (Exception e) {
+                logger.debug("Error fetching {} for player {}: {}",
+                        dataType.getKey(), player.getName().getString(), e.getMessage());
+                return dataType.getDefaultValueTyped();
+            }
+        });
+
+        return (int) cached;
+    }
+
+    /**
+     * boolean値を安全に取得（UnifiedCache連携）
+     *
+     * @param player   プレイヤー
+     * @param dataType データタイプ
+     * @param fetcher  データ取得関数
+     * @return 取得した値、エラー時はデフォルト値
+     */
+    protected boolean fetchBoolean(Player player, DataType dataType, Function<Player, Boolean> fetcher) {
+        if (player == null) {
             return dataType.getDefaultValueTyped();
         }
+
+        float cached = unifiedCache.get(player, dataType, () -> {
+            try {
+                Boolean value = fetcher.apply(player);
+                return value != null ? (value ? 1.0f : 0.0f) : dataType.getDefaultValueTyped();
+            } catch (Exception e) {
+                logger.debug("Error fetching {} for player {}: {}",
+                        dataType.getKey(), player.getName().getString(), e.getMessage());
+                return dataType.getDefaultValueTyped();
+            }
+        });
+
+        return cached >= 0.5f;
     }
 
     /**
-     * 値をキャッシュに保存
+     * 特定のデータタイプのキャッシュを無効化
      */
-    protected void cacheValue(Player player, String key, Object value) {
-        Map<String, Object> data = new HashMap<>();
-        data.put(key, value);
-        cache.cacheData(player, data, cacheDurationMs);
+    protected void invalidateCache(Player player, DataType dataType) {
+        unifiedCache.invalidate(player, dataType);
     }
 
     /**
-     * 複数の値をキャッシュに保存
+     * プレイヤーの全キャッシュを無効化
      */
-    protected void cacheValues(Player player, Map<String, Object> data) {
-        cache.cacheData(player, data, cacheDurationMs);
-    }
-
-    /**
-     * キャッシュを無効化
-     */
-    protected void invalidateCache(Player player) {
-        cache.invalidateCache(player);
-    }
-
-    /**
-     * データ取得関数のインターフェース
-     */
-    @FunctionalInterface
-    protected interface DataFetcher<T> {
-        T fetch(Player player) throws Exception;
+    protected void invalidateAllCache(Player player) {
+        unifiedCache.invalidateAll(player);
     }
 
     @Override
     public float getValue(Player player, DataType type) {
-        return fetchSafely(player, type, p -> 0.0f);
+        return fetchFloat(player, type, p -> 0.0f);
     }
 
     @Override
     public float getMaxValue(Player player, DataType type) {
-        return fetchSafely(player, type, p -> type.getDefaultValueTyped());
+        return fetchFloat(player, type, p -> type.getDefaultValueTyped());
     }
 
     @Override
     public boolean getAttribute(Player player, String attributeKey) {
         DataType type = DataType.fromKey(attributeKey);
         if (type != null && type.getType() == Boolean.class) {
-            return fetchSafely(player, type, p -> (Boolean) type.getDefaultValue());
+            return fetchBoolean(player, type, p -> (Boolean) type.getDefaultValue());
         }
         return false;
+    }
+
+    @Override
+    public int getInt(Player player, DataType type) {
+        return fetchInt(player, type, p -> (int) getValue(player, type));
     }
 }

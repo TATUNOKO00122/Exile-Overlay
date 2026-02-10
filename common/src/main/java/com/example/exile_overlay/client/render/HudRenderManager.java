@@ -1,0 +1,160 @@
+package com.example.exile_overlay.client.render;
+
+import com.example.exile_overlay.api.IRenderCommand;
+import com.example.exile_overlay.api.IRenderPipeline;
+import com.example.exile_overlay.api.RenderContext;
+import com.example.exile_overlay.api.UnifiedCache;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * HUDレンダリングマネージャー
+ * 
+ * 【責任】
+ * - RenderPipelineの管理
+ * - フレームカウンターの更新
+ * - グローバルなレンダリング設定
+ * 
+ * 【シングルトンパターン】
+ * このクラスはシングルトンとして実装
+ * 全HUD要素の統合管理点
+ */
+public class HudRenderManager {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(HudRenderManager.class);
+    private static final HudRenderManager INSTANCE = new HudRenderManager();
+    
+    private final IRenderPipeline pipeline;
+    private boolean initialized = false;
+    
+    private HudRenderManager() {
+        this.pipeline = new RenderPipelineImpl();
+    }
+    
+    /**
+     * インスタンスを取得
+     */
+    public static HudRenderManager getInstance() {
+        return INSTANCE;
+    }
+    
+    /**
+     * 初期化
+     * デフォルトのHUD要素を登録
+     */
+    public void initialize() {
+        if (initialized) {
+            LOGGER.warn("HudRenderManager is already initialized");
+            return;
+        }
+        
+        LOGGER.info("Initializing HudRenderManager...");
+        
+        // デフォルトコマンドを登録
+        registerDefaultCommands();
+        
+        initialized = true;
+        LOGGER.info("HudRenderManager initialized with {} commands", pipeline.getCommandCount());
+    }
+    
+    /**
+     * デフォルトのレンダリングコマンドを登録
+     */
+    private void registerDefaultCommands() {
+        // ホットバー
+        pipeline.register(new HotbarRenderCommand(), 100);
+        
+        // 将来的に他のHUD要素もここに追加
+        // pipeline.register(new DamageNumberCommand(), 200);
+        // pipeline.register(new BossBarCommand(), 50);
+    }
+    
+    /**
+     * 毎フレーム呼び出されるレンダリングメソッド
+     * 
+     * @param graphics GUIグラフィックスコンテキスト
+     * @param screenWidth 画面幅
+     * @param screenHeight 画面高さ
+     */
+    public void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
+        if (!initialized) {
+            LOGGER.warn("HudRenderManager is not initialized");
+            return;
+        }
+        
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return;
+        }
+        
+        // フレームカウンターを更新
+        UnifiedCache.getInstance().incrementFrame();
+        
+        // レンダリングコンテキストを構築
+        RenderContext ctx = RenderContext.builder()
+            .minecraft(mc)
+            .player(mc.player)
+            .screenSize(screenWidth, screenHeight)
+            .partialTick(mc.getFrameTime())
+            .gameTick(mc.level != null ? mc.level.getGameTime() : 0)
+            .elementId("hud")
+            .build();
+        
+        // パイプラインを実行
+        pipeline.render(graphics, ctx);
+    }
+    
+    /**
+     * カスタムコマンドを登録
+     * 
+     * @param command 登録するコマンド
+     * @param priority 優先度
+     */
+    public void registerCommand(IRenderCommand command, int priority) {
+        pipeline.register(command, priority);
+        LOGGER.debug("Registered custom command: {} (priority: {})", command.getId(), priority);
+    }
+    
+    /**
+     * カスタムコマンドを登録（デフォルト優先度）
+     * 
+     * @param command 登録するコマンド
+     */
+    public void registerCommand(IRenderCommand command) {
+        pipeline.register(command);
+    }
+    
+    /**
+     * コマンドを解除
+     * 
+     * @param commandId コマンドID
+     * @return 解除に成功した場合true
+     */
+    public boolean unregisterCommand(String commandId) {
+        return pipeline.unregister(commandId);
+    }
+    
+    /**
+     * パイプラインを取得
+     * 高度な操作が必要な場合に使用
+     */
+    public IRenderPipeline getPipeline() {
+        return pipeline;
+    }
+    
+    /**
+     * 登録されているコマンド数を取得
+     */
+    public int getCommandCount() {
+        return pipeline.getCommandCount();
+    }
+    
+    /**
+     * 特定のコマンドが登録されているか
+     */
+    public boolean hasCommand(String commandId) {
+        return pipeline.hasCommand(commandId);
+    }
+}

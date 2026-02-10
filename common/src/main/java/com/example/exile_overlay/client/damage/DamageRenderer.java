@@ -21,6 +21,10 @@ public class DamageRenderer {
 
     private int cleanupCounter = 0;
     private static final int CLEANUP_INTERVAL = 100;
+    
+    // Phase 1: 物理演算の間引き
+    private int physicsTickCounter = 0;
+    private static final int PHYSICS_INTERVAL = 3; // 3ティックに1回実行
 
     private static class CircularPlacementInfo {
         public int nextAngleIndex = 0;
@@ -195,7 +199,12 @@ public class DamageRenderer {
             return;
         }
 
-        applyPhysics();
+        // Phase 1: 物理演算の間引き（3ティックに1回）
+        physicsTickCounter++;
+        if (physicsTickCounter >= PHYSICS_INTERVAL) {
+            physicsTickCounter = 0;
+            applyPhysics();
+        }
 
         Iterator<DamageNumber> it = damageNumbers.iterator();
         while (it.hasNext()) {

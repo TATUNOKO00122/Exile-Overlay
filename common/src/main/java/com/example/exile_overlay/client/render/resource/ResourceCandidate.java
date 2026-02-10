@@ -81,12 +81,11 @@ public class ResourceCandidate {
     
     /**
      * このリソースが有効かどうかを判定
-     * 最大値 > 0 かつ 現在値 > 0 で有効とする
+     * 最大値 > 0 で有効とする（現在値は0でも可）
      */
     public boolean isValid(Player player, DataType dataType) {
         float max = getMaxValue(player, dataType);
-        float current = getCurrentValue(player, dataType);
-        return max > 0 && current > 0;
+        return max > 0;
     }
     
     /**

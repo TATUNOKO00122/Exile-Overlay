@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.render.orb;
 
+import com.example.exile_overlay.api.DataResult;
 import java.util.function.Predicate;
 import net.minecraft.world.entity.player.Player;
 
@@ -210,11 +211,42 @@ public class OrbConfig {
             return this;
         }
         
-        public OrbConfig build() {
-            if (dataProvider == null) {
-                throw new IllegalStateException("DataProvider must be set for orb: " + id);
+        /**
+         * 設定を構築（バリデーション付き）
+         * 
+         * @return バリデーション結果付きの設定
+         */
+        public DataResult<OrbConfig> buildWithValidation() {
+            OrbConfig config = new OrbConfig(this);
+            OrbConfigValidator validator = new OrbConfigValidator();
+            ValidationResult result = validator.validate(config);
+            
+            if (result.isValid()) {
+                return DataResult.success(config);
+            } else {
+                return DataResult.failure(
+                    String.join("; ", result.getErrors()),
+                    config  // エラーがあっても設定は返す（フォールバック用）
+                );
             }
-            return new OrbConfig(this);
+        }
+        
+        /**
+         * 設定を構築（厳格モード：エラー時は例外）
+         * 
+         * @return 構築された設定
+         * @throws IllegalStateException バリデーションエラー時
+         * @deprecated 代わりに buildWithValidation() を使用してください
+         */
+        @Deprecated
+        public OrbConfig build() {
+            DataResult<OrbConfig> result = buildWithValidation();
+            if (result.isFailure()) {
+                throw new IllegalStateException(
+                    "Invalid OrbConfig for '" + id + "': " + result.getError()
+                );
+            }
+            return result.getValue();
         }
     }
 }

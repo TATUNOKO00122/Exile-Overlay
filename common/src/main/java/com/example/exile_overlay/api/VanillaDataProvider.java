@@ -6,7 +6,7 @@ import net.minecraft.world.entity.player.Player;
  * バニラMinecraft用のデータプロバイダー
  * AbstractModDataProviderを継承し、キャッシュとエラーハンドリングを統一
  * 常に利用可能で、最も低い優先度を持つ
- * 
+ *
  * 【スロットマッピング】
  * - ORB_1: Health（体力）
  * - ORB_1_OVERLAY: なし（バニラにはシールド相当がない）
@@ -21,8 +21,7 @@ public class VanillaDataProvider extends AbstractModDataProvider {
     private static final int PRIORITY = 0; // 最低優先度
 
     public VanillaDataProvider() {
-        // バニラはキャッシュが不要なので0に設定
-        setCacheDuration(0);
+        // バニラは直接取得で十分高速
     }
 
     @Override
@@ -44,7 +43,7 @@ public class VanillaDataProvider extends AbstractModDataProvider {
     // ========== 汎用データ取得の実装 ==========
     @Override
     public float getValue(Player player, DataType type) {
-        return fetchVanillaSafely(player, type, p -> {
+        return fetchFloat(player, type, p -> {
             if (p == null)
                 return 0f;
             return switch (type) {
@@ -58,7 +57,7 @@ public class VanillaDataProvider extends AbstractModDataProvider {
 
     @Override
     public float getMaxValue(Player player, DataType type) {
-        return fetchVanillaSafely(player, type, p -> {
+        return fetchFloat(player, type, p -> {
             if (p == null)
                 return 1f;
             return switch (type) {
