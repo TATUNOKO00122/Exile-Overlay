@@ -158,9 +158,11 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         HudPosition position = getPosition();
         int[] pos = position.resolve(screenWidth, screenHeight);
         
-        // ホットバーは中央基準で描画するため、オフセットを計算
-        int bgX = pos[0] - (int) (BG_WIDTH * RENDER_SCALE) / 2;
-        int bgY = pos[1] - (int) (BG_HEIGHT * RENDER_SCALE) + screenOffsetY;
+        // ホットバーは底辺中心基準で描画するため、オフセットを計算
+        int width = (int) (BG_WIDTH * RENDER_SCALE);
+        int height = (int) (BG_HEIGHT * RENDER_SCALE);
+        int bgX = pos[0] - width / 2;
+        int bgY = pos[1] - height + screenOffsetY;
         
         OrbShaderRenderer.updateAnimationTime(0.016f);
         
@@ -267,14 +269,14 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     
     @Override
     public int getWidth() {
-        return 230;
+        return (int) (BG_WIDTH * RENDER_SCALE);
     }
 
     @Override
     public int getHeight() {
-        return 60;
+        return (int) (BG_HEIGHT * RENDER_SCALE);
     }
-    
+
     @Override
     public boolean isDraggable() {
         return true;
@@ -282,10 +284,12 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
 
     @Override
     public HudRenderMetadata getRenderMetadata() {
+        // 底辺中心基準: Xは中心、Yは底辺
+        // render()メソッド: bgY = pos[1] - height + screenOffsetY
         return new HudRenderMetadata(
-            CoordinateSystem.CENTER_BASED,  // 中心基準
-            new Insets(-30, 0, 0, 0),       // 上に30pxオフセット
-            new Insets(0, 4, 0, 4)          // 左右に4px拡張
+            CoordinateSystem.BOTTOM_CENTER_BASED,
+            new Insets(0, 0, 0, 0),
+            new Insets(0, 0, 0, 0)
         );
     }
 }

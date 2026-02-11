@@ -36,6 +36,9 @@ public class DraggableHudConfigScreen extends Screen {
     private static final int BACKGROUND_COLOR = 0xCC000000;
     private static final int GRID_COLOR = 0x33FFFFFF;
     private static final int SELECTION_COLOR = 0xFFFFFF00;
+    private static final int SNAP_GUIDE_COLOR = 0xFFFF5555;
+    private static final int SNAP_GUIDE_ALPHA = 0x66;
+    private static final int SNAP_DISTANCE = 10;
     private final Screen parent;
     private final List<DraggableElement> draggableElements;
     private final HudPositionManager positionManager;
@@ -47,6 +50,10 @@ public class DraggableHudConfigScreen extends Screen {
 
     // ドラッグ中の変更をメモリ上に保持（確定時に一括保存）
     private final Map<String, HudPosition> pendingChanges = new HashMap<>();
+
+    // スナップガイド表示用
+    private final List<Integer> activeSnapGuidesX = new ArrayList<>();
+    private final List<Integer> activeSnapGuidesY = new ArrayList<>();
 
     private Button resetButton;
     private Button resetAllButton;
@@ -119,9 +126,10 @@ public class DraggableHudConfigScreen extends Screen {
             int height = 40;
 
             if (renderer != null) {
-                width = renderer.getWidth();
-                height = renderer.getHeight();
-                LOGGER.debug("Got size for '{}': {}x{} from renderer", key, width, height);
+                // 設定画面用のサイズを優先的に使用（動的サイズ対応）
+                width = renderer.getConfigWidth();
+                height = renderer.getConfigHeight();
+                LOGGER.debug("Got size for '{}': {}x{} from renderer (config)", key, width, height);
             } else {
                 // レンダラーが見つからない場合はフォールバックサイズを使用
                 int[] fallbackSize = getFallbackSize(key);
@@ -162,6 +170,9 @@ public class DraggableHudConfigScreen extends Screen {
         // グリッド
         renderGrid(graphics);
 
+        // スナップガイド
+        renderSnapGuides(graphics);
+
         // HUD要素プレビュー
         renderHudPreviews(graphics, mouseX, mouseY);
 
@@ -191,27 +202,38 @@ public class DraggableHudConfigScreen extends Screen {
     }
 
     /**
-     * グリッドを描画
+     * グリッドを描画（現在は無効化）
      */
     private void renderGrid(GuiGraphics graphics) {
-        int gridSize = 50;
+        // グリッド描画は無効化されています
+    }
 
-        // 垂直線
-        for (int x = 0; x < this.width; x += gridSize) {
-            graphics.fill(x, 0, x + 1, this.height, GRID_COLOR);
+    /**
+     * スナップガイドを描画
+     * ドラッグ中にスナップ位置を視覚的に表示
+     */
+    private void renderSnapGuides(GuiGraphics graphics) {
+        if (draggedElement == null) return;
+        if (activeSnapGuidesX.isEmpty() && activeSnapGuidesY.isEmpty()) return;
+
+        int guideColor = (SNAP_GUIDE_ALPHA << 24) | (SNAP_GUIDE_COLOR & 0xFFFFFF);
+
+        // 垂直スナップガイド
+        for (int x : activeSnapGuidesX) {
+            graphics.fill(x - 1, 0, x + 2, this.height, guideColor);
         }
 
-        // 水平線
-        for (int y = 0; y < this.height; y += gridSize) {
-            graphics.fill(0, y, this.width, y + 1, GRID_COLOR);
+        // 水平スナップガイド
+        for (int y : activeSnapGuidesY) {
+            graphics.fill(0, y - 1, this.width, y + 2, guideColor);
         }
-
-
     }
 
     /**
      * HUD要素のプレビューを描画
      */
+    private long lastDebugLogTime = 0;
+
     private void renderHudPreviews(GuiGraphics graphics, int mouseX, int mouseY) {
         for (DraggableElement element : draggableElements) {
             int[] pos;
@@ -221,6 +243,19 @@ public class DraggableHudConfigScreen extends Screen {
                 pos = new int[]{mouseX - dragOffsetX, mouseY - dragOffsetY};
             } else {
                 pos = element.getResolvedPosition(this.width, this.height);
+            }
+
+            // デバッグ：バフ要素の位置を2秒ごとにログ出力
+            if ("buff_overlay".equals(element.getKey())) {
+                long now = System.currentTimeMillis();
+                if (now - lastDebugLogTime > 2000) {
+                    Minecraft mc = Minecraft.getInstance();
+                    int mcWidth = mc.getWindow().getGuiScaledWidth();
+                    int mcHeight = mc.getWindow().getGuiScaledHeight();
+                    LOGGER.debug("[CONFIG] Buff preview position: ({}, {}), screen: {}x{}, mc: {}x{}", 
+                        pos[0], pos[1], this.width, this.height, mcWidth, mcHeight);
+                    lastDebugLogTime = now;
+                }
             }
 
             renderElementPreview(graphics, element, pos[0], pos[1]);
@@ -246,8 +281,12 @@ public class DraggableHudConfigScreen extends Screen {
             // 左上基準: x, yがそのまま左上の座標
             left = x + offset.left;
             top = y + offset.top;
+        } else if (metadata.isBottomCenterBased()) {
+            // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
+            left = x - width / 2 - expansion.left + offset.left;
+            top = y - height - expansion.top + offset.top;
         } else {
-            // 中心基準: x, yが中心なので変換
+            // 中心基準: XとYの両方が中心
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height / 2 - expansion.top + offset.top;
         }
@@ -298,6 +337,10 @@ public class DraggableHudConfigScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // ドラッグ開始時にスナップガイドをリセット
+        activeSnapGuidesX.clear();
+        activeSnapGuidesY.clear();
+
         if (button == 0) {
             // 左クリック: 要素選択/ドラッグ開始
             DraggableElement hitElement = findElementAt((int) mouseX, (int) mouseY);
@@ -346,37 +389,104 @@ public class DraggableHudConfigScreen extends Screen {
     /**
      * ドラッグ中の位置をリアルタイムに更新
      * メモリ上のみ保持（ファイルには書き込まない）
+     * スナップ機能付き：画面枠に近づくと自動的に吸着
      */
     private void updateDragPosition(int mouseX, int mouseY) {
         if (draggedElement == null) return;
 
-        int newX = mouseX - dragOffsetX;
-        int newY = mouseY - dragOffsetY;
+        // スナップガイドをリセット
+        activeSnapGuidesX.clear();
+        activeSnapGuidesY.clear();
 
-        HudPosition newPosition = HudPosition.fromAbsolute(newX, newY, this.width, this.height);
+        int rawX = mouseX - dragOffsetX;
+        int rawY = mouseY - dragOffsetY;
 
-        // メモリ上に保持（確定時に一括保存）
-        pendingChanges.put(draggedElement.getKey(), newPosition);
+        // 要素のサイズを取得
+        int elementWidth = draggedElement.getWidth();
+        int elementHeight = draggedElement.getHeight();
+
+        // スナップ処理：表示位置（rawX/Y）をそのままスナップ対象に
+        int snappedX = applySnapX(rawX, elementWidth);
+        int snappedY = applySnapY(rawY, elementHeight);
+
+        HudPosition newPosition = HudPosition.fromAbsolute(snappedX, snappedY, this.width, this.height);
+
+        // 即座に保存（リアルタイム反映のため）
+        positionManager.setPosition(draggedElement.getKey(), newPosition);
         draggedElement.updatePosition(newPosition);
     }
 
     /**
+     * X座標にスナップを適用
+     * rawXは表示位置の基準点（中心または左上）
+     */
+    private int applySnapX(int rawX, int elementWidth) {
+        // 画面左端スナップ（表示位置が画面左端に）
+        if (Math.abs(rawX) <= SNAP_DISTANCE) {
+            activeSnapGuidesX.add(0);
+            return 0;
+        }
+
+        // 画面右端スナップ（表示位置が画面右端に）
+        // rawXは表示位置の基準点なので、右端スナップ時は画面幅に合わせる
+        if (Math.abs(rawX - this.width) <= SNAP_DISTANCE) {
+            activeSnapGuidesX.add(this.width);
+            return this.width;
+        }
+
+        return rawX;
+    }
+
+    /**
+     * Y座標にスナップを適用
+     * rawYは表示位置の基準点（中心または左上）
+     */
+    private int applySnapY(int rawY, int elementHeight) {
+        // 画面上端スナップ（表示位置が画面上端に）
+        if (Math.abs(rawY) <= SNAP_DISTANCE) {
+            activeSnapGuidesY.add(0);
+            return 0;
+        }
+
+        // 画面下端スナップ（表示位置が画面下端に）
+        if (Math.abs(rawY - this.height) <= SNAP_DISTANCE) {
+            activeSnapGuidesY.add(this.height);
+            return this.height;
+        }
+
+        return rawY;
+    }
+
+    /**
      * ドラッグを確定して位置を保存
+     * スナップ機能付き
      */
     private void finalizeDrag(int mouseX, int mouseY) {
         if (draggedElement == null) return;
 
-        int newX = mouseX - dragOffsetX;
-        int newY = mouseY - dragOffsetY;
+        // スナップガイドをリセット
+        activeSnapGuidesX.clear();
+        activeSnapGuidesY.clear();
+
+        int rawX = mouseX - dragOffsetX;
+        int rawY = mouseY - dragOffsetY;
+
+        // 要素のサイズを取得
+        int elementWidth = draggedElement.getWidth();
+        int elementHeight = draggedElement.getHeight();
+
+        // スナップ処理を適用：表示位置（rawX/Y）をそのままスナップ対象に
+        int snappedX = applySnapX(rawX, elementWidth);
+        int snappedY = applySnapY(rawY, elementHeight);
 
         // 新しい位置を計算
-        HudPosition newPosition = HudPosition.fromAbsolute(newX, newY, this.width, this.height);
+        HudPosition newPosition = HudPosition.fromAbsolute(snappedX, snappedY, this.width, this.height);
 
-        // メモリ上に保持
-        pendingChanges.put(draggedElement.getKey(), newPosition);
+        // 即座に保存（リアルタイム反映のため）
+        positionManager.setPosition(draggedElement.getKey(), newPosition);
         draggedElement.updatePosition(newPosition);
 
-        LOGGER.debug("Drag finalized for {}, pending changes: {}", draggedElement.getKey(), pendingChanges.size());
+        LOGGER.debug("Drag finalized and saved for {}: {}", draggedElement.getKey(), newPosition);
     }
 
     /**
@@ -393,25 +503,6 @@ public class DraggableHudConfigScreen extends Screen {
         }
 
         pendingChanges.clear();
-    }
-
-    /**
-     * ドラッグを確定して位置を保存
-     */
-    private void finalizeDrag(int mouseX, int mouseY) {
-        if (draggedElement == null) return;
-
-        int newX = mouseX - dragOffsetX;
-        int newY = mouseY - dragOffsetY;
-
-        // 新しい位置を計算
-        HudPosition newPosition = HudPosition.fromAbsolute(newX, newY, this.width, this.height);
-
-        // 保存
-        positionManager.setPosition(draggedElement.getKey(), newPosition);
-        draggedElement.updatePosition(newPosition);
-
-        LOGGER.debug("Updated position for {}: {}", draggedElement.getKey(), newPosition);
     }
 
     /**
@@ -538,8 +629,12 @@ public class DraggableHudConfigScreen extends Screen {
                 // 左上基準
                 left = pos[0] + offset.left;
                 top = pos[1] + offset.top;
+            } else if (metadata.isBottomCenterBased()) {
+                // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
+                left = pos[0] - width / 2 - expansion.left + offset.left;
+                top = pos[1] - height - expansion.top + offset.top;
             } else {
-                // 中心基準
+                // 中心基準: XとYの両方が中心
                 left = pos[0] - width / 2 - expansion.left + offset.left;
                 top = pos[1] - height / 2 - expansion.top + offset.top;
             }

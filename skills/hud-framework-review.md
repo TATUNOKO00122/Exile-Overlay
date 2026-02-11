@@ -1,3 +1,12 @@
+---
+name: HUD Framework Review
+description: HUDフレームワーク実装時の設計品質チェックリスト。アーキテクチャ、パフォーマンス、堅牢性の3観点から致命的な設計ミスを防止
+triggers:
+  - HUD要素の新規実装時
+  - データソースとレンダラーの連携実装時
+  - 外部MOD連携機能の追加時
+---
+
 # Skill: HUD Framework Review
 
 ## Overview

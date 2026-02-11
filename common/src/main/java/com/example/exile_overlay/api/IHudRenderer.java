@@ -68,12 +68,32 @@ public interface IHudRenderer {
     int getHeight();
 
     /**
+     * 設定画面で使用する幅を取得
+     * 動的サイズの要素（バフ等）はここで実際の表示サイズを返す
+     *
+     * @return 設定画面での幅（ピクセル）
+     */
+    default int getConfigWidth() {
+        return getWidth();
+    }
+
+    /**
+     * 設定画面で使用する高さを取得
+     * 動的サイズの要素（バフ等）はここで実際の表示サイズを返す
+     *
+     * @return 設定画面での高さ（ピクセル）
+     */
+    default int getConfigHeight() {
+        return getHeight();
+    }
+
+    /**
      * ドラッグによる位置変更を許可するか
      *
      * @return ドラッグ可能な場合true
      */
     default boolean isDraggable() {
-        return true;
+        return false;
     }
 
     /**
@@ -112,11 +132,27 @@ public interface IHudRenderer {
         int width = getWidth();
         int height = getHeight();
 
-        // 中心基準から左上基準に変換
-        int left = x - width / 2;
-        int top = y - height / 2;
-        int right = left + width;
-        int bottom = top + height;
+        HudRenderMetadata metadata = getRenderMetadata();
+        Insets offset = metadata.getOffset();
+        Insets expansion = metadata.getExpansion();
+
+        int left;
+        int top;
+        if (metadata.isTopLeftBased()) {
+            // 左上基準
+            left = x + offset.left;
+            top = y + offset.top;
+        } else if (metadata.isBottomCenterBased()) {
+            // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
+            left = x - width / 2 - expansion.left + offset.left;
+            top = y - height - expansion.top + offset.top;
+        } else {
+            // 中心基準: XとYの両方が中心
+            left = x - width / 2 - expansion.left + offset.left;
+            top = y - height / 2 - expansion.top + offset.top;
+        }
+        int right = left + width + expansion.getHorizontal();
+        int bottom = top + height + expansion.getVertical();
 
         return mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom;
     }
@@ -157,7 +193,9 @@ public interface IHudRenderer {
         /** 中心基準（x, yが矩形の中心） */
         CENTER_BASED,
         /** 左上基準（x, yが矩形の左上） */
-        TOP_LEFT_BASED
+        TOP_LEFT_BASED,
+        /** 底辺中心基準（xが中心、yが底辺）- ホットバー等の下部配置要素用 */
+        BOTTOM_CENTER_BASED
     }
 
     /**
@@ -217,6 +255,10 @@ public interface IHudRenderer {
 
         public boolean isTopLeftBased() {
             return coordinateSystem == CoordinateSystem.TOP_LEFT_BASED;
+        }
+
+        public boolean isBottomCenterBased() {
+            return coordinateSystem == CoordinateSystem.BOTTOM_CENTER_BASED;
         }
     }
 }

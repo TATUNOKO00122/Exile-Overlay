@@ -1,8 +1,6 @@
 package com.example.exile_overlay.forge.client;
 
 import com.example.exile_overlay.ExampleMod;
-import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -33,9 +31,6 @@ public class BuffOverlayForgeHandler {
      */
     @SubscribeEvent
     public static void onRenderGuiPost(RenderGuiEvent.Post event) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-        // バフ表示をレンダリング（設定画面を開いていても描画する）
-        BuffOverlayRenderer.render(event.getGuiGraphics(), event.getPartialTick());
+        // バフ表示は現在 HudRenderManager のパイプライン経由で描画されるため、ここでは何もしない
     }
 }

@@ -63,17 +63,18 @@ public class ExileOverlayGui {
             Minecraft mc = Minecraft.getInstance();
 
             // ポーズメニュー/インベントリなどが開いている場合は描画しない
-            if (mc.screen != null) {
+            // ただし、HUD設定画面の場合はプレビューのために描画を許可する
+            if (mc.screen != null
+                    && !(mc.screen instanceof com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen)) {
                 event.setCanceled(true);
                 return;
             }
 
             // パイプライン経由でレンダリング
             HudRenderManager.getInstance().render(
-                event.getGuiGraphics(),
-                event.getWindow().getGuiScaledWidth(),
-                event.getWindow().getGuiScaledHeight()
-            );
+                    event.getGuiGraphics(),
+                    event.getWindow().getGuiScaledWidth(),
+                    event.getWindow().getGuiScaledHeight());
 
             event.setCanceled(true);
         }

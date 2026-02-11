@@ -1,3 +1,12 @@
+---
+name: MethodHandles型安全性
+description: MethodHandles使用時の型安全性に関するガイドライン。invokeExactの落とし穴と対策
+triggers:
+  - MethodHandlesを使用したリフレクション実装時
+  - 外部MODのメソッド呼び出しで型変換が必要な場合
+  - 複数バージョン対応が必要なMOD連携時
+---
+
 # MethodHandles型安全性スキル
 
 ## 概要

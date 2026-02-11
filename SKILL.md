@@ -1,3 +1,12 @@
+---
+name: Mod Integration Abstraction Pattern
+description: 外部MODとの連携を行う際の設計パターン。疎結合で拡張性のある実装を提供
+triggers:
+  - 外部MODのデータを取得・表示する機能を追加する場合
+  - リフレクションを使用して外部APIにアクセスする場合
+  - 複数のMODに対応する必要がある場合
+---
+
 # SKILL: Mod Integration Abstraction Pattern
 
 ## 概要
