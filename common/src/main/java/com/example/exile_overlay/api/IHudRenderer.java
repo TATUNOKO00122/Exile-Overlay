@@ -106,6 +106,15 @@ public interface IHudRenderer {
     }
 
     /**
+     * 現在のスケールを取得
+     *
+     * @return 表示スケール（1.0 = 100%）
+     */
+    default float getScale() {
+        return getPosition().getScale();
+    }
+
+    /**
      * 現在の位置を解決した絶対座標を取得
      *
      * @param screenWidth 画面幅
@@ -184,6 +193,16 @@ public interface IHudRenderer {
             new Insets(0, 0, 0, 0),
             new Insets(0, 0, 0, 0)
         );
+    }
+
+    /**
+     * フォールバックサイズを取得
+     * レンダラーが設定画面で見つからない場合に使用される
+     *
+     * @return [width, height] 配列
+     */
+    default int[] getFallbackSize() {
+        return new int[]{80, 40};
     }
 
     /**

@@ -3,12 +3,15 @@ package com.example.exile_overlay.api;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
 /**
  * RenderContextのオブジェクトプール
  * 
  * 【設計思想】
  * - 毎フレームのRenderContext生成を回避
- * - ラウンドロビン方式によるスレッド安全な再利用
+ * - CAS操作によるスレッド安全な獲得・解放
  * - シングルトンパターンで一元管理
  * 
  * 【使用方法】
@@ -25,11 +28,10 @@ public class RenderContextPool {
     private static final RenderContextPool INSTANCE = new RenderContextPool();
     
     private final PooledRenderContext[] pool = new PooledRenderContext[POOL_SIZE];
-    private final boolean[] inUse = new boolean[POOL_SIZE];
-    private int rotateIndex = 0;
+    private final AtomicIntegerArray inUse = new AtomicIntegerArray(POOL_SIZE);
+    private final AtomicInteger rotateIndex = new AtomicInteger(0);
     
     private RenderContextPool() {
-        // プールを事前に初期化
         for (int i = 0; i < POOL_SIZE; i++) {
             pool[i] = new PooledRenderContext();
         }
@@ -43,54 +45,44 @@ public class RenderContextPool {
      * プールからRenderContextを取得
      * 
      * 【スレッド安全性】
-     * - シングルスレッド（レンダースレッド）のみで呼び出し
-     * - ラウンドロビンで順番に割り当て
+     * - CAS操作でアトミックに獲得
+     * - プール枯渇時は新規作成（フォールバック）
      */
     public PooledRenderContext acquire(Minecraft minecraft, Player player,
                                        int screenWidth, int screenHeight,
                                        float partialTick, long gameTick,
                                        String elementId) {
-        int idx = getNextIndex();
-        PooledRenderContext ctx = pool[idx];
+        int startIdx = rotateIndex.getAndIncrement() % POOL_SIZE;
         
-        // 使用中チェック（万が一の重複使用防止）
-        if (inUse[idx]) {
-            // 使用中の場合は新規作成（フォールバック）
-            ctx = new PooledRenderContext();
-            idx = -1; // プール外を示す
+        for (int i = 0; i < POOL_SIZE; i++) {
+            int idx = (startIdx + i) % POOL_SIZE;
+            
+            if (inUse.compareAndSet(idx, 0, 1)) {
+                PooledRenderContext ctx = pool[idx];
+                ctx.update(minecraft, player, screenWidth, screenHeight,
+                           partialTick, gameTick, elementId);
+                ctx.setPoolIndex(idx);
+                return ctx;
+            }
         }
         
-        if (idx >= 0) {
-            inUse[idx] = true;
-        }
-        
-        ctx.update(minecraft, player, screenWidth, screenHeight,
-                   partialTick, gameTick, elementId);
-        
-        return ctx;
+        PooledRenderContext fallback = new PooledRenderContext();
+        fallback.update(minecraft, player, screenWidth, screenHeight,
+                       partialTick, gameTick, elementId);
+        fallback.setPoolIndex(-1);
+        return fallback;
     }
     
     /**
      * RenderContextをプールに戻す
      */
     public void release(PooledRenderContext ctx) {
-        // プール内のオブジェクトかチェック
-        for (int i = 0; i < POOL_SIZE; i++) {
-            if (pool[i] == ctx) {
-                inUse[i] = false;
-                ctx.reset();
-                return;
-            }
-        }
+        int idx = ctx.getPoolIndex();
         
-        // プール外のオブジェクトはGCに任せる
-    }
-    
-    /**
-     * 次のインデックスを取得（ラウンドロビン）
-     */
-    private int getNextIndex() {
-        return (rotateIndex++) % POOL_SIZE;
+        if (idx >= 0 && idx < POOL_SIZE) {
+            inUse.set(idx, 0);
+            ctx.reset();
+        }
     }
     
     /**
@@ -98,10 +90,10 @@ public class RenderContextPool {
      */
     public PoolStats getStats() {
         int used = 0;
-        for (boolean used1 : inUse) {
-            if (used1) used++;
+        for (int i = 0; i < POOL_SIZE; i++) {
+            if (inUse.get(i) != 0) used++;
         }
-        return new PoolStats(POOL_SIZE, used, rotateIndex);
+        return new PoolStats(POOL_SIZE, used, rotateIndex.get());
     }
     
     /**

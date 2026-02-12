@@ -146,32 +146,34 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     public void render(GuiGraphics graphics, RenderContext ctx) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
-        
+
         // 画面サイズ取得
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
-        
+
         // 表示中のオーブを取得
         List<OrbType> visibleOrbs = OrbRegistry.getVisibleOrbs(player);
-        
-        // 位置設定を取得
+
+        // 位置設定とスケールを取得
         HudPosition position = getPosition();
         int[] pos = position.resolve(screenWidth, screenHeight);
-        
+        float userScale = getScale();
+        float totalScale = RENDER_SCALE * userScale;
+
         // ホットバーは底辺中心基準で描画するため、オフセットを計算
-        int width = (int) (BG_WIDTH * RENDER_SCALE);
-        int height = (int) (BG_HEIGHT * RENDER_SCALE);
+        int width = (int) (BG_WIDTH * totalScale);
+        int height = (int) (BG_HEIGHT * totalScale);
         int bgX = pos[0] - width / 2;
         int bgY = pos[1] - height + screenOffsetY;
-        
+
         OrbShaderRenderer.updateAnimationTime(0.016f);
-        
+
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        
+
         graphics.pose().pushPose();
         graphics.pose().translate(bgX, bgY, 0);
-        graphics.pose().scale(RENDER_SCALE, RENDER_SCALE, 1.0f);
+        graphics.pose().scale(totalScale, totalScale, 1.0f);
         
         // Layer 1: Background Layer (背面)
         renderExpBars(graphics, mc);

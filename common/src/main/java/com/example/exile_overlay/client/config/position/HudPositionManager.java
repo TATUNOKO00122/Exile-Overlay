@@ -200,11 +200,12 @@ public class HudPositionManager {
                 posJson.addProperty("anchor", pos.getAnchor().name());
                 posJson.addProperty("offsetX", pos.getOffsetX());
                 posJson.addProperty("offsetY", pos.getOffsetY());
+                posJson.addProperty("scale", pos.getScale());
                 positionsJson.add(entry.getKey(), posJson);
             }
-            
+
             root.add("positions", positionsJson);
-            root.addProperty("version", 1);
+            root.addProperty("version", 2);
             
             try (FileWriter writer = new FileWriter(configFile)) {
                 GSON.toJson(root, writer);
@@ -257,9 +258,15 @@ public class HudPositionManager {
                     String anchorName = posJson.get("anchor").getAsString();
                     int offsetX = posJson.get("offsetX").getAsInt();
                     int offsetY = posJson.get("offsetY").getAsInt();
-                    
+
+                    // scaleは後方互換：存在しない場合は1.0fを使用
+                    float scale = 1.0f;
+                    if (posJson.has("scale")) {
+                        scale = posJson.get("scale").getAsFloat();
+                    }
+
                     Anchor anchor = Anchor.valueOf(anchorName);
-                    HudPosition position = new HudPosition(anchor, offsetX, offsetY);
+                    HudPosition position = new HudPosition(anchor, offsetX, offsetY, scale);
                     positions.put(key, position);
                     loadedCount++;
                 } catch (Exception e) {

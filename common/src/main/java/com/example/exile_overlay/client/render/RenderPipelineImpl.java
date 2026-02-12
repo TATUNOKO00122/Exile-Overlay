@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * レンダリングパイプラインの実装クラス（改良版）
@@ -25,7 +23,7 @@ import java.util.stream.Collectors;
  * - エラー分類による適切な対応（回復可能/致命的）
  * 
  * 【パフォーマンス最適化】
- * - コマンドリストのキャッシュ
+ * - ArrayList + synchronizedによるゼロアロケーションソート
  * - レイヤーごとのバッチ処理
  * - 無駄なOpenGL状態変更の削減
  * 
@@ -35,7 +33,7 @@ import java.util.stream.Collectors;
  * - CircuitBreaker: 連続失敗時の保護
  * 
  * 【スレッド安全性】
- * - CopyOnWriteArrayListによるスレッド安全なコマンド管理
+ * - synchronizedによるコマンドリスト保護
  * - ConcurrentHashMapによるエラー追跡
  * - TTL付きエラーログによるメモリ保護
  */
@@ -43,35 +41,20 @@ public class RenderPipelineImpl implements IRenderPipeline {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RenderPipelineImpl.class);
     
-    // サーキットブレイカー設定
     private static final int CIRCUIT_BREAKER_THRESHOLD = 10;
-    private static final long CIRCUIT_BREAKER_TIMEOUT_MS = 5000; // 5秒
+    private static final long CIRCUIT_BREAKER_TIMEOUT_MS = 5000;
 
-    // レイヤー → 優先度付きコマンドリスト
     private final Map<RenderLayer, List<PrioritizedCommand>> commandsByLayer = new EnumMap<>(RenderLayer.class);
-
-    // ID → コマンドのマップ（高速検索用）
     private final Map<String, IRenderCommand> commandsById = new ConcurrentHashMap<>();
-
-    // ソート済みフラグ（volatileでスレッド間可視性確保）
     private volatile boolean needsSorting = true;
-    
-    // コマンドリスト変更用ロック
     private final Object commandLock = new Object();
-
-    // エラー追跡（TTL付きキャッシュ）
     private final ErrorLogCache errorLog = new ErrorLogCache();
-    
-    // サーキットブレイカー（コマンドごとに独立）
     private final Map<String, CircuitBreaker> circuitBreakers = new ConcurrentHashMap<>();
-    
-    // ブロックされたコマンドのログ抑制用
     private final Set<String> blockedCommandsLogged = ConcurrentHashMap.newKeySet();
     
     public RenderPipelineImpl() {
-        // 各レイヤーを初期化
         for (RenderLayer layer : RenderLayer.values()) {
-            commandsByLayer.put(layer, new CopyOnWriteArrayList<>());
+            commandsByLayer.put(layer, new ArrayList<>());
         }
     }
     
@@ -177,12 +160,15 @@ public class RenderPipelineImpl implements IRenderPipeline {
     }
     
     private void renderLayerInternal(RenderLayer layer, GuiGraphics graphics, RenderContext ctx) {
-        List<PrioritizedCommand> commands = commandsByLayer.get(layer);
-        if (commands.isEmpty()) {
-            return;
+        List<PrioritizedCommand> commands;
+        synchronized (commandLock) {
+            commands = commandsByLayer.get(layer);
+            if (commands.isEmpty()) {
+                return;
+            }
+            commands = new ArrayList<>(commands);
         }
         
-        // レイヤーの描画設定を適用
         layer.setupRenderState();
         
         try {
@@ -190,10 +176,8 @@ public class RenderPipelineImpl implements IRenderPipeline {
                 IRenderCommand command = pc.command;
                 String commandId = command.getId();
                 
-                // サーキットブレイカーチェック
                 CircuitBreaker cb = circuitBreakers.get(commandId);
                 if (cb != null && !cb.allowExecution()) {
-                    // ブロックされている場合はログ抑制しながらスキップ
                     if (blockedCommandsLogged.add(commandId)) {
                         LOGGER.warn("Command '{}' is blocked due to repeated failures (circuit breaker OPEN)", 
                             commandId);
@@ -201,7 +185,6 @@ public class RenderPipelineImpl implements IRenderPipeline {
                     continue;
                 }
                 
-                // 可視性チェック
                 if (!command.isVisible(ctx)) {
                     continue;
                 }
@@ -209,14 +192,12 @@ public class RenderPipelineImpl implements IRenderPipeline {
                 try {
                     command.execute(graphics, ctx);
                     
-                    // 成功を記録
                     if (cb != null) {
                         cb.recordSuccess();
                         blockedCommandsLogged.remove(commandId);
                     }
                     
                 } catch (RuntimeException e) {
-                    // 回復可能なエラー - サーキットブレイカーに記録
                     if (cb != null) {
                         cb.recordFailure();
                     }
@@ -224,7 +205,6 @@ public class RenderPipelineImpl implements IRenderPipeline {
                     LOGGER.error("Recoverable error in render command '{}': {}", 
                         commandId, e.getMessage(), e);
                     
-                    // エラー追跡
                     errorLog.add(commandId, new HudError(
                         commandId,
                         HudError.ErrorType.RECOVERABLE,
@@ -232,11 +212,9 @@ public class RenderPipelineImpl implements IRenderPipeline {
                         e
                     ));
                     
-                    // 次のコマンドを続行
                     continue;
                     
                 } catch (Error e) {
-                    // 致命的エラー - サーキットブレイカー記録後に再スロー
                     if (cb != null) {
                         cb.recordFailure();
                     }
@@ -255,7 +233,6 @@ public class RenderPipelineImpl implements IRenderPipeline {
                 }
             }
         } finally {
-            // 描画設定を復元
             layer.cleanupRenderState();
         }
     }
@@ -269,9 +246,11 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public List<IRenderCommand> getCommands(RenderLayer layer) {
-        return commandsByLayer.get(layer).stream()
-            .map(pc -> pc.command)
-            .collect(Collectors.toUnmodifiableList());
+        synchronized (commandLock) {
+            return commandsByLayer.get(layer).stream()
+                .map(pc -> pc.command)
+                .toList();
+        }
     }
     
     @Override
@@ -290,16 +269,14 @@ public class RenderPipelineImpl implements IRenderPipeline {
     }
     
     /**
-     * コマンドを優先度順にソート
+     * コマンドを優先度順にソート（in-place、アロケーションなし）
      */
     private void sortCommands() {
         synchronized (commandLock) {
+            if (!needsSorting) return;
+            
             for (List<PrioritizedCommand> commands : commandsByLayer.values()) {
-                // CopyOnWriteArrayListはソートできないため、一時リストを使用
-                List<PrioritizedCommand> sorted = new ArrayList<>(commands);
-                sorted.sort(Comparator.comparingInt(pc -> pc.priority));
-                commands.clear();
-                commands.addAll(sorted);
+                commands.sort(Comparator.comparingInt(pc -> pc.priority));
             }
             needsSorting = false;
             LOGGER.debug("Sorted {} render commands", commandsById.size());

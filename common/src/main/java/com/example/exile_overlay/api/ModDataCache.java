@@ -7,11 +7,18 @@ import com.mojang.logging.LogUtils;
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * MODデータのキャッシュ管理クラス
  * プレイヤー単位でデータをキャッシュし、TTL（生存時間）管理を行う
+ * 
+ * @deprecated {@link UnifiedCache}に統合されました。
+ *             このクラスは将来のバージョンで削除されます。
+ *             新しいコードではUnifiedCache.getInstance()を使用してください。
+ *             
+ * 【移行ガイド】
+ * 旧: ModDataCache.getInstance().cacheData(player, data)
+ * 新: UnifiedCache.getInstance().get(player, type, fetcher)
  * 
  * 【スレッド安全性】
  * - このクラスはConcurrentHashMapを使用してスレッド安全性を確保
@@ -23,6 +30,7 @@ import java.util.concurrent.TimeUnit;
  * - レンダースレッド → 読み込み
  * - ConcurrentHashMapによりロックフリーな並行アクセスを実現
  */
+@Deprecated(since = "2.0", forRemoval = true)
 public class ModDataCache {
     
     private static final Logger LOGGER = LogUtils.getLogger();

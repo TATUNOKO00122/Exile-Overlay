@@ -1,6 +1,7 @@
 {
   "screen.exile_overlay.hud_config.title": "HUD位置設定",
   "screen.exile_overlay.hud_config.help": "要素をドラッグして移動 • クリックで選択",
+  "screen.exile_overlay.hud_config.help_scale": "マウススクロールでサイズ変更",
   "button.exile_overlay.reset": "リセット",
   "button.exile_overlay.reset_all": "全てリセット",
   "button.exile_overlay.done": "完了",

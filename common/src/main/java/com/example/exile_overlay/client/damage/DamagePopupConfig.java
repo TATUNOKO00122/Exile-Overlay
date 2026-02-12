@@ -3,6 +3,8 @@ package com.example.exile_overlay.client.damage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class DamagePopupConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DamagePopupConfig.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE_NAME = "exile_overlay_damage.json";
     private static DamagePopupConfig instance;
@@ -133,7 +136,7 @@ public class DamagePopupConfig {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load damage popup config: {}", e.getMessage());
         }
     }
 
@@ -142,7 +145,7 @@ public class DamagePopupConfig {
         try {
             Files.createDirectories(configPath.getParent());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to create config directory: {}", e.getMessage());
             return;
         }
 
@@ -175,7 +178,7 @@ public class DamagePopupConfig {
         try {
             Files.writeString(configPath, GSON.toJson(json));
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to save damage popup config: {}", e.getMessage());
         }
     }
 

@@ -20,6 +20,7 @@ public class PooledRenderContext extends RenderContext {
     private float partialTick;
     private long gameTick;
     private String elementId;
+    private int poolIndex = -1;
     
     /**
      * デフォルトコンストラクタ（プール用）
@@ -90,5 +91,20 @@ public class PooledRenderContext extends RenderContext {
         this.minecraft = null;
         this.player = null;
         this.elementId = "unknown";
+        this.poolIndex = -1;
+    }
+    
+    /**
+     * プール内のインデックスを取得
+     */
+    public int getPoolIndex() {
+        return poolIndex;
+    }
+    
+    /**
+     * プール内のインデックスを設定
+     */
+    void setPoolIndex(int index) {
+        this.poolIndex = index;
     }
 }

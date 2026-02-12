@@ -13,6 +13,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * HUDレンダリングマネージャー
  * 
@@ -32,6 +35,8 @@ public class HudRenderManager {
 
     private final IRenderPipeline pipeline;
     private boolean initialized = false;
+    
+    private final Map<String, IHudRenderer> rendererIndex = new ConcurrentHashMap<>();
 
     private HudRenderManager() {
         this.pipeline = new RenderPipelineImpl();
@@ -70,15 +75,11 @@ public class HudRenderManager {
      * デフォルトのレンダリングコマンドを登録
      */
     private void registerDefaultCommands() {
-        // ホットバー
-        pipeline.register(new HotbarRenderCommand(), 100);
+        // ホットバー（this.registerCommand経由でrendererIndexにも追加）
+        this.registerCommand(new HotbarRenderCommand(), 100);
 
         // バフオーバーレイ
-        pipeline.register(new BuffOverlayRenderer(), 50);
-
-        // 将来的に他のHUD要素もここに追加
-        // pipeline.register(new DamageNumberCommand(), 200);
-        // pipeline.register(new BossBarCommand(), 50);
+        this.registerCommand(new BuffOverlayRenderer(), 50);
     }
 
     /**
@@ -129,6 +130,9 @@ public class HudRenderManager {
      */
     public void registerCommand(IRenderCommand command, int priority) {
         pipeline.register(command, priority);
+        if (command instanceof IHudRenderer renderer) {
+            rendererIndex.put(renderer.getConfigKey(), renderer);
+        }
         LOGGER.debug("Registered custom command: {} (priority: {})", command.getId(), priority);
     }
 
@@ -148,6 +152,10 @@ public class HudRenderManager {
      * @return 解除に成功した場合true
      */
     public boolean unregisterCommand(String commandId) {
+        IRenderCommand command = pipeline.getCommand(commandId);
+        if (command instanceof IHudRenderer renderer) {
+            rendererIndex.remove(renderer.getConfigKey());
+        }
         return pipeline.unregister(commandId);
     }
 
@@ -184,17 +192,6 @@ public class HudRenderManager {
         if (configKey == null) {
             return null;
         }
-
-        // 全てのコマンドを検索
-        for (IRenderCommand command : pipeline.getCommands()) {
-            if (command instanceof IHudRenderer) {
-                IHudRenderer renderer = (IHudRenderer) command;
-                if (configKey.equals(renderer.getConfigKey())) {
-                    return renderer;
-                }
-            }
-        }
-
-        return null;
+        return rendererIndex.get(configKey);
     }
 }

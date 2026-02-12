@@ -9,21 +9,12 @@ Minecraft 1.20.1 mod using **Architectury** framework (Fabric + Forge).
 ## Build Commands
 
 ```bash
-# Build all platforms
-./gradlew build                    # Unix/Mac
-gradlew.bat build                  # Windows
-
+./gradlew build                    # Build all platforms
 ./gradlew clean build              # Clean and rebuild
 ./gradlew :fabric:build            # Build Fabric only
 ./gradlew :forge:build             # Build Forge only
-
-# Run tests
-./gradlew test                                    # Run all tests
-./gradlew test --tests "ClassName"                # Run single test class
-./gradlew test --tests "com.example.ClassName.methodName"  # Run single method
-./gradlew test --tests "*Benchmark"               # Run benchmark tests
-
-# Development
+./gradlew test                     # Run all tests
+./gradlew test --tests "ClassName" # Run single test class
 ./gradlew :fabric:runClient        # Run Fabric client
 ./gradlew :forge:runClient         # Run Forge client
 ```
@@ -36,6 +27,7 @@ gradlew.bat build                  # Windows
 - Max line length: 120 characters
 - Braces: Same line (K&R style)
 - No wildcard imports
+- **No automatic formatter** (spotless) configured
 
 ### Naming
 - Classes: `PascalCase` (e.g., `HotbarRenderer`)
@@ -60,11 +52,14 @@ import java.util.*;                 // Java standard library
 - Use explicit types, avoid `var`
 - Mark parameters as `final` where appropriate
 - Always null-check `Minecraft.getInstance().player` before use
+- Use @Unique for private mixin fields/methods
+- Use @Environment for client-only mixins
 
 ### Error Handling
 - Wrap all mixin code in try-catch blocks
 - Use SLF4J logger: `LoggerFactory.getLogger("exile_overlay/ClassName")`
 - Return early for null states: `if (player == null) return;`
+- Handle side checks at method start: `if (!entity.level().isClientSide()) return;`
 
 ## Mixin Rules
 
@@ -75,72 +70,71 @@ import java.util.*;                 // Java standard library
 - Add `@Unique` annotation to private mixin fields/methods
 - Prefix unique fields with `exileOverlay$`
 
+### Mixin Pattern
 ```java
 @Environment(EnvType.CLIENT)
 @Mixin(LivingEntity.class)
 public abstract class DamageMixin {
-    @Unique
-    private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
-
-    @Unique
-    private float exileOverlay$lastHealth = -1;
+    @Unique private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
+    @Unique private float exileOverlay$lastHealth = -1;
 
     @Inject(method = "hurt", at = @At("HEAD"))
     private void exileOverlay$onHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         try {
-            // Mixin logic here
-        } catch (Exception e) {
-            LOGGER.error("Failed to track damage", e);
-        }
+            if (!((LivingEntity)(Object)this).level().isClientSide()) return;
+            if (source == null) { LOGGER.debug("Null damage source received"); return; }
+        } catch (Exception e) { LOGGER.error("Failed to track damage", e); }
     }
 }
 ```
 
-## Development Guidelines
+## Architecture
 
-### Architecture
 1. **Always implement in `common`** first if platform-agnostic
 2. Use `@ExpectPlatform` for platform-specific implementations
 3. Test on both Fabric and Forge
+4. Use `IDataSource` interface for data abstraction
+5. Register renderers in `HudRenderManager`
+6. Register providers in `ModDataProviderRegistry`
+
+## Development Guidelines
 
 ### Memory Management
-- Reuse StringBuilder instead of creating new instances
+- Reuse StringBuilder: `sb.setLength(0)` instead of creating new instances
 - Avoid object allocation in render/tick methods
-- Use primitive types as map keys instead of UUID.toString()
+- Use primitive types (long) as map keys instead of UUID.toString()
 
 ### Rendering
 - Use `GuiGraphics` for 2D rendering (1.20.1+)
 - Enable blend mode: `RenderSystem.enableBlend()`
-- Push/pop pose stack properly: `graphics.pose().pushPose()` / `popPose()`
-
-### Resource Locations
-```java
-private static final ResourceLocation TEXTURE =
-    new ResourceLocation("exile_overlay", "textures/gui/texture.png");
-```
+- Push/pop pose stack: `graphics.pose().pushPose()` / `popPose()`
+- Check `mc.screen != null` before drawing to skip when GUI open
 
 ### Thread Safety
-- Rendering: **Render Thread**
-- Network packets: **Netty Thread**
-- Use `Minecraft.getInstance().execute()` for thread-safe GUI updates
-- Use `ConcurrentHashMap` for cross-thread data sharing
+- Rendering: **Render Thread** only
+- Data access: Use `ConcurrentHashMap` for cross-thread sharing
+- GUI updates: Use `Minecraft.getInstance().execute()`
+- Mixin hooks: Check side (`isClientSide`) before client logic
+
+### API Design
+- Prefer composition over inheritance
+- Use interfaces for contracts (`IDataSource`, `IRenderCommand`)
+- Provide default implementations in interfaces
+- Document usage with JavaDoc (Japanese allowed)
 
 ## Project Structure
 
 ```
-common/src/main/java/com/example/exile_overlay/    # Shared code
-├── client/render/                                 # Rendering logic
-├── client/damage/                                 # Damage popup system
-├── api/                                           # API classes
-├── util/                                          # Utility classes
-└── mixin/                                         # Mixin classes
+common/src/main/java/com/example/exile_overlay/
+├── api/                                   # Public interfaces & abstractions
+├── client/damage/                         # Damage popup system
+├── client/config/                         # Configuration & UI
+├── client/render/                         # Rendering pipeline
+├── mixin/                                 # Mixin implementations
+└── util/                                  # Utility classes
 
-fabric/src/main/java/com/example/                  # Fabric-specific
-forge/src/main/java/com/example/                   # Forge-specific
-
-common/src/main/resources/
-├── assets/exile_overlay/textures/                 # GUI textures
-└── exile_overlay.accesswidener                    # Access wideners
+fabric/src/main/java/com/example/          # Fabric-specific
+forge/src/main/java/com/example/           # Forge-specific
 ```
 
 ## Dependencies
@@ -154,6 +148,7 @@ common/src/main/resources/
 
 ## Troubleshooting
 
-**Mixin not applying:** Check mixin configuration and verify target class names.
-**Texture not loading:** Verify path `assets/exile_overlay/textures/...` and ResourceLocation mod ID.
-**Build failures:** Run `./gradlew clean`, verify Java 17.
+**Mixin not applying:** Check mixin config JSON and target class names
+**Texture not loading:** Verify path `assets/exile_overlay/textures/` and ResourceLocation mod ID
+**Build failures:** Run `./gradlew clean`, verify Java 17 installed
+**NullPointerException in render:** Ensure `mc.screen != null` check before drawing

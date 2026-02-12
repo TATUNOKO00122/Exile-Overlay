@@ -19,16 +19,63 @@ import org.slf4j.LoggerFactory;
  * 【設計思想】
  * - 古いエラー履歴を自動的に削除
  * - 最大エントリ数によるメモリ保護
- * - 定期的なクリーンアップによるリーク防止
+ * - 共有Executorによるスレッドリーク防止
  */
 public class ErrorLogCache {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLogCache.class);
     
+    private static final SharedCleanupScheduler SHARED_SCHEDULER = new SharedCleanupScheduler();
+    
     private final Map<String, ErrorEntry> cache = new ConcurrentHashMap<>();
     private final Duration ttl;
     private final int maxEntries;
-    private final ScheduledExecutorService cleanupExecutor;
+    private volatile boolean registered = false;
+    
+    /**
+     * 共有クリーンアップスケジューラー
+     * 全ErrorLogCacheインスタンスのクリーンアップを一元管理
+     */
+    private static class SharedCleanupScheduler {
+        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "HudErrorLog-Cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        
+        private final List<Runnable> cleanupTasks = new ArrayList<>();
+        
+        void register(Runnable cleanupTask) {
+            synchronized (cleanupTasks) {
+                cleanupTasks.add(cleanupTask);
+                if (cleanupTasks.size() == 1) {
+                    executor.scheduleAtFixedRate(this::runAll, 1, 1, TimeUnit.MINUTES);
+                }
+            }
+        }
+        
+        void unregister(Runnable cleanupTask) {
+            synchronized (cleanupTasks) {
+                cleanupTasks.remove(cleanupTask);
+            }
+        }
+        
+        private void runAll() {
+            synchronized (cleanupTasks) {
+                for (Runnable task : cleanupTasks) {
+                    try {
+                        task.run();
+                    } catch (Exception e) {
+                        LOGGER.debug("Error during cleanup task: {}", e.getMessage());
+                    }
+                }
+            }
+        }
+        
+        void shutdown() {
+            executor.shutdown();
+        }
+    }
     
     /**
      * エラーエントリ内部クラス
@@ -62,26 +109,16 @@ public class ErrorLogCache {
     public ErrorLogCache(Duration ttl, int maxEntries) {
         this.ttl = ttl;
         this.maxEntries = maxEntries;
-        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "ErrorLogCache-Cleanup");
-            t.setDaemon(true);
-            return t;
-        });
         
-        // 1分ごとにクリーンアップ実行
-        this.cleanupExecutor.scheduleAtFixedRate(
-            this::cleanup, 
-            1, 1, TimeUnit.MINUTES
-        );
+        SHARED_SCHEDULER.register(this::cleanup);
+        registered = true;
     }
     
     /**
      * エラーを追加
      */
     public void add(String commandId, HudError error) {
-        // 最大エントリ数チェック
         if (cache.size() >= maxEntries && !cache.containsKey(commandId)) {
-            // 最も古いエントリを削除
             removeOldestEntry();
         }
         
@@ -89,7 +126,6 @@ public class ErrorLogCache {
         entry.errors.add(error);
         entry.touch();
         
-        // 個別エントリの最大履歴数（10件）を超えたら古いものを削除
         while (entry.errors.size() > 10) {
             entry.errors.remove(0);
         }
@@ -170,14 +206,16 @@ public class ErrorLogCache {
      * シャットダウン（リソース解放）
      */
     public void shutdown() {
-        cleanupExecutor.shutdown();
-        try {
-            if (!cleanupExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                cleanupExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            cleanupExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
+        if (registered) {
+            SHARED_SCHEDULER.unregister(this::cleanup);
+            registered = false;
         }
+    }
+    
+    /**
+     * アプリケーション終了時に呼び出す
+     */
+    public static void shutdownAll() {
+        SHARED_SCHEDULER.shutdown();
     }
 }

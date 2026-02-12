@@ -1,6 +1,7 @@
 {
   "screen.exile_overlay.hud_config.title": "HUD Position Settings",
   "screen.exile_overlay.hud_config.help": "Drag elements to reposition • Click to select",
+  "screen.exile_overlay.hud_config.help_scale": "Scroll to resize",
   "button.exile_overlay.reset": "Reset",
   "button.exile_overlay.reset_all": "Reset All",
   "button.exile_overlay.done": "Done",

@@ -298,7 +298,9 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
                         pos[0], pos[1], screenWidth, screenHeight, mcWidth, mcHeight, effectCache.size());
                 lastLogTime = now;
             }
-            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE, ctx.getPartialTick());
+            // ユーザー設定のスケールを適用
+            float userScale = getScale();
+            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE * userScale, ctx.getPartialTick());
         }
     }
 

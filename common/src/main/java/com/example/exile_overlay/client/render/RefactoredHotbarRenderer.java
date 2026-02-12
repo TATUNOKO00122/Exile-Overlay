@@ -114,6 +114,15 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
     }
 
     @Override
+    public HudRenderMetadata getRenderMetadata() {
+        return new HudRenderMetadata(
+                CoordinateSystem.BOTTOM_CENTER_BASED, // 底辺中心基準
+                new Insets(0, 0, 0, 0), // オフセットなし
+                new Insets(0, 0, 0, 0) // 拡張なし
+        );
+    }
+
+    @Override
     public void render(GuiGraphics graphics, RenderContext ctx) {
         final Minecraft mc = ctx.getMinecraft();
         final Player player = ctx.getPlayer();
@@ -133,12 +142,17 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
         final int screenHeight = ctx.getScreenHeight();
         final long gameTick = ctx.getGameTick();
         
+        // ユーザー設定のスケールを取得
+        final float userScale = getScale();
+        final float totalScale = RENDER_SCALE * userScale;
+        
         // 可視オーブを取得（キャッシュ付き）
         final List<OrbType> visibleOrbs = renderState.getVisibleOrbs(player, gameTick);
         
-        // デフォルト位置（画面下部中央）
-        final int bgX = (int) (screenWidth / 2 - (BG_WIDTH * RENDER_SCALE) / 2);
-        final int bgY = screenHeight - (int) (BG_HEIGHT * RENDER_SCALE);
+        // ユーザー設定の位置を取得（底辺中心基準）
+        int[] pos = resolvePosition(screenWidth, screenHeight);
+        final int bgX = pos[0] - (int) ((BG_WIDTH * totalScale) / 2);
+        final int bgY = pos[1] - (int) (BG_HEIGHT * totalScale);
 
         OrbShaderRenderer.updateAnimationTime(0.016f);
 
@@ -147,7 +161,7 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
 
         graphics.pose().pushPose();
         graphics.pose().translate(bgX, bgY, 0);
-        graphics.pose().scale(RENDER_SCALE, RENDER_SCALE, 1.0f);
+        graphics.pose().scale(totalScale, totalScale, 1.0f);
 
         try {
             // Layer 1: Background Layer (背面)
