@@ -5,6 +5,7 @@ plugins {
 loom {
     forge {
         mixinConfig "exile_overlay.mixins.json"
+        mixinConfig "exile_overlay-forge.mixins.json"
     }
 }
 
@@ -38,6 +39,9 @@ dependencies {
 
     common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
     shadowBundle project(path: ':common', configuration: 'transformProductionForge')
+    
+    // Mine and Slash for Mixin target compilation
+    modCompileOnly files("F:/ATLauncher/instances/Minecraft1201withForgeEEE/mods/Mine_and_Slash-1.20.1-6.3.14.jar")
 }
 
 processResources {

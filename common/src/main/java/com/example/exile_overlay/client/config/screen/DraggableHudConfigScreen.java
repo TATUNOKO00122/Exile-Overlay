@@ -42,6 +42,12 @@ public class DraggableHudConfigScreen extends Screen {
     private static final float MIN_SCALE = 0.5f;
     private static final float MAX_SCALE = 2.0f;
     private static final float SCALE_STEP = 0.1f;
+    private static final int TOGGLE_BUTTON_MIN_SIZE = 5;
+    private static final int TOGGLE_BUTTON_MAX_SIZE = 7;
+    private static final int TOGGLE_BUTTON_COLOR_VISIBLE = 0xFF44FF44;
+    private static final int TOGGLE_BUTTON_COLOR_HIDDEN = 0xFFFF4444;
+    private static final int ORIENTATION_BUTTON_COLOR = 0xFF4444FF;
+    private static final int ORIENTATION_BUTTON_COLOR_ACTIVE = 0xFFFF4444;
     private final Screen parent;
     private final List<DraggableElement> draggableElements;
     private final HudPositionManager positionManager;
@@ -182,7 +188,7 @@ public class DraggableHudConfigScreen extends Screen {
 
         // 選択中要素の情報
         if (selectedElement != null) {
-            renderElementInfo(graphics, selectedElement);
+
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -248,8 +254,8 @@ public class DraggableHudConfigScreen extends Screen {
     private void renderElementPreview(GuiGraphics graphics, DraggableElement element, int x, int y) {
         int width = element.getWidth();
         int height = element.getHeight();
+        boolean isVisible = element.isVisible();
 
-        // メタデータから設定を取得
         IHudRenderer.HudRenderMetadata metadata = element.getRenderMetadata();
         IHudRenderer.Insets offset = metadata.getOffset();
         IHudRenderer.Insets expansion = metadata.getExpansion();
@@ -257,34 +263,57 @@ public class DraggableHudConfigScreen extends Screen {
         int left;
         int top;
         if (metadata.isTopLeftBased()) {
-            // 左上基準: x, yがそのまま左上の座標
             left = x + offset.left;
             top = y + offset.top;
         } else if (metadata.isBottomCenterBased()) {
-            // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height - expansion.top + offset.top;
         } else {
-            // 中心基準: XとYの両方が中心
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height / 2 - expansion.top + offset.top;
         }
         int renderWidth = width + expansion.getHorizontal();
         int renderHeight = height + expansion.getVertical();
 
-        // 背景（半透明）
-        int alpha = element == selectedElement ? 0x44 : 0x22;
-        int color = (alpha << 24) | 0x4444FF;
+        int baseAlpha = element == selectedElement ? 0x66 : 0x33;
+        if (!isVisible) {
+            baseAlpha = 0x22;
+        }
+        int color = (baseAlpha << 24) | (isVisible ? 0x4444FF : 0xFF4444);
         graphics.fill(left, top, left + renderWidth, top + renderHeight, color);
 
-        // 枠線
-        graphics.renderOutline(left, top, renderWidth, renderHeight, 0xFFFFFFFF);
+        graphics.renderOutline(left, top, renderWidth, renderHeight, isVisible ? 0xFFFFFFFF : 0xFF888888);
 
-        // 要素名
-        String name = element.getDisplayName();
-        int textX = metadata.isTopLeftBased() ? left + renderWidth / 2 : x;
-        int textY = top + renderHeight / 2 - 4;
-        graphics.drawCenteredString(this.font, name, textX, textY, 0xFFFFFF);
+
+
+        renderToggleButton(graphics, element);
+        renderOrientationButton(graphics, element);
+    }
+
+    private void renderToggleButton(GuiGraphics graphics, DraggableElement element) {
+        int[] btnPos = element.getToggleButtonPosition(this.width, this.height);
+        int btnSize = element.getToggleButtonSize();
+        boolean isVisible = element.isVisible();
+
+        int btnColor = isVisible ? TOGGLE_BUTTON_COLOR_VISIBLE : TOGGLE_BUTTON_COLOR_HIDDEN;
+        graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
+        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0xFFFFFFFF);
+
+
+    }
+
+    private void renderOrientationButton(GuiGraphics graphics, DraggableElement element) {
+        if (!element.supportsOrientation()) {
+            return;
+        }
+
+        int[] btnPos = element.getOrientationButtonPosition(this.width, this.height);
+        int btnSize = element.getOrientationButtonSize();
+        boolean isHorizontal = element.isHorizontal();
+
+        int btnColor = isHorizontal ? ORIENTATION_BUTTON_COLOR_ACTIVE : ORIENTATION_BUTTON_COLOR;
+        graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
+        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0xFFFFFFFF);
     }
 
     /**
@@ -294,30 +323,40 @@ public class DraggableHudConfigScreen extends Screen {
         int[] pos = element.getResolvedPosition(this.width, this.height);
         HudPosition hudPos = element.getPosition();
 
-        String[] info = {
-                "Element: " + element.getKey(),
-                "Position: (" + pos[0] + ", " + pos[1] + ")",
-                "Anchor: " + hudPos.getAnchor().name(),
-                "Offset: (" + hudPos.getOffsetX() + ", " + hudPos.getOffsetY() + ")",
-                "Scale: " + String.format("%.1f", hudPos.getScale()) + "x"
+        Component[] info = {
+                Component.translatable("hud.exile_overlay.element.element", element.getKey()),
+                Component.translatable("hud.exile_overlay.element.position", pos[0], pos[1]),
+                Component.translatable("hud.exile_overlay.element.anchor", hudPos.getAnchor().name()),
+                Component.translatable("hud.exile_overlay.element.offset", hudPos.getOffsetX(), hudPos.getOffsetY()),
+                Component.translatable("hud.exile_overlay.element.scale", hudPos.getScale())
         };
 
         int infoX = 10;
         int infoY = 50;
 
         for (int i = 0; i < info.length; i++) {
-            graphics.drawString(this.font, info[i], infoX, infoY + i * 12, 0xFFFFFF);
+            graphics.drawString(this.font, info[i].getString(), infoX, infoY + i * 12, 0xFFFFFF);
         }
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // ドラッグ開始時にスナップガイドをリセット
         activeSnapGuidesX.clear();
         activeSnapGuidesY.clear();
 
         if (button == 0) {
-            // 左クリック: 要素選択/ドラッグ開始
+            for (int i = draggableElements.size() - 1; i >= 0; i--) {
+                DraggableElement element = draggableElements.get(i);
+                if (element.isToggleButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
+                    toggleElementVisibility(element);
+                    return true;
+                }
+                if (element.isOrientationButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
+                    toggleElementOrientation(element);
+                    return true;
+                }
+            }
+
             DraggableElement hitElement = findElementAt((int) mouseX, (int) mouseY);
 
             if (hitElement != null) {
@@ -337,6 +376,28 @@ public class DraggableHudConfigScreen extends Screen {
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void toggleElementVisibility(DraggableElement element) {
+        boolean newVisible = !element.isVisible();
+        HudPosition newPosition = element.getPosition().withVisible(newVisible);
+        element.updatePosition(newPosition);
+        positionManager.setPosition(element.getKey(), newPosition);
+        pendingChanges.put(element.getKey(), newPosition);
+        LOGGER.debug("Toggled visibility for {}: {}", element.getKey(), newVisible);
+    }
+
+    private void toggleElementOrientation(DraggableElement element) {
+        boolean newHorizontal = !element.isHorizontal();
+        HudPosition newPosition = element.getPosition().withHorizontal(newHorizontal);
+        element.updatePosition(newPosition);
+        positionManager.setPosition(element.getKey(), newPosition);
+        pendingChanges.put(element.getKey(), newPosition);
+        
+        // 向き切り替え後にサイズを再計算（動的サイズ対応）
+        element.refreshSize();
+        
+        LOGGER.debug("Toggled orientation for {}: {}", element.getKey(), newHorizontal ? "horizontal" : "vertical");
     }
 
     @Override
@@ -427,9 +488,10 @@ public class DraggableHudConfigScreen extends Screen {
         activeSnapGuidesY.clear();
         activeSnapGuidesY.addAll(result.guidesY());
 
-        // 現在のスケールを保持して位置を更新
+        // 現在のスケールと向きを保持して位置を更新
         float currentScale = draggedElement.getPosition().getScale();
-        HudPosition newPosition = HudPosition.fromAbsolute(result.x(), result.y(), this.width, this.height, currentScale);
+        boolean currentHorizontal = draggedElement.getPosition().isHorizontal();
+        HudPosition newPosition = HudPosition.fromAbsolute(result.x(), result.y(), this.width, this.height, currentScale, currentHorizontal);
 
         // リアルタイムで位置を更新（HUDが即座に移動）
         positionManager.setPosition(draggedElement.getKey(), newPosition);
@@ -465,9 +527,10 @@ public class DraggableHudConfigScreen extends Screen {
         activeSnapGuidesY.clear();
         activeSnapGuidesY.addAll(result.guidesY());
 
-        // 新しい位置を計算（現在のスケールを保持）
+        // 新しい位置を計算（現在のスケールと向きを保持）
         float currentScale = draggedElement.getPosition().getScale();
-        HudPosition newPosition = HudPosition.fromAbsolute(result.x(), result.y(), this.width, this.height, currentScale);
+        boolean currentHorizontal = draggedElement.getPosition().isHorizontal();
+        HudPosition newPosition = HudPosition.fromAbsolute(result.x(), result.y(), this.width, this.height, currentScale, currentHorizontal);
 
         // リアルタイムで位置を更新
         positionManager.setPosition(draggedElement.getKey(), newPosition);
@@ -497,14 +560,20 @@ public class DraggableHudConfigScreen extends Screen {
      * 指定座標にある要素を検索
      */
     private DraggableElement findElementAt(int x, int y) {
-        // 後ろから検索して、前面の要素を優先
-        for (int i = draggableElements.size() - 1; i >= 0; i--) {
+        DraggableElement smallest = null;
+        int smallestArea = Integer.MAX_VALUE;
+
+        for (int i = 0; i < draggableElements.size(); i++) {
             DraggableElement element = draggableElements.get(i);
             if (element.isHit(x, y, this.width, this.height)) {
-                return element;
+                int area = element.getWidth() * element.getHeight();
+                if (area < smallestArea) {
+                    smallestArea = area;
+                    smallest = element;
+                }
             }
         }
-        return null;
+        return smallest;
     }
 
     /**
@@ -562,8 +631,8 @@ public class DraggableHudConfigScreen extends Screen {
     private static class DraggableElement {
         private final String key;
         private HudPosition position;
-        private final int baseWidth;
-        private final int baseHeight;
+        private int baseWidth;
+        private int baseHeight;
 
         DraggableElement(String key, HudPosition position, int width, int height) {
             this.key = key;
@@ -572,13 +641,24 @@ public class DraggableHudConfigScreen extends Screen {
             this.baseHeight = height;
         }
 
+        /**
+         * レンダラーから最新のサイズを再取得
+         * 向き切り替え時や動的サイズ変更時に呼び出す
+         */
+        void refreshSize() {
+            IHudRenderer renderer = HudRenderManager.getInstance().getHudRenderer(key);
+            if (renderer != null) {
+                this.baseWidth = renderer.getConfigWidth();
+                this.baseHeight = renderer.getConfigHeight();
+            }
+        }
+
         String getKey() {
             return key;
         }
 
-        String getDisplayName() {
-            // キーから表示名を生成
-            return key.replace("_", " ").toUpperCase();
+        Component getDisplayName() {
+            return Component.translatable("hud.exile_overlay." + key);
         }
 
         HudPosition getPosition() {
@@ -657,12 +737,81 @@ public class DraggableHudConfigScreen extends Screen {
             if (renderer != null) {
                 return renderer.getRenderMetadata();
             }
-            // デフォルト: 中心基準
             return new IHudRenderer.HudRenderMetadata(
                 IHudRenderer.CoordinateSystem.CENTER_BASED,
                 new IHudRenderer.Insets(0, 0, 0, 0),
                 new IHudRenderer.Insets(0, 0, 0, 0)
             );
+        }
+
+        boolean isVisible() {
+            return position.isVisible();
+        }
+
+        boolean isHorizontal() {
+            return position.isHorizontal();
+        }
+
+        boolean supportsOrientation() {
+            return "skill_hotbar".equals(key);
+        }
+
+        int getToggleButtonSize() {
+            int size = (int) (Math.min(baseWidth, baseHeight) * position.getScale() * 0.3f);
+            return Math.max(TOGGLE_BUTTON_MIN_SIZE, Math.min(TOGGLE_BUTTON_MAX_SIZE, size));
+        }
+
+        int getOrientationButtonSize() {
+            return getToggleButtonSize();
+        }
+
+        int[] getToggleButtonPosition(int screenWidth, int screenHeight) {
+            int[] pos = getResolvedPosition(screenWidth, screenHeight);
+            int scaledWidth = getWidth();
+            int scaledHeight = getHeight();
+            int btnSize = getToggleButtonSize();
+
+            IHudRenderer.HudRenderMetadata metadata = getRenderMetadata();
+            IHudRenderer.Insets offset = metadata.getOffset();
+            IHudRenderer.Insets expansion = metadata.getExpansion();
+
+            int left;
+            int top;
+            if (metadata.isTopLeftBased()) {
+                left = pos[0] + offset.left;
+                top = pos[1] + offset.top;
+            } else if (metadata.isBottomCenterBased()) {
+                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
+                top = pos[1] - scaledHeight - expansion.top + offset.top;
+            } else {
+                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
+                top = pos[1] - scaledHeight / 2 - expansion.top + offset.top;
+            }
+
+            return new int[]{left, top};
+        }
+
+        boolean isToggleButtonHit(int mouseX, int mouseY, int screenWidth, int screenHeight) {
+            int[] btnPos = getToggleButtonPosition(screenWidth, screenHeight);
+            int btnSize = getToggleButtonSize();
+            return mouseX >= btnPos[0] && mouseX < btnPos[0] + btnSize &&
+                   mouseY >= btnPos[1] && mouseY < btnPos[1] + btnSize;
+        }
+
+        int[] getOrientationButtonPosition(int screenWidth, int screenHeight) {
+            int[] togglePos = getToggleButtonPosition(screenWidth, screenHeight);
+            int btnSize = getOrientationButtonSize();
+            return new int[]{togglePos[0] + btnSize + 1, togglePos[1]};
+        }
+
+        boolean isOrientationButtonHit(int mouseX, int mouseY, int screenWidth, int screenHeight) {
+            if (!supportsOrientation()) {
+                return false;
+            }
+            int[] btnPos = getOrientationButtonPosition(screenWidth, screenHeight);
+            int btnSize = getOrientationButtonSize();
+            return mouseX >= btnPos[0] && mouseX < btnPos[0] + btnSize &&
+                   mouseY >= btnPos[1] && mouseY < btnPos[1] + btnSize;
         }
     }
 }

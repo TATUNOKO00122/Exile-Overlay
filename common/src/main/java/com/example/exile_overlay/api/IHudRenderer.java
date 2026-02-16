@@ -23,12 +23,13 @@ public interface IHudRenderer {
 
     /**
      * このレンダラーが有効かどうか
+     * HudPositionのvisible設定とRenderContextの状態をチェック
      *
      * @param ctx レンダリングコンテキスト
      * @return 描画すべき場合true
      */
     default boolean isVisible(RenderContext ctx) {
-        return true;
+        return getPosition().isVisible();
     }
 
     /**

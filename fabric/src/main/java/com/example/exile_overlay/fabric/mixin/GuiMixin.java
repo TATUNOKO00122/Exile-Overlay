@@ -31,4 +31,19 @@ public class GuiMixin {
         // HudRenderCallbackで描画するため、ここではバニラの効果表示のみをキャンセル
         ci.cancel();
     }
+
+    @Inject(method = "renderFood", at = @At("HEAD"), cancellable = true)
+    private void onRenderFood(GuiGraphics graphics, CallbackInfo ci) {
+        ci.cancel();
+    }
+
+    @Inject(method = "renderAir", at = @At("HEAD"), cancellable = true)
+    private void onRenderAir(GuiGraphics graphics, CallbackInfo ci) {
+        ci.cancel();
+    }
+
+    @Inject(method = "renderArmor", at = @At("HEAD"), cancellable = true)
+    private void onRenderArmor(GuiGraphics graphics, CallbackInfo ci) {
+        ci.cancel();
+    }
 }

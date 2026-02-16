@@ -128,11 +128,13 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     
     @Override
     public boolean isVisible(RenderContext ctx) {
+        if (!IHudRenderer.super.isVisible(ctx)) {
+            return false;
+        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             return false;
         }
-        // スペクテイターモードでは非表示
         return mc.gameMode == null || 
                mc.gameMode.getPlayerMode() != net.minecraft.world.level.GameType.SPECTATOR;
     }
@@ -217,11 +219,43 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         }
     }
     
+    // レベル表示の色定数
+    private static final int VANILLA_LEVEL_COLOR = 0xFFFFFF00; // 黄色
+    private static final int MOD_LEVEL_COLOR = 0xFF00FF00;     // 緑
+    private static final int SEPARATOR_COLOR = 0xFFFFFFFF;     // 白
+
     private void renderLevelDisplay(GuiGraphics graphics, Minecraft mc) {
         int vanillaLevel = mc.player.experienceLevel;
         int modLevel = (int) ModDataProviderRegistry.getValue(mc.player, DataType.LEVEL);
-        String levelStr = levelFormatCache.formatLevel(vanillaLevel, modLevel);
-        OrbRenderer.renderCenteredScaledText(graphics, mc, levelStr, LEVEL_TEXT_X, LEVEL_TEXT_Y, 0.7f, 0xFFFFFFFF);
+
+        String vanillaStr = String.valueOf(vanillaLevel);
+        String separator = " / ";
+        String modStr = String.valueOf(modLevel);
+
+        // 各テキストの幅を計算
+        int vanillaWidth = mc.font.width(vanillaStr);
+        int sepWidth = mc.font.width(separator);
+        int modWidth = mc.font.width(modStr);
+        int totalWidth = vanillaWidth + sepWidth + modWidth;
+
+        float scale = 0.7f;
+        float startX = LEVEL_TEXT_X - (totalWidth * scale) / 2;
+        float y = LEVEL_TEXT_Y - (mc.font.lineHeight * scale) / 2;
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(startX, y, 0);
+        graphics.pose().scale(scale, scale, 1.0f);
+
+        // バニラレベル（黄色）
+        graphics.drawString(mc.font, vanillaStr, 0, 0, VANILLA_LEVEL_COLOR, true);
+
+        // 区切り（白）
+        graphics.drawString(mc.font, separator, vanillaWidth, 0, SEPARATOR_COLOR, true);
+
+        // M&Sレベル（緑）
+        graphics.drawString(mc.font, modStr, vanillaWidth + sepWidth, 0, MOD_LEVEL_COLOR, true);
+
+        graphics.pose().popPose();
     }
     
     private ResourceLocation selectBackgroundTexture(List<OrbType> visibleOrbs, Player player) {

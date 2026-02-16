@@ -1,17 +1,13 @@
 package com.example.exile_overlay.forge.client;
 
-import com.example.exile_overlay.ExampleMod;
-import com.example.exile_overlay.client.damage.ThreadSafeDamageRenderer;
+import com.example.exile_overlay.client.damage.DamagePopupManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-/**
- * Phase 2: スレッド安全性を確保したDamageRendererを使用
- */
-@Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(value = Dist.CLIENT)
 public class DamagePopupForgeHandler {
 
     @SubscribeEvent
@@ -19,7 +15,8 @@ public class DamagePopupForgeHandler {
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        ThreadSafeDamageRenderer.getInstance().onClientTick();
+
+        DamagePopupManager.getInstance().onClientTick();
     }
 
     @SubscribeEvent
@@ -27,6 +24,7 @@ public class DamagePopupForgeHandler {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
-        ThreadSafeDamageRenderer.getInstance().onRenderWorld(event.getPoseStack());
+
+        DamagePopupManager.getInstance().onRenderWorld(event.getPoseStack());
     }
 }

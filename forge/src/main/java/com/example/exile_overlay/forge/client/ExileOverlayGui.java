@@ -49,7 +49,8 @@ public class ExileOverlayGui {
         }
 
         // Mine and Slash のオーバーレイをキャンセル
-        if (overlayId.startsWith("mine_and_slash:")) {
+        // Mod IDは "mine_and_slash" だが、内部では "mmorpg" も使用される
+        if (overlayId.startsWith("mine_and_slash:") || overlayId.contains("mmorpg")) {
             LOGGER.debug("[ExileOverlay] Canceling Mine and Slash overlay: {}", overlayId);
             event.setCanceled(true);
             return;

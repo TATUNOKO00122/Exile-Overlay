@@ -1,6 +1,5 @@
 modLoader = "javafml"
 loaderVersion = "[47,)"
-#issueTrackerURL = ""
 license = "Insert License Here"
 
 [[mods]]
@@ -11,7 +10,6 @@ authors = "Me!"
 description = '''
 This is an example description! Tell everyone what your mod is about!
 '''
-#logoFile = ""
 
 [[dependencies.exile_overlay]]
 modId = "forge"
@@ -33,3 +31,7 @@ mandatory = true
 versionRange = "[9.2.14,)"
 ordering = "AFTER"
 side = "BOTH"
+
+# Mixin設定 - クライアントサイドのみ
+[[mixins]]
+config = "exile_overlay-forge.mixins.json"

@@ -14,38 +14,32 @@ public class HudPosition {
     private final int offsetX;
     private final int offsetY;
     private final float scale;
+    private final boolean visible;
+    private final boolean horizontal;
 
-    /**
-     * デフォルトコンストラクタ（中央配置）
-     */
     public HudPosition() {
-        this(Anchor.BOTTOM_CENTER, 0, 0, 1.0f);
+        this(Anchor.BOTTOM_CENTER, 0, 0, 1.0f, true, false);
     }
 
-    /**
-     * 完全指定コンストラクタ（スケールなし、後方互換）
-     *
-     * @param anchor アンカー位置
-     * @param offsetX アンカーからのXオフセット
-     * @param offsetY アンカーからのYオフセット
-     */
     public HudPosition(Anchor anchor, int offsetX, int offsetY) {
-        this(anchor, offsetX, offsetY, 1.0f);
+        this(anchor, offsetX, offsetY, 1.0f, true, false);
     }
 
-    /**
-     * 完全指定コンストラクタ（スケール付き）
-     *
-     * @param anchor アンカー位置
-     * @param offsetX アンカーからのXオフセット
-     * @param offsetY アンカーからのYオフセット
-     * @param scale 表示スケール（1.0 = 100%）
-     */
     public HudPosition(Anchor anchor, int offsetX, int offsetY, float scale) {
+        this(anchor, offsetX, offsetY, scale, true, false);
+    }
+
+    public HudPosition(Anchor anchor, int offsetX, int offsetY, float scale, boolean visible) {
+        this(anchor, offsetX, offsetY, scale, visible, false);
+    }
+
+    public HudPosition(Anchor anchor, int offsetX, int offsetY, float scale, boolean visible, boolean horizontal) {
         this.anchor = Objects.requireNonNull(anchor, "anchor cannot be null");
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.scale = scale;
+        this.visible = visible;
+        this.horizontal = horizontal;
     }
     
     /**
@@ -75,7 +69,14 @@ public class HudPosition {
         Anchor anchor = Anchor.estimateFromPosition(x, y, screenWidth, screenHeight);
         int baseX = getBaseXForAnchor(anchor, screenWidth);
         int baseY = getBaseYForAnchor(anchor, screenHeight);
-        return new HudPosition(anchor, x - baseX, y - baseY, scale);
+        return new HudPosition(anchor, x - baseX, y - baseY, scale, true, false);
+    }
+
+    public static HudPosition fromAbsolute(int x, int y, int screenWidth, int screenHeight, float scale, boolean horizontal) {
+        Anchor anchor = Anchor.estimateFromPosition(x, y, screenWidth, screenHeight);
+        int baseX = getBaseXForAnchor(anchor, screenWidth);
+        int baseY = getBaseYForAnchor(anchor, screenHeight);
+        return new HudPosition(anchor, x - baseX, y - baseY, scale, true, horizontal);
     }
     
     /**
@@ -113,25 +114,32 @@ public class HudPosition {
         return scale;
     }
 
-    /**
-     * 新しいオフセットで更新したHudPositionを返す（イミュータブル）
-     */
-    public HudPosition withOffset(int newOffsetX, int newOffsetY) {
-        return new HudPosition(anchor, newOffsetX, newOffsetY, scale);
+    public boolean isVisible() {
+        return visible;
     }
 
-    /**
-     * 新しいスケールで更新したHudPositionを返す（イミュータブル）
-     */
+    public boolean isHorizontal() {
+        return horizontal;
+    }
+
+    public HudPosition withOffset(int newOffsetX, int newOffsetY) {
+        return new HudPosition(anchor, newOffsetX, newOffsetY, scale, visible, horizontal);
+    }
+
     public HudPosition withScale(float newScale) {
-        return new HudPosition(anchor, offsetX, offsetY, newScale);
+        return new HudPosition(anchor, offsetX, offsetY, newScale, visible, horizontal);
     }
     
-    /**
-     * 新しいアンカーで更新したHudPositionを返す（イミュータブル）
-     */
     public HudPosition withAnchor(Anchor newAnchor) {
-        return new HudPosition(newAnchor, offsetX, offsetY, scale);
+        return new HudPosition(newAnchor, offsetX, offsetY, scale, visible, horizontal);
+    }
+
+    public HudPosition withVisible(boolean newVisible) {
+        return new HudPosition(anchor, offsetX, offsetY, scale, newVisible, horizontal);
+    }
+
+    public HudPosition withHorizontal(boolean newHorizontal) {
+        return new HudPosition(anchor, offsetX, offsetY, scale, visible, newHorizontal);
     }
     
     private static int getBaseXForAnchor(Anchor anchor, int screenWidth) {
@@ -158,16 +166,18 @@ public class HudPosition {
         return offsetX == that.offsetX &&
                offsetY == that.offsetY &&
                Float.compare(that.scale, scale) == 0 &&
+               visible == that.visible &&
+               horizontal == that.horizontal &&
                anchor == that.anchor;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(anchor, offsetX, offsetY, scale);
+        return Objects.hash(anchor, offsetX, offsetY, scale, visible, horizontal);
     }
 
     @Override
     public String toString() {
-        return String.format("HudPosition{anchor=%s, offset=(%d, %d), scale=%.2f}", anchor, offsetX, offsetY, scale);
+        return String.format("HudPosition{anchor=%s, offset=(%d, %d), scale=%.2f, visible=%s, horizontal=%s}", anchor, offsetX, offsetY, scale, visible, horizontal);
     }
 }

@@ -92,6 +92,18 @@ public class HudPositionManager {
         // バフオーバーレイ: 右上（設定画面では中央付近に表示されるように調整）
         defaults.put("buff_overlay", new HudPosition(Anchor.TOP_RIGHT, -40, 40));
 
+        // バニラ酸素ゲージ: ホットバーの上、左寄せ
+        defaults.put("vanilla_air", new HudPosition(Anchor.BOTTOM_LEFT, 10, -50));
+
+        // バニラ食料ゲージ: ホットバーの上、右寄せ
+        defaults.put("vanilla_food", new HudPosition(Anchor.BOTTOM_RIGHT, -90, -50));
+
+        // スキルホットバー: 画面左中央（縦向きがデフォルト）
+        defaults.put("skill_hotbar", new HudPosition(Anchor.LEFT, 10, 0, 1.0f, true, false));
+
+        // ターゲットMOB名: 画面上部中央
+        defaults.put("target_mob_name", new HudPosition(Anchor.TOP_CENTER, 0, 30, 1.0f, true, false));
+
         LOGGER.debug("Registered {} default positions", defaults.size());
     }
     
@@ -201,11 +213,13 @@ public class HudPositionManager {
                 posJson.addProperty("offsetX", pos.getOffsetX());
                 posJson.addProperty("offsetY", pos.getOffsetY());
                 posJson.addProperty("scale", pos.getScale());
+                posJson.addProperty("visible", pos.isVisible());
+                posJson.addProperty("horizontal", pos.isHorizontal());
                 positionsJson.add(entry.getKey(), posJson);
             }
 
             root.add("positions", positionsJson);
-            root.addProperty("version", 2);
+            root.addProperty("version", 3);
             
             try (FileWriter writer = new FileWriter(configFile)) {
                 GSON.toJson(root, writer);
@@ -259,14 +273,23 @@ public class HudPositionManager {
                     int offsetX = posJson.get("offsetX").getAsInt();
                     int offsetY = posJson.get("offsetY").getAsInt();
 
-                    // scaleは後方互換：存在しない場合は1.0fを使用
                     float scale = 1.0f;
                     if (posJson.has("scale")) {
                         scale = posJson.get("scale").getAsFloat();
                     }
 
+                    boolean visible = true;
+                    if (posJson.has("visible")) {
+                        visible = posJson.get("visible").getAsBoolean();
+                    }
+
+                    boolean horizontal = false;
+                    if (posJson.has("horizontal")) {
+                        horizontal = posJson.get("horizontal").getAsBoolean();
+                    }
+
                     Anchor anchor = Anchor.valueOf(anchorName);
-                    HudPosition position = new HudPosition(anchor, offsetX, offsetY, scale);
+                    HudPosition position = new HudPosition(anchor, offsetX, offsetY, scale, visible, horizontal);
                     positions.put(key, position);
                     loadedCount++;
                 } catch (Exception e) {

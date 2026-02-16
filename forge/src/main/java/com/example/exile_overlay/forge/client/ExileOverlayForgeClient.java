@@ -3,6 +3,8 @@ package com.example.exile_overlay.forge.client;
 import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
+import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -55,6 +57,9 @@ public class ExileOverlayForgeClient {
             // Forgeイベントバスにクライアントティックハンドラーを登録
             MinecraftForge.EVENT_BUS.addListener(ExileOverlayForgeClient::onClientTick);
 
+            // カスタムフォントの初期化
+            initializeCustomFont();
+
             LOGGER.info("ExileOverlayForgeClient initialized");
         });
     }
@@ -86,6 +91,27 @@ public class ExileOverlayForgeClient {
             if (hudConfigKey != null && hudConfigKey.consumeClick()) {
                 LOGGER.info("HUD config key pressed on Forge, opening config screen");
                 ModMenuApi.openConfigScreen();
+            }
+        }
+    }
+
+    private static void initializeCustomFont() {
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+        if (config.isUseCustomFont()) {
+            String fontPath = config.getCustomFontPath();
+            if (fontPath != null && !fontPath.isEmpty()) {
+                LOGGER.info("Initializing custom damage font: {}", fontPath);
+                // リソースからフォントを読み込み
+                boolean loaded = CustomDamageFontRenderer.getInstance().loadFontFromResource(
+                    fontPath, config.getCustomFontSize()
+                );
+                if (loaded) {
+                    LOGGER.info("Custom font loaded successfully from resource");
+                } else {
+                    LOGGER.warn("Failed to load custom font from resource, will use default font");
+                }
+            } else {
+                LOGGER.warn("Custom font is enabled but path is not set");
             }
         }
     }

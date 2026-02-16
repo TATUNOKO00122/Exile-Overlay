@@ -1,7 +1,7 @@
 package com.example.exile_overlay.client.config;
 
 import com.example.exile_overlay.client.config.position.HudPositionManager;
-import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
+import com.example.exile_overlay.client.config.screen.HudListScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.slf4j.Logger;
@@ -11,13 +11,13 @@ import java.util.function.Function;
 
 /**
  * ModMenu連携用のAPI
- * 
+ *
  * Fabric/Forge双方で使用可能な設定画面ファクトリ
  */
 public final class ModMenuApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ModMenuApi.class);
-    private static Function<Screen, Screen> configScreenFactory = DraggableHudConfigScreen::new;
+    private static Function<Screen, Screen> configScreenFactory = HudListScreen::new;
     
     private ModMenuApi() {
         // ユーティリティクラス

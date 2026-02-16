@@ -2,6 +2,8 @@ package com.example.exile_overlay.fabric.client;
 
 import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
+import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import net.fabricmc.api.ClientModInitializer;
@@ -61,6 +63,12 @@ public class ExileOverlayFabricClient implements ClientModInitializer {
         // ダメージポップアップの登録
         DamagePopupFabricHandler.register();
 
+        // 3D HPバーの登録
+        EntityHpBarFabricHandler.register();
+
+        // カスタムフォントの初期化
+        initializeCustomFont();
+
         // キーバインディングの登録
         registerKeyBindings();
     }
@@ -80,5 +88,26 @@ public class ExileOverlayFabricClient implements ClientModInitializer {
                 ModMenuApi.openConfigScreen();
             }
         });
+    }
+
+    private void initializeCustomFont() {
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+        if (config.isUseCustomFont()) {
+            String fontPath = config.getCustomFontPath();
+            if (fontPath != null && !fontPath.isEmpty()) {
+                LOGGER.info("Initializing custom damage font: {}", fontPath);
+                // リソースからフォントを読み込み
+                boolean loaded = CustomDamageFontRenderer.getInstance().loadFontFromResource(
+                    fontPath, config.getCustomFontSize()
+                );
+                if (loaded) {
+                    LOGGER.info("Custom font loaded successfully from resource");
+                } else {
+                    LOGGER.warn("Failed to load custom font from resource, will use default font");
+                }
+            } else {
+                LOGGER.warn("Custom font is enabled but path is not set");
+            }
+        }
     }
 }

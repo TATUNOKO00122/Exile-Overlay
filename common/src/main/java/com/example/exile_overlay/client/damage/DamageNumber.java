@@ -9,31 +9,31 @@ public class DamageNumber {
     private final int color;
     private final boolean isCrit;
     private final DamageType type;
-    private final int comboCount;
+    private final int entityId;
     private int life;
-    private final DamagePopupConfig config;
 
-    public DamageNumber(Vec3 position, float damage, int color, boolean isCrit, DamageType type, int comboCount) {
-        this.config = DamagePopupConfig.getInstance();
+    public DamageNumber(Vec3 position, float damage, int color, boolean isCrit, 
+                       DamageType type, int entityId, int comboCount) {
         this.damage = damage;
         this.color = color;
         this.isCrit = isCrit;
         this.type = type;
-        this.comboCount = comboCount;
+        this.entityId = entityId;
         this.life = 0;
 
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
         float spread = config.getHorizontalSpread();
         float xOffset = (float) (Math.random() - 0.5) * spread;
         float zOffset = (float) (Math.random() - 0.5) * spread;
         this.position = position.add(xOffset, 0, zOffset);
 
-        this.velocity = new Vec3(0, 0.02, 0);
+        this.velocity = new Vec3(0, config.getVerticalSpeed(), 0);
     }
 
     public void tick() {
         life++;
         position = position.add(velocity);
-        velocity = velocity.scale(0.9f);
+        velocity = velocity.scale(0.95);
     }
 
     public void addDamage(float amount) {
@@ -45,34 +45,33 @@ public class DamageNumber {
     }
 
     public boolean isExpired() {
-        return life >= config.getDisplayDuration();
+        return life >= DamagePopupConfig.getInstance().getDisplayDuration();
     }
 
-    public Vec3 getPosition() {
-        return position;
-    }
+    public Vec3 getPosition() { return position; }
+    public void setPosition(Vec3 pos) { this.position = pos; }
+    public float getDamage() { return damage; }
+    public int getColor() { return color; }
+    public boolean isCrit() { return isCrit; }
+    public DamageType getType() { return type; }
+    public int getEntityId() { return entityId; }
+    public int getLife() { return life; }
+    public Vec3 getVelocity() { return velocity; }
+    public void setVelocity(Vec3 vel) { this.velocity = vel; }
 
-    public float getDamage() {
-        return damage;
-    }
-
-    public int getColor() {
-        return switch (type) {
-            case FIRE -> config.getFireDamageColor();
-            case ICE -> config.getIceDamageColor();
-            case LIGHTNING -> config.getLightningDamageColor();
-            case POISON -> config.getPoisonDamageColor();
-            case HEALING -> config.getHealingColor();
-            default -> isCrit ? config.getCriticalDamageColor() : color;
-        };
+    public int getDisplayColor() {
+        if (type == DamageType.HEALING) {
+            return DamagePopupConfig.getInstance().getHealingColor();
+        }
+        if (isCrit) {
+            return DamagePopupConfig.getInstance().getCriticalDamageColor();
+        }
+        return color;
     }
 
     public float getScale() {
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
         float baseScale = isCrit ? config.getCriticalScale() : config.getBaseScale();
-
-        if (comboCount > 1) {
-            baseScale *= 1.0f + (Math.min(comboCount, 10) * 0.05f);
-        }
 
         int fadeIn = config.getFadeInDuration();
         if (life < fadeIn) {
@@ -92,6 +91,8 @@ public class DamageNumber {
     }
 
     public float getAlpha() {
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+
         int fadeIn = config.getFadeInDuration();
         if (life < fadeIn) {
             return life / (float) fadeIn;
@@ -105,21 +106,5 @@ public class DamageNumber {
         }
 
         return 1.0f;
-    }
-
-    public boolean isCrit() {
-        return isCrit;
-    }
-
-    public Vec3 getVelocity() {
-        return velocity;
-    }
-
-    public void setVelocity(Vec3 velocity) {
-        this.velocity = velocity;
-    }
-
-    public int getLife() {
-        return life;
     }
 }

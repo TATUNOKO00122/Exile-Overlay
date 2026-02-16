@@ -290,30 +290,6 @@ public class MineAndSlashHelper {
         return 0;
     }
 
-    // スキル関連の取得メソッド（将来の拡張用）
-    public static Object getHotbarSpell(Player player, int slot) {
-        if (!isMnsLoaded())
-            return null;
-        try {
-            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
-            var method = loadClass.getMethod("player", Player.class);
-            Object playerData = method.invoke(null, player);
-            if (playerData != null) {
-                var getSkillGemInventory = playerData.getClass().getMethod("getSkillGemInventory");
-                Object inv = getSkillGemInventory.invoke(playerData);
-                if (inv != null) {
-                    var getHotbarGem = inv.getClass().getMethod("getHotbarGem", int.class);
-                    Object gem = getHotbarGem.invoke(inv, slot);
-                    if (gem != null) {
-                        return gem.getClass().getMethod("getSpell").invoke(gem);
-                    }
-                }
-            }
-        } catch (Exception e) {
-        }
-        return null;
-    }
-
     // ========== Exile Effect (Buff/Debuff) Data Classes ==========
     
     /**
@@ -461,5 +437,215 @@ public class MineAndSlashHelper {
         } else {
             return seconds + "s";
         }
+    }
+
+    // ========== Skill Hotbar API ==========
+
+    /**
+     * Get spell at hotbar slot (0-7)
+     */
+    public static Object getHotbarSpell(Player player, int slot) {
+        if (!isMnsLoaded()) return null;
+        try {
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var method = loadClass.getMethod("player", Player.class);
+            Object playerData = method.invoke(null, player);
+            if (playerData != null) {
+                var getSkillGemInventory = playerData.getClass().getMethod("getSkillGemInventory");
+                Object inv = getSkillGemInventory.invoke(playerData);
+                if (inv != null) {
+                    var getHotbarGem = inv.getClass().getMethod("getHotbarGem", int.class);
+                    Object gem = getHotbarGem.invoke(inv, slot);
+                    if (gem != null) {
+                        return gem.getClass().getMethod("getSpell").invoke(gem);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get hotbar spell at slot {}: {}", slot, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Get spell icon ResourceLocation
+     */
+    public static ResourceLocation getSpellIcon(Player player, int slot) {
+        if (!isMnsLoaded()) return null;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell != null) {
+                var getIconLoc = spell.getClass().getMethod("getIconLoc");
+                return (ResourceLocation) getIconLoc.invoke(spell);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell icon at slot {}: {}", slot, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Get cooldown percentage (0.0 - 1.0, where 1.0 = fully on cooldown)
+     */
+    public static float getSpellCooldownPercent(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell != null) {
+                var getGUID = spell.getClass().getMethod("GUID");
+                String guid = (String) getGUID.invoke(spell);
+                
+                Object data = getCachedEntityData(player);
+                if (data != null) {
+                    var getCooldowns = data.getClass().getMethod("getCooldowns");
+                    Object cds = getCooldowns.invoke(data);
+                    if (cds != null) {
+                        var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
+                        var getNeededTicks = cds.getClass().getMethod("getNeededTicks", String.class);
+                        int current = (int) getCurrentTicks.invoke(cds, guid);
+                        int needed = (int) getNeededTicks.invoke(cds, guid);
+                        if (needed > 0) {
+                            return Math.min((float) current / needed, 1.0f);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell cooldown at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * Get remaining cooldown in seconds
+     */
+    public static int getSpellCooldownSeconds(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell != null) {
+                var getGUID = spell.getClass().getMethod("GUID");
+                String guid = (String) getGUID.invoke(spell);
+                
+                Object data = getCachedEntityData(player);
+                if (data != null) {
+                    var getCooldowns = data.getClass().getMethod("getCooldowns");
+                    Object cds = getCooldowns.invoke(data);
+                    if (cds != null) {
+                        var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
+                        int ticks = (int) getCurrentTicks.invoke(cds, guid);
+                        return ticks / 20;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell cooldown seconds at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * Get mana cost for a spell
+     */
+    public static int getSpellManaCost(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell != null) {
+                // Try getManaCost method directly
+                try {
+                    var method = spell.getClass().getMethod("getManaCost");
+                    Object result = method.invoke(spell);
+                    if (result instanceof Number) {
+                        return ((Number) result).intValue();
+                    }
+                } catch (NoSuchMethodException e) {
+                    // Try config.cast_action.getManaCost()
+                    try {
+                        var configField = spell.getClass().getField("config");
+                        Object config = configField.get(spell);
+                        if (config != null) {
+                            var castActionField = config.getClass().getField("cast_action");
+                            Object castAction = castActionField.get(config);
+                            if (castAction != null) {
+                                var manaCostMethod = castAction.getClass().getMethod("getManaCost");
+                                Object result = manaCostMethod.invoke(castAction);
+                                if (result instanceof Number) {
+                                    return ((Number) result).intValue();
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        // Ignore
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell mana cost at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    private static net.minecraft.client.KeyMapping[] cachedSpellKeys = null;
+
+    /**
+     * Get the key name for a spell slot (0-7)
+     */
+    public static String getSpellKeyText(int slot) {
+        if (cachedSpellKeys == null) {
+            findSpellKeys();
+        }
+
+        if (cachedSpellKeys != null && slot >= 0 && slot < cachedSpellKeys.length) {
+            net.minecraft.client.KeyMapping key = cachedSpellKeys[slot];
+            if (key != null) {
+                return key.getTranslatedKeyMessage().getString().toUpperCase();
+            }
+        }
+
+        return String.valueOf(slot + 1);
+    }
+
+    private static void findSpellKeys() {
+        try {
+            var options = net.minecraft.client.Minecraft.getInstance().options;
+            var allKeys = options.keyMappings;
+
+            net.minecraft.client.KeyMapping[] foundKeys = new net.minecraft.client.KeyMapping[8];
+
+            for (var key : allKeys) {
+                String name = key.getName().toLowerCase();
+                String category = key.getCategory().toLowerCase();
+
+                for (int i = 1; i <= 8; i++) {
+                    String pattern = "spell_" + i;
+
+                    if (name.contains(pattern)) {
+                        boolean isMmorpg = name.startsWith("mmorpg") || category.contains("mmorpg")
+                                || category.contains("slash");
+
+                        if (foundKeys[i - 1] == null || isMmorpg) {
+                            foundKeys[i - 1] = key;
+                        }
+                    }
+                }
+            }
+
+            boolean anyFound = false;
+            for (var k : foundKeys) if (k != null) anyFound = true;
+
+            if (anyFound) {
+                cachedSpellKeys = foundKeys;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Error finding spell keys", e);
+        }
+    }
+
+    /**
+     * Check if Mine and Slash is loaded
+     */
+    public static boolean isLoaded() {
+        return isMnsLoaded();
     }
 }

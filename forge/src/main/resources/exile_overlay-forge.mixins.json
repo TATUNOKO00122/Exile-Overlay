@@ -1,13 +1,14 @@
 {
     "required": false,
-    "package": "com.example.exile_overlay.fabric.mixin",
+    "package": "com.example.exile_overlay.forge.mixin",
     "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "client": [
-        "GuiMixin"
+        "DamageInformationMixin",
+        "HealNumberMixin"
     ],
     "mixins": [],
     "injectors": {
-        "defaultRequire": 1
+        "defaultRequire": 0
     }
 }

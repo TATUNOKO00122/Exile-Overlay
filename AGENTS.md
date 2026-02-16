@@ -9,33 +9,34 @@ Minecraft 1.20.1 mod using **Architectury** framework (Fabric + Forge).
 ## Build Commands
 
 ```bash
-./gradlew build                    # Build all platforms
-./gradlew clean build              # Clean and rebuild
-./gradlew :fabric:build            # Build Fabric only
-./gradlew :forge:build             # Build Forge only
-./gradlew test                     # Run all tests
-./gradlew test --tests "ClassName" # Run single test class
-./gradlew :fabric:runClient        # Run Fabric client
-./gradlew :forge:runClient         # Run Forge client
+./gradlew build                              # Build all platforms
+./gradlew clean build                        # Clean and rebuild
+./gradlew :fabric:build                      # Build Fabric only
+./gradlew :forge:build                       # Build Forge only
+./gradlew test                               # Run all tests
+./gradlew test --tests "ClassName"           # Run single test class
+./gradlew :common:test --tests "MethodHandlesBenchmark"
+./gradlew :fabric:runClient                  # Run Fabric client
+./gradlew :forge:runClient                   # Run Forge client
 ```
 
 ## Code Style
 
 ### Formatting
-- Indentation: 4 spaces (no tabs)
-- Line endings: LF
-- Max line length: 120 characters
-- Braces: Same line (K&R style)
-- No wildcard imports
+- **Indentation**: 4 spaces (no tabs)
+- **Line endings**: LF
+- **Max line length**: 120 characters
+- **Braces**: Same line (K&R style)
+- **No wildcard imports**
 - **No automatic formatter** (spotless) configured
 
-### Naming
-- Classes: `PascalCase` (e.g., `HotbarRenderer`)
-- Methods/Fields: `camelCase` (e.g., `renderHotbar`)
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `BG_WIDTH`)
-- Packages: lowercase reverse domain
-- Mixin unique fields: `exileOverlay$fieldName` prefix
-- Resource locations: `snake_case`
+### Naming Conventions
+- **Classes**: `PascalCase` (e.g., `HudRenderManager`)
+- **Methods/Fields**: `camelCase` (e.g., `renderHotbar`)
+- **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `BG_WIDTH`)
+- **Packages**: lowercase reverse domain (`com.example.exile_overlay`)
+- **Mixin unique fields**: `exileOverlay$fieldName` prefix
+- **Resource locations**: `snake_case`
 
 ### Import Order
 ```java
@@ -52,8 +53,8 @@ import java.util.*;                 // Java standard library
 - Use explicit types, avoid `var`
 - Mark parameters as `final` where appropriate
 - Always null-check `Minecraft.getInstance().player` before use
-- Use @Unique for private mixin fields/methods
-- Use @Environment for client-only mixins
+- Use `@Unique` for private mixin fields/methods
+- Use `@Environment(EnvType.CLIENT)` for client-only mixins
 
 ### Error Handling
 - Wrap all mixin code in try-catch blocks
@@ -67,8 +68,6 @@ import java.util.*;                 // Java standard library
 - Use `@Inject` at `HEAD` or `TAIL` when possible
 - Avoid `@Overwrite` unless absolutely necessary
 - Use `CallbackInfo` for void methods, `CallbackInfoReturnable<T>` for return types
-- Add `@Unique` annotation to private mixin fields/methods
-- Prefix unique fields with `exileOverlay$`
 
 ### Mixin Pattern
 ```java
@@ -78,24 +77,27 @@ public abstract class DamageMixin {
     @Unique private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
     @Unique private float exileOverlay$lastHealth = -1;
 
-    @Inject(method = "hurt", at = @At("HEAD"))
-    private void exileOverlay$onHurt(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "setHealth", at = @At("TAIL"))
+    private void exileOverlay$onSetHealth(float health, CallbackInfo ci) {
         try {
-            if (!((LivingEntity)(Object)this).level().isClientSide()) return;
-            if (source == null) { LOGGER.debug("Null damage source received"); return; }
-        } catch (Exception e) { LOGGER.error("Failed to track damage", e); }
+            LivingEntity entity = (LivingEntity) (Object) this;
+            if (!entity.level().isClientSide()) return;
+            // Logic here
+        } catch (Exception e) {
+            LOGGER.error("Failed to handle setHealth", e);
+        }
     }
 }
 ```
 
-## Architecture
+## Architecture Guidelines
 
 1. **Always implement in `common`** first if platform-agnostic
 2. Use `@ExpectPlatform` for platform-specific implementations
 3. Test on both Fabric and Forge
 4. Use `IDataSource` interface for data abstraction
-5. Register renderers in `HudRenderManager`
-6. Register providers in `ModDataProviderRegistry`
+5. Register renderers in `HudRenderManager` via `registerCommand()`
+6. Use `rendererIndex` map for IHudRenderer lookup by config key
 
 ## Development Guidelines
 
@@ -114,27 +116,17 @@ public abstract class DamageMixin {
 - Rendering: **Render Thread** only
 - Data access: Use `ConcurrentHashMap` for cross-thread sharing
 - GUI updates: Use `Minecraft.getInstance().execute()`
-- Mixin hooks: Check side (`isClientSide`) before client logic
-
-### API Design
-- Prefer composition over inheritance
-- Use interfaces for contracts (`IDataSource`, `IRenderCommand`)
-- Provide default implementations in interfaces
-- Document usage with JavaDoc (Japanese allowed)
 
 ## Project Structure
 
 ```
 common/src/main/java/com/example/exile_overlay/
-├── api/                                   # Public interfaces & abstractions
-├── client/damage/                         # Damage popup system
-├── client/config/                         # Configuration & UI
-├── client/render/                         # Rendering pipeline
-├── mixin/                                 # Mixin implementations
-└── util/                                  # Utility classes
-
-fabric/src/main/java/com/example/          # Fabric-specific
-forge/src/main/java/com/example/           # Forge-specific
+├── api/                    # Public interfaces & abstractions
+├── client/damage/          # Damage popup system
+├── client/config/          # Configuration & UI
+├── client/render/          # Rendering pipeline
+├── mixin/                  # Mixin implementations
+└── util/                   # Utility classes
 ```
 
 ## Dependencies
@@ -148,7 +140,9 @@ forge/src/main/java/com/example/           # Forge-specific
 
 ## Troubleshooting
 
-**Mixin not applying:** Check mixin config JSON and target class names
-**Texture not loading:** Verify path `assets/exile_overlay/textures/` and ResourceLocation mod ID
-**Build failures:** Run `./gradlew clean`, verify Java 17 installed
-**NullPointerException in render:** Ensure `mc.screen != null` check before drawing
+| Issue | Solution |
+|-------|----------|
+| Mixin not applying | Check mixin config JSON and target class names |
+| Texture not loading | Verify path `assets/exile_overlay/textures/` and ResourceLocation mod ID |
+| Build failures | Run `./gradlew clean`, verify Java 17 installed |
+| NullPointerException in render | Ensure `mc.screen != null` check before drawing |

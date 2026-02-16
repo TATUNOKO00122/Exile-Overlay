@@ -8,6 +8,9 @@ import com.example.exile_overlay.api.RenderContextPool;
 import com.example.exile_overlay.api.UnifiedCache;
 import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
+import com.example.exile_overlay.client.render.skill.SkillHotbarRenderer;
+import com.example.exile_overlay.client.render.vanilla.VanillaAirRenderer;
+import com.example.exile_overlay.client.render.vanilla.VanillaFoodRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import org.slf4j.Logger;
@@ -80,6 +83,18 @@ public class HudRenderManager {
 
         // バフオーバーレイ
         this.registerCommand(new BuffOverlayRenderer(), 50);
+
+        // スキルホットバー
+        this.registerCommand(new SkillHotbarRenderer(), 95);
+
+        // バニラ酸素ゲージ
+        this.registerCommand(new VanillaAirRenderer(), 45);
+
+        // バニラ食料ゲージ
+        this.registerCommand(new VanillaFoodRenderer(), 45);
+
+        // ターゲットMOB名表示
+        this.registerCommand(new TargetMobNameRenderer(), 75);
     }
 
     /**

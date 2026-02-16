@@ -70,10 +70,9 @@ public class MethodHandlesUtil {
      * 各クラス・メソッドを個別にtry-catchで保護
      */
     private static void initialize() {
-        LOGGER.info("Initializing MethodHandles for Mine and Slash integration...");
+        LOGGER.debug("Initializing MethodHandles for Mine and Slash integration...");
         
         try {
-            // クラスの存在確認
             loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
             entityDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityData");
             resourcesDataClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourcesData");
@@ -81,7 +80,6 @@ public class MethodHandlesUtil {
             unitClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Unit");
             healthUtilsClass = Class.forName("com.robertx22.mine_and_slash.uncommon.utilityclasses.HealthUtils");
             
-            // MethodHandlesの取得（個別エラーハンドリング）
             LOAD_UNIT = lookupMethod(loadClass, "Unit", Entity.class);
             GET_RESOURCES = lookupMethod(entityDataClass, "getResources");
             GET_MANA = lookupMethod(resourcesDataClass, "getMana");
@@ -94,38 +92,36 @@ public class MethodHandlesUtil {
             GET_LEVEL = lookupMethod(entityDataClass, "getLevel");
             GET_UNIT = lookupMethod(entityDataClass, "getUnit");
             IS_BLOOD_MAGE = lookupMethod(unitClass, "isBloodMage");
-            // HealthUtilsメソッドはLivingEntity引数でLookup（M&SはPlayerではなくLivingEntityを期待）
             GET_CURRENT_HEALTH = lookupMethod(healthUtilsClass, "getCurrentHealth", LivingEntity.class);
             GET_MAX_HEALTH = lookupMethod(healthUtilsClass, "getMaxHealth", LivingEntity.class);
             
-            // ResourceType enum valuesの取得
             MANA_TYPE = getEnumValue(resourceTypeClass, "mana");
             MAGIC_SHIELD_TYPE = getEnumValue(resourceTypeClass, "magic_shield");
             ENERGY_TYPE = getEnumValue(resourceTypeClass, "energy");
             BLOOD_TYPE = getEnumValue(resourceTypeClass, "blood");
             
-            // 最低限必要なメソッドが揃っているかチェック
             available = LOAD_UNIT != null && GET_RESOURCES != null;
             
-            // デバッグ: 各メソッドハンドルの状態をログ出力
-            LOGGER.info("MethodHandles initialization status:");
-            LOGGER.info("  LOAD_UNIT: {}", LOAD_UNIT != null ? "OK" : "NULL");
-            LOGGER.info("  GET_RESOURCES: {}", GET_RESOURCES != null ? "OK" : "NULL");
-            LOGGER.info("  GET_CURRENT_HEALTH: {}", GET_CURRENT_HEALTH != null ? "OK" : "NULL");
-            LOGGER.info("  GET_MAX_HEALTH: {}", GET_MAX_HEALTH != null ? "OK" : "NULL");
-            LOGGER.info("  GET_MANA: {}", GET_MANA != null ? "OK" : "NULL");
-            LOGGER.info("  GET_MAGIC_SHIELD: {}", GET_MAGIC_SHIELD != null ? "OK" : "NULL");
-            LOGGER.info("  GET_ENERGY: {}", GET_ENERGY != null ? "OK" : "NULL");
-            LOGGER.info("  GET_BLOOD: {}", GET_BLOOD != null ? "OK" : "NULL");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("MethodHandles initialization status:");
+                LOGGER.debug("  LOAD_UNIT: {}", LOAD_UNIT != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_RESOURCES: {}", GET_RESOURCES != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_CURRENT_HEALTH: {}", GET_CURRENT_HEALTH != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_MAX_HEALTH: {}", GET_MAX_HEALTH != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_MANA: {}", GET_MANA != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_MAGIC_SHIELD: {}", GET_MAGIC_SHIELD != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_ENERGY: {}", GET_ENERGY != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_BLOOD: {}", GET_BLOOD != null ? "OK" : "NULL");
+            }
             
             if (available) {
-                LOGGER.info("MethodHandles initialized successfully. M&S integration enabled.");
+                LOGGER.debug("MethodHandles initialized successfully. M&S integration enabled.");
             } else {
                 LOGGER.warn("Required MethodHandles not available. M&S integration disabled.");
             }
             
         } catch (ClassNotFoundException e) {
-            LOGGER.info("Mine and Slash classes not found. Using vanilla fallbacks.");
+            LOGGER.debug("Mine and Slash classes not found. Using vanilla fallbacks.");
             available = false;
         } catch (Exception e) {
             LOGGER.error("Failed to initialize MethodHandles: {}", e.getMessage(), e);
