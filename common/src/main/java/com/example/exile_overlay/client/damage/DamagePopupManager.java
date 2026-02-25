@@ -372,11 +372,11 @@ public class DamagePopupManager {
             if (config.isEnableShadow()) {
                 int shadowColor = ((int) (alpha * 0.5f) << 24) | 0x000000;
                 DamageFontRenderer.renderText(poseStack, text, x + 1.0f, y + 1.0f, 
-                    shadowColor, bufferSource, 0xF000F0);
+                    shadowColor, bufferSource, 0xF000F0, scale);
             }
 
             DamageFontRenderer.renderText(poseStack, text, x, y, colorWithAlpha, 
-                bufferSource, 0xF000F0);
+                bufferSource, 0xF000F0, scale);
 
         } finally {
             poseStack.popPose();

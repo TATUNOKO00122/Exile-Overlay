@@ -19,6 +19,11 @@ public class DamageFontRenderer {
 
     public static void renderText(PoseStack poseStack, String text, float x, float y, 
                                   int color, MultiBufferSource bufferSource, int packedLight) {
+        renderText(poseStack, text, x, y, color, bufferSource, packedLight, -1.0f);
+    }
+    
+    public static void renderText(PoseStack poseStack, String text, float x, float y, 
+                                  int color, MultiBufferSource bufferSource, int packedLight, float scale) {
         DamagePopupConfig config = DamagePopupConfig.getInstance();
         
         // カスタムフォントが有効で、フォントが読み込まれている場合
@@ -29,7 +34,8 @@ public class DamageFontRenderer {
             
             CustomDamageFontRenderer customRenderer = CustomDamageFontRenderer.getInstance();
             if (customRenderer.isFontLoaded()) {
-                customRenderer.renderText(poseStack, text, x, y, color, bufferSource, packedLight);
+                float actualScale = scale > 0 ? scale : config.getBaseScale();
+                customRenderer.renderText(poseStack, text, x, y, color, bufferSource, packedLight, actualScale);
                 return;
             }
         }
@@ -40,17 +46,19 @@ public class DamageFontRenderer {
     
     private static void initializeCustomFont(DamagePopupConfig config) {
         fontInitialized = true;
-        String fontPath = config.getCustomFontPath();
+        FontPreset preset = config.getFontPreset();
         
-        if (fontPath != null && !fontPath.isEmpty()) {
-            boolean loaded = CustomDamageFontRenderer.getInstance().loadFont(
-                fontPath, config.getCustomFontSize()
-            );
-            if (!loaded) {
-                LOGGER.warn("Failed to load custom font: {}, using default font", fontPath);
-            }
-        } else {
-            LOGGER.warn("Custom font path is not set, using default font");
+        if (!preset.isCustomFont()) {
+            return;
+        }
+        
+        String fontPath = preset.getResourcePath();
+        boolean loaded = CustomDamageFontRenderer.getInstance().loadFontFromResource(
+            fontPath, config.getCustomFontSize()
+        );
+        
+        if (!loaded) {
+            LOGGER.warn("Failed to load custom font: {}, using default font", fontPath);
         }
     }
     

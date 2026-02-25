@@ -71,9 +71,9 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     private static final int VANILLA_EXP_BAR_Y = 249;
     private static final int EXP_BAR_HEIGHT = 2;
 
-    // テキスト定数
-    private static final int LEVEL_TEXT_X = 319;
-    private static final int LEVEL_TEXT_Y = 204;
+    // テキスト定数（中心座標、HJUDと同じ値）
+    private static final float LEVEL_CENTER_X = 319.5f;
+    private static final float LEVEL_CENTER_Y = 204.5f;
     
     // レイアウト設定
     private final int screenOffsetY;
@@ -218,11 +218,6 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
             graphics.fill(EXP_BAR_X, y, EXP_BAR_X + filledWidth, y + EXP_BAR_HEIGHT, color);
         }
     }
-    
-    // レベル表示の色定数
-    private static final int VANILLA_LEVEL_COLOR = 0xFFFFFF00; // 黄色
-    private static final int MOD_LEVEL_COLOR = 0xFF00FF00;     // 緑
-    private static final int SEPARATOR_COLOR = 0xFFFFFFFF;     // 白
 
     private void renderLevelDisplay(GuiGraphics graphics, Minecraft mc) {
         int vanillaLevel = mc.player.experienceLevel;
@@ -237,23 +232,28 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         int sepWidth = mc.font.width(separator);
         int modWidth = mc.font.width(modStr);
         int totalWidth = vanillaWidth + sepWidth + modWidth;
+        int textHeight = mc.font.lineHeight;
 
-        float scale = 0.7f;
-        float startX = LEVEL_TEXT_X - (totalWidth * scale) / 2;
-        float y = LEVEL_TEXT_Y - (mc.font.lineHeight * scale) / 2;
+        // HJUDと同じ計算方法
+        float maxWidth = 27.0f;
+        float scale = Math.min(maxWidth / totalWidth, 1.0f);
+        scale = Math.min(scale, 0.8f);
 
         graphics.pose().pushPose();
-        graphics.pose().translate(startX, y, 0);
+        graphics.pose().translate(LEVEL_CENTER_X, LEVEL_CENTER_Y, 0);
         graphics.pose().scale(scale, scale, 1.0f);
 
-        // バニラレベル（黄色）
-        graphics.drawString(mc.font, vanillaStr, 0, 0, VANILLA_LEVEL_COLOR, true);
+        int startX = -totalWidth / 2;
+        int textY = -textHeight / 2 + 1;
+
+        // バニラレベル（緑）
+        graphics.drawString(mc.font, vanillaStr, startX, textY, 0x55FF55, false);
 
         // 区切り（白）
-        graphics.drawString(mc.font, separator, vanillaWidth, 0, SEPARATOR_COLOR, true);
+        graphics.drawString(mc.font, separator, startX + vanillaWidth, textY, 0xFFFFFF, false);
 
-        // M&Sレベル（緑）
-        graphics.drawString(mc.font, modStr, vanillaWidth + sepWidth, 0, MOD_LEVEL_COLOR, true);
+        // M&Sレベル（黄色）
+        graphics.drawString(mc.font, modStr, startX + vanillaWidth + sepWidth, textY, 0xFFFF55, false);
 
         graphics.pose().popPose();
     }

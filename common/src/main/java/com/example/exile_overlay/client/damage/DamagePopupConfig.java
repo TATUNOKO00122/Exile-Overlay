@@ -17,8 +17,8 @@ public class DamagePopupConfig {
     private static final String CONFIG_FILE_NAME = "exile_overlay_damage_popup.json";
     private static DamagePopupConfig instance;
 
-    private float baseScale = 0.03f;
-    private float criticalScale = 0.05f;
+    private float baseScale = 0.08f;
+    private float criticalScale = 0.12f;
     private int displayDuration = 60;
     private boolean enableShadow = true;
     private float horizontalSpread = 0.5f;
@@ -36,10 +36,9 @@ public class DamagePopupConfig {
     private boolean enableDamageStacking = true;
     private float stackingRadius = 0.8f;
     
-    // カスタムフォント設定（デフォルトで内蔵フォントを使用）
-    private String customFontPath = "font/TitanOne-Regular.ttf";
+    // フォントプリセット設定
+    private FontPreset fontPreset = FontPreset.JERSEY20;
     private int customFontSize = 64;
-    private boolean useCustomFont = true;
     
     // 距離スケーリング設定
     private boolean enableDistanceScaling = true;
@@ -100,9 +99,12 @@ public class DamagePopupConfig {
             if (obj.has("enableDamageStacking")) enableDamageStacking = obj.get("enableDamageStacking").getAsBoolean();
             if (obj.has("stackingRadius")) stackingRadius = obj.get("stackingRadius").getAsFloat();
             
-            // カスタムフォント設定の読み込み
-            if (obj.has("useCustomFont")) useCustomFont = obj.get("useCustomFont").getAsBoolean();
-            if (obj.has("customFontPath")) customFontPath = obj.get("customFontPath").getAsString();
+            // フォントプリセット設定の読み込み
+            if (obj.has("fontPreset")) {
+                fontPreset = FontPreset.fromName(obj.get("fontPreset").getAsString());
+            } else if (obj.has("customFontPath")) {
+                fontPreset = FontPreset.fromPath(obj.get("customFontPath").getAsString());
+            }
             if (obj.has("customFontSize")) customFontSize = obj.get("customFontSize").getAsInt();
             
             // 距離スケーリング設定の読み込み
@@ -156,9 +158,8 @@ public class DamagePopupConfig {
         obj.addProperty("enableDamageStacking", enableDamageStacking);
         obj.addProperty("stackingRadius", stackingRadius);
         
-        // カスタムフォント設定の保存
-        obj.addProperty("useCustomFont", useCustomFont);
-        obj.addProperty("customFontPath", customFontPath);
+        // フォントプリセット設定の保存
+        obj.addProperty("fontPreset", fontPreset.name());
         obj.addProperty("customFontSize", customFontSize);
         
         // 距離スケーリング設定の保存
@@ -203,9 +204,10 @@ public class DamagePopupConfig {
     public boolean isEnableDamageStacking() { return enableDamageStacking; }
     public float getStackingRadius() { return stackingRadius; }
     
-    // カスタムフォント設定のゲッター
-    public boolean isUseCustomFont() { return useCustomFont; }
-    public String getCustomFontPath() { return customFontPath; }
+    // フォントプリセット設定のゲッター
+    public FontPreset getFontPreset() { return fontPreset; }
+    public boolean isUseCustomFont() { return fontPreset.isCustomFont(); }
+    public String getCustomFontPath() { return fontPreset.getResourcePath(); }
     public int getCustomFontSize() { return customFontSize; }
 
     public int getNormalDamageColor() { return normalDamageColor; }
@@ -246,9 +248,8 @@ public class DamagePopupConfig {
     public void setEnableDamageStacking(boolean enable) { this.enableDamageStacking = enable; }
     public void setStackingRadius(float radius) { this.stackingRadius = radius; }
 
-    // カスタムフォント設定のセッター
-    public void setUseCustomFont(boolean use) { this.useCustomFont = use; }
-    public void setCustomFontPath(String path) { this.customFontPath = path; }
+    // フォントプリセット設定のセッター
+    public void setFontPreset(FontPreset preset) { this.fontPreset = preset; }
     public void setCustomFontSize(int size) { this.customFontSize = size; }
     
     // 距離スケーリング設定のゲッター・セッター

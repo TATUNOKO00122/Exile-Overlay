@@ -1,7 +1,8 @@
 package com.example.exile_overlay.client.config.screen;
 
+import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
-import net.minecraft.client.Minecraft;
+import com.example.exile_overlay.client.damage.FontPreset;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
@@ -37,8 +38,11 @@ public class DamagePopupConfigScreen extends Screen {
     private Checkbox showPlayerDamageCheckbox;
     private Checkbox enableShadowCheckbox;
     private Checkbox enableStackingCheckbox;
-    private Checkbox useCustomFontCheckbox;
     private Checkbox enableDistanceScalingCheckbox;
+
+    // フォント選択
+    private FontPreset currentFontPreset;
+    private Button fontPresetButton;
 
     // スライダー
     private SliderButton baseScaleSlider;
@@ -58,13 +62,11 @@ public class DamagePopupConfigScreen extends Screen {
     protected void init() {
         super.init();
 
-        // 画面サイズに応じてカラム位置を計算
         int centerX = this.width / 2;
         int leftColumnX = centerX - BUTTON_WIDTH - COLUMN_SPACING / 2;
         int rightColumnX = centerX + COLUMN_SPACING / 2;
         int startY = 50;
 
-        // === 左カラム：表示設定 ===
         int leftY = startY;
 
         showDamageCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
@@ -92,28 +94,31 @@ public class DamagePopupConfigScreen extends Screen {
         addRenderableWidget(enableStackingCheckbox);
         leftY += SPACING;
 
-        useCustomFontCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
-                Component.translatable("checkbox.exile_overlay.use_custom_font"), config.isUseCustomFont());
-        addRenderableWidget(useCustomFontCheckbox);
+        currentFontPreset = config.getFontPreset();
+        fontPresetButton = Button.builder(
+                getFontPresetButtonText(),
+                button -> cycleFontPreset())
+                .bounds(leftColumnX, leftY, 150, BUTTON_HEIGHT)
+                .build();
+        addRenderableWidget(fontPresetButton);
         leftY += SPACING;
 
         enableDistanceScalingCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
                 Component.translatable("checkbox.exile_overlay.enable_distance_scaling"), config.isEnableDistanceScaling());
         addRenderableWidget(enableDistanceScalingCheckbox);
 
-        // === 右カラム：数値設定 ===
         int rightY = startY;
 
         baseScaleSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
                 Component.translatable("slider.exile_overlay.base_scale"),
-                config.getBaseScale(), 0.01, 0.1, 0.001,
+                config.getBaseScale(), 0.01, 0.3, 0.005,
                 value -> Component.literal(String.format("%.3f", value)));
         addRenderableWidget(baseScaleSlider);
         rightY += SPACING;
 
         criticalScaleSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
                 Component.translatable("slider.exile_overlay.critical_scale"),
-                config.getCriticalScale(), 0.01, 0.15, 0.001,
+                config.getCriticalScale(), 0.01, 0.5, 0.01,
                 value -> Component.literal(String.format("%.3f", value)));
         addRenderableWidget(criticalScaleSlider);
         rightY += SPACING;
@@ -145,7 +150,6 @@ public class DamagePopupConfigScreen extends Screen {
                 value -> Component.literal(String.valueOf(value.intValue())));
         addRenderableWidget(maxDamageTextsSlider);
 
-        // === ボタン ===
         int buttonY = this.height - 40;
 
         Button saveButton = Button.builder(
@@ -169,7 +173,6 @@ public class DamagePopupConfigScreen extends Screen {
         renderScreenBackground(graphics);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
 
-        // セクションラベル（画面サイズに応じて位置を計算）
         int centerX = this.width / 2;
         int leftColumnX = centerX - BUTTON_WIDTH - COLUMN_SPACING / 2;
         int rightColumnX = centerX + COLUMN_SPACING / 2;
@@ -197,16 +200,29 @@ public class DamagePopupConfigScreen extends Screen {
         config.setFadeOutDuration((int) fadeOutDurationSlider.getValue());
         config.setMaxDamageTexts((int) maxDamageTextsSlider.getValue());
         config.setEnableDamageStacking(enableStackingCheckbox.selected());
-        config.setUseCustomFont(useCustomFontCheckbox.selected());
+        config.setFontPreset(currentFontPreset);
         config.setEnableDistanceScaling(enableDistanceScalingCheckbox.selected());
 
         config.save();
+        DamageFontRenderer.reloadCustomFont();
         this.minecraft.setScreen(parent);
     }
 
     private void onCancel() {
         LOGGER.info("Canceling damage popup config changes");
         this.minecraft.setScreen(parent);
+    }
+
+    private Component getFontPresetButtonText() {
+        return Component.literal("Font: " + currentFontPreset.getDisplayName());
+    }
+
+    private void cycleFontPreset() {
+        FontPreset[] presets = FontPreset.values();
+        int currentIndex = currentFontPreset.ordinal();
+        int nextIndex = (currentIndex + 1) % presets.length;
+        currentFontPreset = presets[nextIndex];
+        fontPresetButton.setMessage(getFontPresetButtonText());
     }
 
     @Override

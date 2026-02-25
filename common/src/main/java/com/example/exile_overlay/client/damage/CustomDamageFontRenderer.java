@@ -158,18 +158,25 @@ public class CustomDamageFontRenderer {
     }
     
     /**
-     * カスタムフォントを使用してテキストを描画
+     * カスタムフォントを使用してテキストを描画（スケール指定なし、後方互換）
      */
     public void renderText(PoseStack poseStack, String text, float x, float y, 
                           int color, MultiBufferSource bufferSource, int packedLight) {
+        renderText(poseStack, text, x, y, color, bufferSource, packedLight, 0.03f);
+    }
+    
+    /**
+     * カスタムフォントを使用してテキストを描画
+     */
+    public void renderText(PoseStack poseStack, String text, float x, float y, 
+                          int color, MultiBufferSource bufferSource, int packedLight, float scale) {
         if (!fontLoaded || customFont == null) {
-            // フォントが読み込まれていない場合はデフォルトフォントを使用
             DamageFontRenderer.renderText(poseStack, text, x, y, color, bufferSource, packedLight);
             return;
         }
         
         try {
-            renderWithCustomFont(poseStack, text, x, y, color);
+            renderWithCustomFont(poseStack, text, x, y, color, scale);
         } catch (Exception e) {
             LOGGER.error("Failed to render with custom font, falling back to default", e);
             DamageFontRenderer.renderText(poseStack, text, x, y, color, bufferSource, packedLight);
@@ -179,7 +186,7 @@ public class CustomDamageFontRenderer {
     /**
      * カスタムフォントでの描画処理
      */
-    private void renderWithCustomFont(PoseStack poseStack, String text, float x, float y, int color) {
+    private void renderWithCustomFont(PoseStack poseStack, String text, float x, float y, int color, float baseScale) {
         // キャッシュからデータを取得（必要に応じて生成）
         StringCacheData cacheData = getStringCacheData(text);
         if (cacheData == null) {
@@ -189,7 +196,7 @@ public class CustomDamageFontRenderer {
         float width = cacheData.width;
         float height = cacheData.height;
         int textureId = cacheData.textureId;
-        float scale = 0.1f; // 3D空間でのスケール調整
+        float scale = baseScale * (fontSize / 64.0f);
         
         // 色の分解
         float a = ((color >> 24) & 0xFF) / 255.0f;
