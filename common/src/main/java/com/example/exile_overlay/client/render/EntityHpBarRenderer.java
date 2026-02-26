@@ -2,15 +2,10 @@ package com.example.exile_overlay.client.render;
 
 import com.example.exile_overlay.client.config.MobHealthBarConfig;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
@@ -285,24 +280,30 @@ public class EntityHpBarRenderer {
         Matrix4f matrix = poseStack.last().pose();
         var normalMatrix = poseStack.last().normal();
 
+        // 描画する全体の角度範囲
         float angleRange = endAngle - startAngle;
 
-        // HPが左から右へ増加（右が最大値になるように）
-        float actualEndAngle = startAngle + (angleRange * percentage);
+        // 右が最大値（＝左から右へ増加）。HPが減ると右側から空になっていく
+        // angleは小さい方(startAngle=右)から大きい方(endAngle=左)へ進むため、
+        // HPの割合に応じて左側（大きい角度）を残す。
+        float actualStartAngle = endAngle - (angleRange * percentage);
 
         for (int i = 0; i < segments; i++) {
             float tCurrent = (float) i / segments;
             float tNext = (float) (i + 1) / segments;
 
+            // 角度は左端(startAngle)から右端(endAngle)へ進む
             float angleCurrent = startAngle + angleRange * tCurrent;
             float angleNext = startAngle + angleRange * tNext;
 
-            // HP範囲外をスキップ
-            if (angleCurrent >= actualEndAngle)
+            // HP範囲外（空になった右側）をスキップ
+            if (angleNext <= actualStartAngle)
                 continue;
-            if (angleNext > actualEndAngle) {
-                angleNext = actualEndAngle;
-                tNext = (angleNext - startAngle) / angleRange;
+
+            // 境界をまたぐセグメントはHPの現在値でぶつ切りにする
+            if (angleCurrent < actualStartAngle) {
+                angleCurrent = actualStartAngle;
+                tCurrent = (angleCurrent - startAngle) / angleRange;
             }
 
             float u1 = uMin + (uMax - uMin) * tCurrent;
@@ -467,76 +468,51 @@ public class EntityHpBarRenderer {
     }
 
     /**
-     * 湾曲したテキストを描画
-     * 各文字を円弧上に配置
+     * テキストを描画（湾曲はせず、常にプレイヤー方向を向く1枚のビルボードとして中央へ配置）
      */
     private static void renderCurvedText(PoseStack poseStack, MultiBufferSource.BufferSource buffer,
             Font font, String text,
             float radius, float centerAngle, float arcRange, float yPosition, int color, float charScale) {
 
-        if (text.isEmpty())
+        if (text.isEmpty()) {
             return;
-
-        RenderSystem.disableCull();
+        }
 
         float totalWidth = font.width(text);
         if (totalWidth <= 0) {
-            RenderSystem.enableCull();
             return;
         }
 
-        float startAngle = centerAngle - arcRange / 2.0f;
-        float anglePerWidth = arcRange / totalWidth;
+        RenderSystem.disableCull();
+        poseStack.pushPose();
 
-        float accumulatedWidth = 0.0f;
+        // 描画位置：バーの半径方向の少し外側、中心角度（手前側）の位置に配置
+        float x = (float) Math.cos(centerAngle) * radius;
+        float z = (float) Math.sin(centerAngle) * radius;
+        poseStack.translate(x, yPosition, z);
 
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            String charStr = String.valueOf(c);
-            float charWidth = font.width(charStr);
+        // 文字の平面をカメラ（プレイヤー）に向ける
+        // centerAngleの向きに合わせて回転させる（270度は外側を向く）
+        float rotationY = 270.0f - (float) Math.toDegrees(centerAngle);
+        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(rotationY));
 
-            if (charWidth <= 0) {
-                accumulatedWidth += charWidth;
-                continue;
-            }
+        // 右手座標系にスケールを設定（鏡文字防止、左右正立に）
+        poseStack.scale(charScale, charScale, -charScale);
 
-            float charCenterWidth = accumulatedWidth + charWidth / 2.0f;
-            float angle = startAngle + charCenterWidth * anglePerWidth;
+        // X軸（左右）のセンタリング、Y軸（上下）のセンタリング
+        float charX = -totalWidth / 2.0f;
+        float charY = -font.lineHeight / 2.0f;
 
-            float x = (float) Math.cos(angle) * radius;
-            float z = (float) Math.sin(angle) * radius;
+        // 表から正しく読めるように表面描画
+        font.drawInBatch(Component.literal(text), charX, charY, color, false,
+                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0, 0xF000F0);
 
-            poseStack.pushPose();
+        // 真裏からも確認できるように、裏面用として180度回転させて描画
+        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(180.0f));
+        font.drawInBatch(Component.literal(text), charX, charY, color, false,
+                poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0, 0xF000F0);
 
-            poseStack.translate(x, yPosition, z);
-
-            // 視点（カメラ）の正面を向かせるためのY回転（下向きY軸での計算）
-            float rotationY = 270.0f - (float) Math.toDegrees(angle);
-            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(rotationY));
-
-            // 親のスケールでYのみ反転されているため、Zも反転して右手系に直し、鏡文字になるのを防ぐ
-            poseStack.scale(charScale, charScale, -charScale);
-
-            float charX = -charWidth / 2.0f;
-            float charY = -font.lineHeight / 2.0f;
-
-            // 表面描画（カリング無効なので両方向から見える）
-            font.drawInBatch(
-                    Component.literal(charStr),
-                    charX, charY,
-                    color,
-                    false,
-                    poseStack.last().pose(),
-                    buffer,
-                    Font.DisplayMode.SEE_THROUGH,
-                    0,
-                    0xF000F0);
-
-            poseStack.popPose();
-
-            accumulatedWidth += charWidth;
-        }
-
+        poseStack.popPose();
         RenderSystem.enableCull();
     }
 
