@@ -24,10 +24,6 @@ public class DamagePopupConfigScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(DamagePopupConfigScreen.class);
 
     private static final int BACKGROUND_COLOR = 0xCC000000;
-    private static final int BUTTON_WIDTH = 120;
-    private static final int BUTTON_HEIGHT = 20;
-    private static final int SPACING = 25;
-    private static final int COLUMN_SPACING = 40;
 
     private final Screen parent;
     private final DamagePopupConfig config;
@@ -63,105 +59,121 @@ public class DamagePopupConfigScreen extends Screen {
         super.init();
 
         int centerX = this.width / 2;
-        int leftColumnX = centerX - BUTTON_WIDTH - COLUMN_SPACING / 2;
-        int rightColumnX = centerX + COLUMN_SPACING / 2;
-        int startY = 50;
+        int columnWidth = 180;
+        int buttonHeight = 20;
+        int columnSpacing = 40;
+        int elementSpacing = 24;
 
-        int leftY = startY;
+        int leftColumnX = centerX - columnWidth - columnSpacing / 2;
+        int rightColumnX = centerX + columnSpacing / 2;
 
-        showDamageCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
+        int itemsPerColumn = 7;
+        int titleHeight = 20;
+        int labelHeight = 20;
+        int footerHeight = 40;
+        int contentHeight = titleHeight + labelHeight + (itemsPerColumn * elementSpacing) + footerHeight;
+
+        int startY = Math.max(10, (this.height - contentHeight) / 2);
+        int widgetStartY = startY + titleHeight + labelHeight;
+
+        int leftY = widgetStartY;
+
+        showDamageCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.show_damage"), config.isShowDamage());
         addRenderableWidget(showDamageCheckbox);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
-        showHealingCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
+        showHealingCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.show_healing"), config.isShowHealing());
         addRenderableWidget(showHealingCheckbox);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
-        showPlayerDamageCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
+        showPlayerDamageCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.show_player_damage"), config.isShowPlayerDamage());
         addRenderableWidget(showPlayerDamageCheckbox);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
-        enableShadowCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
+        enableShadowCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.enable_shadow"), config.isEnableShadow());
         addRenderableWidget(enableShadowCheckbox);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
-        enableStackingCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
+        enableStackingCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.enable_stacking"), config.isEnableDamageStacking());
         addRenderableWidget(enableStackingCheckbox);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
         currentFontPreset = config.getFontPreset();
         fontPresetButton = Button.builder(
                 getFontPresetButtonText(),
                 button -> cycleFontPreset())
-                .bounds(leftColumnX, leftY, 150, BUTTON_HEIGHT)
+                .bounds(leftColumnX, leftY, columnWidth, buttonHeight)
                 .build();
         addRenderableWidget(fontPresetButton);
-        leftY += SPACING;
+        leftY += elementSpacing;
 
-        enableDistanceScalingCheckbox = new Checkbox(leftColumnX, leftY, 150, BUTTON_HEIGHT,
-                Component.translatable("checkbox.exile_overlay.enable_distance_scaling"), config.isEnableDistanceScaling());
+        enableDistanceScalingCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
+                Component.translatable("checkbox.exile_overlay.enable_distance_scaling"),
+                config.isEnableDistanceScaling());
         addRenderableWidget(enableDistanceScalingCheckbox);
 
-        int rightY = startY;
+        int rightY = widgetStartY;
 
-        baseScaleSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        baseScaleSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.base_scale"),
                 config.getBaseScale(), 0.01, 0.3, 0.005,
                 value -> Component.literal(String.format("%.3f", value)));
         addRenderableWidget(baseScaleSlider);
-        rightY += SPACING;
+        rightY += elementSpacing;
 
-        criticalScaleSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        criticalScaleSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.critical_scale"),
                 config.getCriticalScale(), 0.01, 0.5, 0.01,
                 value -> Component.literal(String.format("%.3f", value)));
         addRenderableWidget(criticalScaleSlider);
-        rightY += SPACING;
+        rightY += elementSpacing;
 
-        displayDurationSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        displayDurationSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.display_duration"),
                 config.getDisplayDuration(), 20, 200, 1,
                 value -> Component.literal(String.valueOf(value.intValue()) + " ticks"));
         addRenderableWidget(displayDurationSlider);
-        rightY += SPACING;
+        rightY += elementSpacing;
 
-        fadeInDurationSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        fadeInDurationSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.fade_in"),
                 config.getFadeInDuration(), 0, 20, 1,
                 value -> Component.literal(String.valueOf(value.intValue()) + " ticks"));
         addRenderableWidget(fadeInDurationSlider);
-        rightY += SPACING;
+        rightY += elementSpacing;
 
-        fadeOutDurationSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        fadeOutDurationSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.fade_out"),
                 config.getFadeOutDuration(), 5, 60, 1,
                 value -> Component.literal(String.valueOf(value.intValue()) + " ticks"));
         addRenderableWidget(fadeOutDurationSlider);
-        rightY += SPACING;
+        rightY += elementSpacing;
 
-        maxDamageTextsSlider = new SliderButton(rightColumnX, rightY, BUTTON_WIDTH, BUTTON_HEIGHT,
+        maxDamageTextsSlider = new SliderButton(rightColumnX, rightY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.max_texts"),
                 config.getMaxDamageTexts(), 5, 50, 1,
                 value -> Component.literal(String.valueOf(value.intValue())));
         addRenderableWidget(maxDamageTextsSlider);
 
-        int buttonY = this.height - 40;
+        int contentBottom = Math.max(leftY, rightY) + buttonHeight;
+        int buttonY = Math.min(contentBottom + 20, this.height - buttonHeight - 10);
+        int actionButtonWidth = 150;
 
         Button saveButton = Button.builder(
-                        Component.translatable("button.exile_overlay.save"),
-                        button -> onSave())
-                .bounds(centerX - BUTTON_WIDTH - 10, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.save"),
+                button -> onSave())
+                .bounds(centerX - actionButtonWidth - 10, buttonY, actionButtonWidth, buttonHeight)
                 .build();
 
         Button cancelButton = Button.builder(
-                        Component.translatable("button.exile_overlay.cancel"),
-                        button -> onCancel())
-                .bounds(centerX + 10, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.cancel"),
+                button -> onCancel())
+                .bounds(centerX + 10, buttonY, actionButtonWidth, buttonHeight)
                 .build();
 
         addRenderableWidget(saveButton);
@@ -171,13 +183,30 @@ public class DamagePopupConfigScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderScreenBackground(graphics);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
+
+        int itemsPerColumn = 7;
+        int titleHeight = 20;
+        int labelHeight = 20;
+        int footerHeight = 40;
+        int elementSpacing = 24;
+        int contentHeight = titleHeight + labelHeight + (itemsPerColumn * elementSpacing) + footerHeight;
+
+        int startY = Math.max(10, (this.height - contentHeight) / 2);
+        int titleY = startY;
+        int labelY = startY + titleHeight;
+
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, titleY, 0xFFFFFF);
 
         int centerX = this.width / 2;
-        int leftColumnX = centerX - BUTTON_WIDTH - COLUMN_SPACING / 2;
-        int rightColumnX = centerX + COLUMN_SPACING / 2;
-        graphics.drawString(this.font, Component.translatable("label.exile_overlay.display_settings"), leftColumnX, 35, 0xAAAAAA);
-        graphics.drawString(this.font, Component.translatable("label.exile_overlay.numeric_settings"), rightColumnX, 35, 0xAAAAAA);
+        int columnWidth = 180;
+        int columnSpacing = 40;
+        int leftColumnX = centerX - columnWidth - columnSpacing / 2;
+        int rightColumnX = centerX + columnSpacing / 2;
+
+        graphics.drawString(this.font, Component.translatable("label.exile_overlay.display_settings"), leftColumnX,
+                labelY, 0xAAAAAA);
+        graphics.drawString(this.font, Component.translatable("label.exile_overlay.numeric_settings"), rightColumnX,
+                labelY, 0xAAAAAA);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }
@@ -246,8 +275,8 @@ public class DamagePopupConfigScreen extends Screen {
         private final java.util.function.Function<Double, Component> valueFormatter;
 
         public SliderButton(int x, int y, int width, int height, Component title,
-                           double currentValue, double minValue, double maxValue, double step,
-                           java.util.function.Function<Double, Component> valueFormatter) {
+                double currentValue, double minValue, double maxValue, double step,
+                java.util.function.Function<Double, Component> valueFormatter) {
             super(x, y, width, height, title, (currentValue - minValue) / (maxValue - minValue));
             this.minValue = minValue;
             this.maxValue = maxValue;

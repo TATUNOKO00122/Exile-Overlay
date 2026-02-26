@@ -60,6 +60,9 @@ public class ExileOverlayForgeClient {
             // カスタムフォントの初期化
             initializeCustomFont();
 
+            // Mine and Slashの独自のNeat(HPバー)描画を無効化
+            disableMineAndSlashNeat();
+
             LOGGER.info("ExileOverlayForgeClient initialized");
         });
     }
@@ -69,8 +72,7 @@ public class ExileOverlayForgeClient {
         hudConfigKey = new KeyMapping(
                 "key.exile_overlay.hud_config",
                 GLFW.GLFW_KEY_O,
-                "category.exile_overlay.general"
-        );
+                "category.exile_overlay.general");
         event.register(hudConfigKey);
         LOGGER.info("Registered HUD config key binding for Forge");
     }
@@ -78,12 +80,13 @@ public class ExileOverlayForgeClient {
     @SubscribeEvent
     public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
         // HUDオーバーレイを登録
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "exile_overlay_hud", (gui, graphics, partialTick, screenWidth, screenHeight) -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
-                HudRenderManager.getInstance().render(graphics, screenWidth, screenHeight);
-            }
-        });
+        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "exile_overlay_hud",
+                (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player != null) {
+                        HudRenderManager.getInstance().render(graphics, screenWidth, screenHeight);
+                    }
+                });
     }
 
     private static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -103,8 +106,7 @@ public class ExileOverlayForgeClient {
                 LOGGER.info("Initializing custom damage font: {}", fontPath);
                 // リソースからフォントを読み込み
                 boolean loaded = CustomDamageFontRenderer.getInstance().loadFontFromResource(
-                    fontPath, config.getCustomFontSize()
-                );
+                        fontPath, config.getCustomFontSize());
                 if (loaded) {
                     LOGGER.info("Custom font loaded successfully from resource");
                 } else {
@@ -113,6 +115,19 @@ public class ExileOverlayForgeClient {
             } else {
                 LOGGER.warn("Custom font is enabled but path is not set");
             }
+        }
+    }
+
+    private static void disableMineAndSlashNeat() {
+        try {
+            Class<?> neatConfigClass = Class.forName("com.robertx22.mine_and_slash.a_libraries.neat.NeatConfig");
+            java.lang.reflect.Field drawField = neatConfigClass.getField("draw");
+            drawField.setBoolean(null, false);
+            LOGGER.info("Successfully disabled Mine and Slash Neat (HP Bar) rendering via reflection.");
+        } catch (ClassNotFoundException e) {
+            LOGGER.debug("Mine and Slash not found, skipping Neat rendering compatibility layer.");
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            LOGGER.error("Failed to disable Mine and Slash Neat rendering: " + e.getMessage(), e);
         }
     }
 }

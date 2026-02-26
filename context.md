@@ -4,62 +4,46 @@
 Minecraft 1.20.1用MOD。Architecturyフレームワーク（Fabric + Forge）を使用。
 - **Mod ID**: `exile_overlay`
 - **Java**: 17
-- **主機能**: HUD表示、Damageポップアップ、エフェクト管理
+- **主機能**: HUD表示、Damageポップアップ表示、Mob HPバー、各種情報オーバーレイの提供
 
 ## [全体の現在状態]
-- **フェーズ**: 開発中
-- **直近の決定事項**: フォントプリセット切り替え機能完成（5種類: Minecraft標準, Jersey20, Jersey15, Jacquard12, TitanOne）
-- **次ステップ**: ゲーム内で動作確認
+- **フェーズ**: 開発中・Mob HPバー機能拡充
+- **直近の決定事項**: 湾曲HP数値テキスト実装完了。X軸180度回転でプレイヤー方向を向くよう修正。
+- **次ステップ**: ゲーム内での湾曲テキスト動作確認（位置・サイズ・可読性）
 
 ## [ファイル・ディレクトリ別状態]
 
-### Damageポップアップ関連 (`common/src/main/java/com/example/exile_overlay/client/damage/`)
+### Mob HPバー描画 (`common/src/main/java/.../client/render/`)
+| ファイル | 役割 | 直近の変更内容・状態 |
+|---------|------|------------------|
+| `EntityHpBarRenderer.java` | 3D湾曲HPバー＋HP数値描画 | `renderCurvedText()`追加。各文字を円弧上に配置しX軸180度回転でプレイヤー方向を向かせる。パラメータ: textRadius=baseRadius+0.05f*heightScale, charScale=0.018f。 |
 
-| ファイル | 役割 | 直近の変更 |
-|---------|------|-----------|
-| `FontPreset.java` | フォントプリセット定義enum。MINECRAFT, JERSEY20, JERSEY15, JACQUARD12, TITAN_ONE | 新規作成 |
-| `DamagePopupConfig.java` | 設定管理。`fontPreset`フィールド追加（旧`customFontPath`を置換、後方互換あり） | 更新済み |
-| `DamageFontRenderer.java` | フォント描画エントリ。`reloadCustomFont()`でプリセットからロード | 更新済み |
-| `CustomDamageFontRenderer.java` | TrueTypeフォント描画 | 変更なし |
-| `DamagePopupManager.java` | ポップアップ管理・描画 | 変更なし |
-| `DamageNumber.java` | 個別のダメージ数値データ | 変更なし |
-
-### 設定画面 (`common/src/main/java/com/example/exile_overlay/client/config/screen/`)
-
-| ファイル | 役割 | 直近の変更 |
-|---------|------|-----------|
-| `DamagePopupConfigScreen.java` | 設定UI。フォント選択サイクルボタン追加、保存時に`reloadCustomFont()`呼び出し | 更新済み |
-
-### リソース (`common/src/main/resources/assets/exile_overlay/font/`)
-
-| ファイル | 状態 |
-|---------|------|
-| `Jersey20-Regular.ttf` | デフォルトフォント |
-| `Jersey15-Regular.ttf` | 新規追加 |
-| `Jacquard12-Regular.ttf` | 新規追加 |
-| `TitanOne-Regular.ttf` | 既存 |
-
-### フォントプリセット一覧
-
-| プリセット | 表示名 | リソースパス |
-|-----------|--------|-------------|
-| MINECRAFT | Minecraft | null (標準フォント) |
-| JERSEY20 | Jersey 20 | font/Jersey20-Regular.ttf |
-| JERSEY15 | Jersey 15 | font/Jersey15-Regular.ttf |
-| JACQUARD12 | Jacquard 12 | font/Jacquard12-Regular.ttf |
-| TITAN_ONE | Titan One | font/TitanOne-Regular.ttf |
+### Mob HPバー設定 (`common/src/main/java/.../client/config/`)
+| ファイル | 役割 | 直近の変更内容・状態 |
+|---------|------|------------------|
+| `MobHealthBarConfig.java` | 設定クラス | 変更なし。`showHealthValue`/`showMaxHealth`/`showPercentage`のgetter使用。 |
+| `MobHealthBarConfigScreen.java` | 設定画面 | 変更なし。チェックボックス既存。 |
 
 ## [直近の行動履歴]
 
-### 2026-02-25 セッション
-1. **フォントプリセット切り替え機能の実装**
-   - `FontPreset` enum作成、フォントファイル2種追加（Jersey15, Jacquard12）
-   - `DamagePopupConfig`: `customFontPath` → `fontPreset` に置換（後方互換性維持）
-   - 設定画面にフォント選択サイクルボタン追加
+### 2026-02-26 (最新セッション)
+- **湾曲HP数値テキストの実装と調整**
+  - `renderCurvedText()`新規追加: 各文字を円弧上に配置
+  - 描画フロー: `translate(cos, y, sin)` → `rotateY(-angle+90°)` → `scale(charScale, -charScale, charScale)` → `rotateX(180°)`
+  - トラブルシューティング:
+    - 裏面描画問題 → 裏面描画不要と判断（表面のみ描画）
+    - テキストがプレイヤー方向を向かない → X軸180度回転を追加
+  - ビルド成功、動作確認待ち
 
-2. **修正作業**
-   - フォント切り替え不具合修正: 保存時に`reloadCustomFont()`呼び出し追加
-   - プレビュー機能実装→ユーザー指摘で削除（重なり問題、複雑性）
+### 過去セッション（圧縮ログ）
+- **2026-02-25**: HP数値表示の初版実装（平面上描画）
+- **スナップ計算バグ修正**: expansion領域を考慮
+- **Mine and Slash互換性**: NeatConfig.draw無効化
+- **フォント機能拡充**: フォントプリセット機能追加
 
-### 過去セッション（要約）
-- 2026-02-24: Jersey20フォント導入、スケール反映修正、デフォルト値調整
+## [未実装機能メモ]
+Mob HPバーで設定あり・実装なしの機能:
+- `showOnlyWhenDamaged` - ダメージ時のみ表示
+- `showForAllMobs` - 全Mob表示制御
+- `showThroughWalls` - 壁越し表示制御
+- 色設定UI - backgroundColor/borderColor/healthColor等

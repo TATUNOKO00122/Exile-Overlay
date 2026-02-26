@@ -41,34 +41,43 @@ public class HudListScreen extends Screen {
         super.init();
 
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 40;
+        int buttonsCount = 4;
+        int titleHeight = 20;
+        int labelSpacing = 20;
+        int totalHeight = titleHeight + labelSpacing + (BUTTON_HEIGHT + BUTTON_SPACING) * buttonsCount;
+
+        int startY = Math.max(10, (this.height - totalHeight) / 2);
+        int widgetStartY = startY + titleHeight + labelSpacing;
 
         // HUD位置設定ボタン
         hudPositionButton = Button.builder(
-                        Component.translatable("button.exile_overlay.hud_position"),
-                        button -> openHudPositionScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, startY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.hud_position"),
+                button -> openHudPositionScreen())
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build();
 
         // Damageポップアップ設定ボタン
         damagePopupButton = Button.builder(
-                        Component.translatable("button.exile_overlay.damage_popup_config"),
-                        button -> openDamagePopupConfigScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, startY + BUTTON_HEIGHT + BUTTON_SPACING, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.damage_popup_config"),
+                button -> openDamagePopupConfigScreen())
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + BUTTON_HEIGHT + BUTTON_SPACING, BUTTON_WIDTH,
+                        BUTTON_HEIGHT)
                 .build();
 
         // MOBヘルスバー設定ボタン
         mobHealthBarButton = Button.builder(
-                        Component.translatable("button.exile_overlay.mob_healthbar_config"),
-                        button -> openMobHealthBarConfigScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.mob_healthbar_config"),
+                button -> openMobHealthBarConfigScreen())
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
+                        BUTTON_HEIGHT)
                 .build();
 
         // 完了ボタン
         doneButton = Button.builder(
-                        Component.translatable("button.exile_overlay.done"),
-                        button -> onDone())
-                .bounds(centerX - BUTTON_WIDTH / 2, startY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH, BUTTON_HEIGHT)
+                Component.translatable("button.exile_overlay.done"),
+                button -> onDone())
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH,
+                        BUTTON_HEIGHT)
                 .build();
 
         addRenderableWidget(hudPositionButton);
@@ -82,8 +91,14 @@ public class HudListScreen extends Screen {
         // 背景
         renderScreenBackground(graphics);
 
+        int buttonsCount = 4;
+        int titleHeight = 20;
+        int labelSpacing = 20;
+        int totalHeight = titleHeight + labelSpacing + (BUTTON_HEIGHT + BUTTON_SPACING) * buttonsCount;
+        int startY = Math.max(10, (this.height - totalHeight) / 2);
+
         // タイトル
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, startY, 0xFFFFFF);
 
         super.render(graphics, mouseX, mouseY, partialTick);
     }

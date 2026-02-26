@@ -19,6 +19,7 @@
   "checkbox.exile_overlay.enable_shadow": "影を有効化",
   "checkbox.exile_overlay.enable_stacking": "ダメージスタッキング有効化",
   "checkbox.exile_overlay.use_custom_font": "カスタムフォントを使用",
+  "checkbox.exile_overlay.enable_distance_scaling": "距離ベースのスケーリング",
   "checkbox.exile_overlay.show_healthbar": "ヘルスバーを表示",
   "checkbox.exile_overlay.show_player_healthbar": "プレイヤーにヘルスバーを表示",
   "checkbox.exile_overlay.show_for_all_mobs": "すべてのMOBに表示",

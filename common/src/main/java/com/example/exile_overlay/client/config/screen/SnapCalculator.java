@@ -42,33 +42,37 @@ public class SnapCalculator {
      * @param rawX 生のX座標
      * @param elementWidth 要素の幅
      * @param isCenterBased trueの場合Xは中心、falseの場合Xは左端
+     * @param expansionLeft 左方向の拡張領域
+     * @param expansionRight 右方向の拡張領域
      * @return スナップ後のX座標
      */
-    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased) {
+    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased, int expansionLeft, int expansionRight) {
         if (isCenterBased) {
-            // 中心基準: 左端スナップ時は中心が elementWidth/2 の位置に
-            int leftEdgeX = rawX - elementWidth / 2;
-            if (Math.abs(leftEdgeX) <= snapDistance) {
+            // 中心基準: 実際の左端 = 中心 - elementWidth/2 - expansionLeft
+            int actualLeftEdge = rawX - elementWidth / 2 - expansionLeft;
+            if (Math.abs(actualLeftEdge) <= snapDistance) {
                 activeSnapGuidesX.add(0);
-                return elementWidth / 2;
+                return elementWidth / 2 + expansionLeft;
             }
             
-            // 右端スナップ: 中心が width - elementWidth/2 の位置に
-            int rightEdgeX = rawX + elementWidth / 2;
-            if (Math.abs(rightEdgeX - screenWidth) <= snapDistance) {
+            // 右端スナップ: 実際の右端 = 中心 + elementWidth/2 + expansionRight
+            int actualRightEdge = rawX + elementWidth / 2 + expansionRight;
+            if (Math.abs(actualRightEdge - screenWidth) <= snapDistance) {
                 activeSnapGuidesX.add(screenWidth);
-                return screenWidth - elementWidth / 2;
+                return screenWidth - elementWidth / 2 - expansionRight;
             }
         } else {
-            // 左上基準: 従来通り
-            if (Math.abs(rawX) <= snapDistance) {
+            // 左上基準: expansionを含めた実際の端で判定
+            int actualLeftEdge = rawX - expansionLeft;
+            if (Math.abs(actualLeftEdge) <= snapDistance) {
                 activeSnapGuidesX.add(0);
-                return 0;
+                return expansionLeft;
             }
             
-            if (Math.abs(rawX + elementWidth - screenWidth) <= snapDistance) {
+            int actualRightEdge = rawX + elementWidth + expansionRight;
+            if (Math.abs(actualRightEdge - screenWidth) <= snapDistance) {
                 activeSnapGuidesX.add(screenWidth);
-                return screenWidth - elementWidth;
+                return screenWidth - elementWidth - expansionRight;
             }
         }
         
@@ -80,34 +84,54 @@ public class SnapCalculator {
      * 
      * @param rawY 生のY座標
      * @param elementHeight 要素の高さ
-     * @param isBottomBased trueの場合Yは底辺、falseの場合Yは上端
+     * @param isBottomBased trueの場合Yは底辺
+     * @param isCenterBased trueの場合Yは中心
+     * @param expansionTop 上方向の拡張領域
+     * @param expansionBottom 下方向の拡張領域
      * @return スナップ後のY座標
      */
-    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased) {
+    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased, boolean isCenterBased,
+                          int expansionTop, int expansionBottom) {
         if (isBottomBased) {
-            // 底辺基準: 下端スナップのみ有効
-            // 底辺が画面下端に一致
-            if (Math.abs(rawY - screenHeight) <= snapDistance) {
+            // 底辺中心基準: 実際の底辺 = rawY + expansionBottom
+            int actualBottom = rawY + expansionBottom;
+            if (Math.abs(actualBottom - screenHeight) <= snapDistance) {
                 activeSnapGuidesY.add(screenHeight);
-                return screenHeight;
+                return screenHeight - expansionBottom;
             }
             
-            // 上端スナップ: 底辺が elementHeight の位置（上端が0）
-            int topEdgeY = rawY - elementHeight;
-            if (Math.abs(topEdgeY) <= snapDistance) {
+            // 上端スナップ: 実際の上端 = 底辺 - elementHeight - expansionTop
+            int actualTop = rawY - elementHeight - expansionTop;
+            if (Math.abs(actualTop) <= snapDistance) {
                 activeSnapGuidesY.add(0);
-                return elementHeight;
+                return elementHeight + expansionTop;
+            }
+        } else if (isCenterBased) {
+            // 中心基準: 実際の上端 = 中心 - elementHeight/2 - expansionTop
+            int actualTop = rawY - elementHeight / 2 - expansionTop;
+            if (Math.abs(actualTop) <= snapDistance) {
+                activeSnapGuidesY.add(0);
+                return elementHeight / 2 + expansionTop;
+            }
+            
+            // 下端スナップ: 実際の下端 = 中心 + elementHeight/2 + expansionBottom
+            int actualBottom = rawY + elementHeight / 2 + expansionBottom;
+            if (Math.abs(actualBottom - screenHeight) <= snapDistance) {
+                activeSnapGuidesY.add(screenHeight);
+                return screenHeight - elementHeight / 2 - expansionBottom;
             }
         } else {
-            // 上端基準: 従来通り
-            if (Math.abs(rawY) <= snapDistance) {
+            // 上端基準: expansionを含めた実際の端で判定
+            int actualTop = rawY - expansionTop;
+            if (Math.abs(actualTop) <= snapDistance) {
                 activeSnapGuidesY.add(0);
-                return 0;
+                return expansionTop;
             }
             
-            if (Math.abs(rawY + elementHeight - screenHeight) <= snapDistance) {
+            int actualBottom = rawY + elementHeight + expansionBottom;
+            if (Math.abs(actualBottom - screenHeight) <= snapDistance) {
                 activeSnapGuidesY.add(screenHeight);
-                return screenHeight - elementHeight;
+                return screenHeight - elementHeight - expansionBottom;
             }
         }
         
@@ -150,9 +174,12 @@ public class SnapCalculator {
         
         boolean isCenterX = !metadata.isTopLeftBased();
         boolean isBottomY = metadata.isBottomCenterBased();
+        boolean isCenterY = metadata.isCenterBased();
         
-        int snappedX = applySnapX(rawX, elementWidth, isCenterX);
-        int snappedY = applySnapY(rawY, elementHeight, isBottomY);
+        IHudRenderer.Insets expansion = metadata.getExpansion();
+        
+        int snappedX = applySnapX(rawX, elementWidth, isCenterX, expansion.left, expansion.right);
+        int snappedY = applySnapY(rawY, elementHeight, isBottomY, isCenterY, expansion.top, expansion.bottom);
         
         return new SnapResult(snappedX, snappedY, 
                               new ArrayList<>(activeSnapGuidesX), 
