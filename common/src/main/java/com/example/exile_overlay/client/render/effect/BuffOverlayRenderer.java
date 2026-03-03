@@ -177,7 +177,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             List<EffectRenderHelper.DisplayableEffect> effects,
             int listX, int listY, boolean horizontal,
             double scale, float partialTick) {
-        int spacing = horizontal ? (FRAME_WIDTH + 0) : (FRAME_HEIGHT + 0);
+        int spacing = horizontal ? (FRAME_WIDTH + 1) : (FRAME_HEIGHT + 1);
 
         graphics.pose().pushPose();
         try {
@@ -193,7 +193,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
 
                 // アニメーション状態を取得
                 EffectRenderHelper.VisualState state = EffectRenderHelper.getVisualState(effect.getId(),
-                        horizontal ? targetX : targetY);
+                        horizontal ? targetX : targetY, effect.getDuration());
 
                 // 位置を更新（Lerp）
                 float currentPos = horizontal
@@ -229,11 +229,45 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         int iconY = y + iconOffset;
         effect.renderIcon(graphics, iconX, iconY, ICON_SIZE);
 
-        // 3. フレームを描画
+        // 3. プログレスバー描画（フレームの前に描画して枠の後ろに配置）
+        int barMaxWidth = 20;
+        int barHeight = 8;
+        int barX = x + 5;
+        int barY = y + 28;
+        int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
+
+        if (!effect.isInfinite()) {
+            int currentDuration = effect.getDuration();
+            int maxDur = state.maxDuration;
+            
+            if (maxDur <= 0 || currentDuration > maxDur) {
+                maxDur = currentDuration;
+                state.maxDuration = maxDur;
+            }
+            
+            float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
+            progress = Math.max(0.0f, Math.min(1.0f, progress));
+            int barWidth = (int) (barMaxWidth * progress);
+
+            long now = System.currentTimeMillis();
+            if (now - lastLogTime > 1000) {
+                LOGGER.info("[BUFF BAR] id={}, cur={}, max={}, progress={}, width={}", 
+                    effect.getId(), currentDuration, maxDur, progress, barWidth);
+            }
+
+            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
+            if (barWidth > 0) {
+                graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
+            }
+        } else {
+            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
+        }
+
+        // 4. フレームを描画
         RenderSystem.setShaderTexture(0, EFFECT_FRAME);
         graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-        // 4. 残り時間テキストを描画
+        // 5. 残り時間テキストを描画
         String durationText = effect.getDurationText();
         if (durationText != null && !durationText.isEmpty()) {
             float textScale = 0.5f;
@@ -242,7 +276,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             graphics.pose().pushPose();
             try {
                 float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2) / textScale;
-                float textY = (y + 31) / textScale;
+                float textY = (float) ((y + 29) + 0.4) / textScale;
 
                 graphics.pose().scale(textScale, textScale, 1.0f);
                 graphics.pose().translate(0, 0, 201.0f);
@@ -357,7 +391,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) {
             // プレイヤーがいない場合はデフォルトで3個分の幅を返す
-            return FRAME_WIDTH * 3;
+            return FRAME_WIDTH * 3 + 2;
         }
 
         // バフとデバフを統合して取得
@@ -367,11 +401,11 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
 
         // バフがない場合はデフォルトで3個分の幅を返す（設定画面用）
         if (count <= 0) {
-            return FRAME_WIDTH * 3;
+            return FRAME_WIDTH * 3 + 2;
         }
 
         // 水平配置の場合：フレーム幅 × 個数
-        return FRAME_WIDTH * count;
+        return FRAME_WIDTH * count + (count - 1);
     }
 
     /**

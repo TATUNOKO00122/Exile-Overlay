@@ -71,6 +71,7 @@ public class OrbShaderRenderer {
 
     // 描画調整定数
     private static final float PADDING = 2.0f;
+    private static final float OFFSET_X = -1.0f;
     private static final float OFFSET_Y = -1.0f;
 
     public static void drawCircularFill(GuiGraphics graphics, int x, int y, int size,
@@ -103,7 +104,7 @@ public class OrbShaderRenderer {
         buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
 
         // 座標調整
-        float adX = x - PADDING;
+        float adX = x - PADDING + OFFSET_X;
         float adY = y - PADDING + OFFSET_Y;
         float adSize = size + (PADDING * 2.0f);
 

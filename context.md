@@ -3,47 +3,35 @@
 ## [全体概要]
 Minecraft 1.20.1用MOD。Architecturyフレームワーク（Fabric + Forge）を使用。
 - **Mod ID**: `exile_overlay`
-- **Java**: 17
-- **主機能**: HUD表示、Damageポップアップ表示、Mob HPバー、各種情報オーバーレイの提供
+- **Java**: 17 / Gradle 8.x
+- **主機能**: HUD表示、Damageポップアップ、Mob HPバー（3D）、各種情報オーバーレイ、Energy Orb表示。
 
 ## [全体の現在状態]
-- **フェーズ**: 開発中・Mob HPバー機能拡充
-- **直近の決定事項**: 湾曲HP数値テキスト実装完了。X軸180度回転でプレイヤー方向を向くよう修正。
-- **次ステップ**: ゲーム内での湾曲テキスト動作確認（位置・サイズ・可読性）
+- **フェーズ**: HUD要素の微調整（位置・視覚的整合性）
+- **決定事項**: 
+  - Energy Orbの反射テクスチャと本体（液面）の位置を左に1pxずつ移動し、視覚的な整合性を改善。
+- **次ステップ**: ゲーム内での表示確認。
 
 ## [ファイル・ディレクトリ別状態]
+
+### Orb描画システム (`common/src/main/java/.../client/render/orb/`)
+| ファイル | 役割 | 直近の変更内容・状態 |
+|---------|------|------------------|
+| `OrbRenderer.java` | オーブ描画（Fill/Overlay層） | **[調整]** 反射テクスチャのX座標オフセットを `orbX - 1` → `orbX - 2` に変更（左に1px追加移動）。 |
+| `OrbShaderRenderer.java` | GPUシェーダー方式の液面描画 | **[調整]** `OFFSET_X = -1.0f` 定数を追加し、座標計算 `adX = x - PADDING + OFFSET_X` に適用（左に1px移動）。 |
 
 ### Mob HPバー描画 (`common/src/main/java/.../client/render/`)
 | ファイル | 役割 | 直近の変更内容・状態 |
 |---------|------|------------------|
-| `EntityHpBarRenderer.java` | 3D湾曲HPバー＋HP数値描画 | `renderCurvedText()`追加。各文字を円弧上に配置しX軸180度回転でプレイヤー方向を向かせる。パラメータ: textRadius=baseRadius+0.05f*heightScale, charScale=0.018f。 |
-
-### Mob HPバー設定 (`common/src/main/java/.../client/config/`)
-| ファイル | 役割 | 直近の変更内容・状態 |
-|---------|------|------------------|
-| `MobHealthBarConfig.java` | 設定クラス | 変更なし。`showHealthValue`/`showMaxHealth`/`showPercentage`のgetter使用。 |
-| `MobHealthBarConfigScreen.java` | 設定画面 | 変更なし。チェックボックス既存。 |
+| `EntityHpBarRenderer.java` | 3D HPバー＋数値描画 | ビルボード方式でテキスト描画。HPバー進行方向は右側が最大値。 |
 
 ## [直近の行動履歴]
 
-### 2026-02-26 (最新セッション)
-- **湾曲HP数値テキストの実装と調整**
-  - `renderCurvedText()`新規追加: 各文字を円弧上に配置
-  - 描画フロー: `translate(cos, y, sin)` → `rotateY(-angle+90°)` → `scale(charScale, -charScale, charScale)` → `rotateX(180°)`
-  - トラブルシューティング:
-    - 裏面描画問題 → 裏面描画不要と判断（表面のみ描画）
-    - テキストがプレイヤー方向を向かない → X軸180度回転を追加
-  - ビルド成功、動作確認待ち
+### 2026-03-03 (最新セッション: Energy Orb位置調整)
+- **反射テクスチャと本体の位置合わせ**
+  - `OrbRenderer.java:99`: 反射テクスチャのX座標を `orbX - 2` に変更
+  - `OrbShaderRenderer.java:74,107`: `OFFSET_X = -1.0f` 定数を追加し、液面描画位置を左に1px移動
+  - ビルド確認完了
 
-### 過去セッション（圧縮ログ）
-- **2026-02-25**: HP数値表示の初版実装（平面上描画）
-- **スナップ計算バグ修正**: expansion領域を考慮
-- **Mine and Slash互換性**: NeatConfig.draw無効化
-- **フォント機能拡充**: フォントプリセット機能追加
-
-## [未実装機能メモ]
-Mob HPバーで設定あり・実装なしの機能:
-- `showOnlyWhenDamaged` - ダメージ時のみ表示
-- `showForAllMobs` - 全Mob表示制御
-- `showThroughWalls` - 壁越し表示制御
-- 色設定UI - backgroundColor/borderColor/healthColor等
+### 過去セッション（極度圧縮）
+- **2026-02-26**: HPバーのテキスト消失・反転バグを解決（ビルボード方式化）。HPバー進行方向を修正。

@@ -32,11 +32,13 @@ public class EffectRenderHelper {
         public float currentY;
         public boolean isNew;
         public int flashTimer;
+        public int maxDuration;
 
         public VisualState(float startX) {
             this.currentX = startX;
             this.isNew = true;
             this.flashTimer = FLASH_DURATION;
+            this.maxDuration = -1;
         }
     }
 
@@ -201,9 +203,6 @@ public class EffectRenderHelper {
             return Integer.compare(b.getDuration(), a.getDuration());
         });
 
-        // 4. Update States for Animation
-        updateVisualStates(combined);
-
         return combined;
     }
 
@@ -216,11 +215,14 @@ public class EffectRenderHelper {
         displayStates.keySet().removeIf(id -> !currentIds.contains(id));
     }
 
-    public static VisualState getVisualState(String id, float targetX) {
+    public static VisualState getVisualState(String id, float targetX, int duration) {
         VisualState state = displayStates.get(id);
         if (state == null) {
             state = new VisualState(targetX);
+            state.maxDuration = duration;
             displayStates.put(id, state);
+        } else if (duration > state.maxDuration) {
+            state.maxDuration = duration;
         }
         return state;
     }
