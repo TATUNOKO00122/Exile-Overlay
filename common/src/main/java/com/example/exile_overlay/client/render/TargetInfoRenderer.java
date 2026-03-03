@@ -6,6 +6,7 @@ import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,10 +23,10 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
 
-public class TargetMobNameRenderer implements IRenderCommand, IHudRenderer {
+public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TargetMobNameRenderer.class);
-    private static final String COMMAND_ID = "target_mob_name";
+    private static final Logger LOGGER = LoggerFactory.getLogger(TargetInfoRenderer.class);
+    private static final String COMMAND_ID = "target_info";
     private static final int PRIORITY = 80;
 
     private static final double MAX_DISTANCE = 64.0;
@@ -50,7 +51,7 @@ public class TargetMobNameRenderer implements IRenderCommand, IHudRenderer {
 
     private static final int NAME_Y = 22;
 
-    public TargetMobNameRenderer() {
+    public TargetInfoRenderer() {
     }
 
     @Override
@@ -107,6 +108,14 @@ public class TargetMobNameRenderer implements IRenderCommand, IHudRenderer {
             return;
         }
 
+        int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
+        String displayName;
+        if (mnsLevel > 0) {
+            displayName = "Lv." + mnsLevel + " " + name;
+        } else {
+            displayName = name;
+        }
+
         float health = target.getHealth();
         float maxHealth = target.getMaxHealth();
         float hpRatio = Mth.clamp(health / maxHealth, 0.0f, 1.0f);
@@ -139,14 +148,10 @@ public class TargetMobNameRenderer implements IRenderCommand, IHudRenderer {
 
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
 
-            // HP数値（一時的に無効化）
-            // String hpText = formatHpText(health, maxHealth);
-            // int hpWidth = mc.font.width(hpText);
-
-            int nameWidth = mc.font.width(name);
+            int nameWidth = mc.font.width(displayName);
             int textX = (TEX_WIDTH - nameWidth) / 2;
 
-            graphics.drawString(mc.font, name, textX, NAME_Y, 0xFFFFFFFF, true);
+            graphics.drawString(mc.font, displayName, textX, NAME_Y, 0xFFFFFFFF, true);
 
         } finally {
             graphics.pose().popPose();
@@ -199,7 +204,7 @@ public class TargetMobNameRenderer implements IRenderCommand, IHudRenderer {
 
     @Override
     public String getConfigKey() {
-        return "target_mob_name";
+        return "target_info";
     }
 
     @Override

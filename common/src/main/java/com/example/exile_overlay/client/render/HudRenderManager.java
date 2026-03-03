@@ -93,8 +93,8 @@ public class HudRenderManager {
         // バニラ食料ゲージ
         this.registerCommand(new VanillaFoodRenderer(), 45);
 
-        // ターゲットMOB名表示
-        this.registerCommand(new TargetMobNameRenderer(), 75);
+        // ターゲット情報表示（レベル+名前+HP）
+        this.registerCommand(new TargetInfoRenderer(), 75);
     }
 
     /**

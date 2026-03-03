@@ -648,4 +648,38 @@ public class MineAndSlashHelper {
     public static boolean isLoaded() {
         return isMnsLoaded();
     }
+
+    // ========== Entity Level API (Mob/Player) ==========
+
+    private static Boolean entityDataHasGetLevel = null;
+
+    /**
+     * LivingEntity（Mob/Player）のMine-And-Slashレベルを取得
+     * Mine-And-Slash-Rework MODの Load.Unit(entity).getLevel() を呼び出し
+     * 
+     * @param entity 対象エンティティ（Mob or Player）
+     * @return レベル（MOD未導入時、または取得失敗時は -1）
+     */
+    public static int getEntityLevel(net.minecraft.world.entity.LivingEntity entity) {
+        if (!isMnsLoaded() || entity == null) {
+            return -1;
+        }
+
+        try {
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var unitMethod = loadClass.getMethod("Unit", net.minecraft.world.entity.Entity.class);
+            Object entityData = unitMethod.invoke(null, entity);
+
+            if (entityData != null) {
+                var getLevelMethod = entityData.getClass().getMethod("getLevel");
+                return ((Number) getLevelMethod.invoke(entityData)).intValue();
+            }
+        } catch (Exception e) {
+            if (entityDataHasGetLevel == null) {
+                LOGGER.debug("Failed to get entity level from Mine-And-Slash: {}", e.getMessage());
+                entityDataHasGetLevel = false;
+            }
+        }
+        return -1;
+    }
 }
