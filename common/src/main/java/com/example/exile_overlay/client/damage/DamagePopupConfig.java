@@ -39,9 +39,6 @@ public class DamagePopupConfig {
     // フォントプリセット設定
     private FontPreset fontPreset = FontPreset.JERSEY20;
     private int customFontSize = 64;
-    
-    // 距離スケーリング設定
-    private boolean enableDistanceScaling = true;
 
     private int normalDamageColor = 0xFFFFFF;
     private int criticalDamageColor = 0xFFFF00;
@@ -106,9 +103,6 @@ public class DamagePopupConfig {
                 fontPreset = FontPreset.fromPath(obj.get("customFontPath").getAsString());
             }
             if (obj.has("customFontSize")) customFontSize = obj.get("customFontSize").getAsInt();
-            
-            // 距離スケーリング設定の読み込み
-            if (obj.has("enableDistanceScaling")) enableDistanceScaling = obj.get("enableDistanceScaling").getAsBoolean();
 
             if (obj.has("colors")) {
                 JsonObject colors = obj.getAsJsonObject("colors");
@@ -161,9 +155,6 @@ public class DamagePopupConfig {
         // フォントプリセット設定の保存
         obj.addProperty("fontPreset", fontPreset.name());
         obj.addProperty("customFontSize", customFontSize);
-        
-        // 距離スケーリング設定の保存
-        obj.addProperty("enableDistanceScaling", enableDistanceScaling);
 
         JsonObject colors = new JsonObject();
         colors.addProperty("normal", normalDamageColor);
@@ -251,10 +242,6 @@ public class DamagePopupConfig {
     // フォントプリセット設定のセッター
     public void setFontPreset(FontPreset preset) { this.fontPreset = preset; }
     public void setCustomFontSize(int size) { this.customFontSize = size; }
-    
-    // 距離スケーリング設定のゲッター・セッター
-    public boolean isEnableDistanceScaling() { return enableDistanceScaling; }
-    public void setEnableDistanceScaling(boolean enable) { this.enableDistanceScaling = enable; }
 
     // 色設定のセッター
     public void setNormalDamageColor(int color) { this.normalDamageColor = color; }

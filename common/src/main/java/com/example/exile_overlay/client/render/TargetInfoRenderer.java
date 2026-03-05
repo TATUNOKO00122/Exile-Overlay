@@ -204,7 +204,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     @Override
     public String getConfigKey() {
-        return "target_info";
+        return "target_mob_name";
     }
 
     @Override

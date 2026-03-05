@@ -34,7 +34,6 @@ public class DamagePopupConfigScreen extends Screen {
     private Checkbox showPlayerDamageCheckbox;
     private Checkbox enableShadowCheckbox;
     private Checkbox enableStackingCheckbox;
-    private Checkbox enableDistanceScalingCheckbox;
 
     // フォント選択
     private FontPreset currentFontPreset;
@@ -111,11 +110,6 @@ public class DamagePopupConfigScreen extends Screen {
                 .build();
         addRenderableWidget(fontPresetButton);
         leftY += elementSpacing;
-
-        enableDistanceScalingCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
-                Component.translatable("checkbox.exile_overlay.enable_distance_scaling"),
-                config.isEnableDistanceScaling());
-        addRenderableWidget(enableDistanceScalingCheckbox);
 
         int rightY = widgetStartY;
 
@@ -230,7 +224,6 @@ public class DamagePopupConfigScreen extends Screen {
         config.setMaxDamageTexts((int) maxDamageTextsSlider.getValue());
         config.setEnableDamageStacking(enableStackingCheckbox.selected());
         config.setFontPreset(currentFontPreset);
-        config.setEnableDistanceScaling(enableDistanceScalingCheckbox.selected());
 
         config.save();
         DamageFontRenderer.reloadCustomFont();

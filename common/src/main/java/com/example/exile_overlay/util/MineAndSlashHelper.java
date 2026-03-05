@@ -1,5 +1,6 @@
 package com.example.exile_overlay.util;
 
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
@@ -58,14 +59,15 @@ public class MineAndSlashHelper {
         }
 
         try {
-            // Load.Unit(player) を呼び出す
+            // Load.Unit(Entity) を呼び出す - Player is a subclass of Entity
             Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
-            var method = loadClass.getMethod("Unit", Player.class);
+            var method = loadClass.getMethod("Unit", Entity.class);
             cachedEntityData = method.invoke(null, player);
             cachedPlayer = new WeakReference<>(player);
             cacheTime = now;
             return cachedEntityData;
         } catch (Exception e) {
+            LOGGER.info("[CD Debug] getCachedEntityData failed: {}", e.getMessage());
             return null;
         }
     }
@@ -484,6 +486,11 @@ public class MineAndSlashHelper {
         return null;
     }
 
+    private static long lastCooldownLogTime = 0;
+    private static final long COOLDOWN_LOG_INTERVAL_MS = 2000;
+    private static int lastLoggedSlot = -1;
+    private static int lastLoggedCurrent = -1;
+
     /**
      * Get cooldown percentage (0.0 - 1.0, where 1.0 = fully on cooldown)
      */
@@ -491,29 +498,66 @@ public class MineAndSlashHelper {
         if (!isMnsLoaded()) return 0;
         try {
             var spell = getHotbarSpell(player, slot);
-            if (spell != null) {
-                var getGUID = spell.getClass().getMethod("GUID");
-                String guid = (String) getGUID.invoke(spell);
-                
-                Object data = getCachedEntityData(player);
-                if (data != null) {
-                    var getCooldowns = data.getClass().getMethod("getCooldowns");
-                    Object cds = getCooldowns.invoke(data);
-                    if (cds != null) {
-                        var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
-                        var getNeededTicks = cds.getClass().getMethod("getNeededTicks", String.class);
-                        int current = (int) getCurrentTicks.invoke(cds, guid);
-                        int needed = (int) getNeededTicks.invoke(cds, guid);
-                        if (needed > 0) {
-                            return Math.min((float) current / needed, 1.0f);
-                        }
-                    }
-                }
+            if (spell == null) {
+                logCooldownDebug(slot, "spell=null", 0, 0);
+                return 0;
+            }
+
+            var getGUID = spell.getClass().getMethod("GUID");
+            String guid = (String) getGUID.invoke(spell);
+            if (guid == null || guid.isEmpty()) {
+                logCooldownDebug(slot, "guid=null", 0, 0);
+                return 0;
+            }
+
+            Object data = getCachedEntityData(player);
+            if (data == null) {
+                logCooldownDebug(slot, "data=null", 0, 0);
+                return 0;
+            }
+
+            var getCooldowns = data.getClass().getMethod("getCooldowns");
+            Object cds = getCooldowns.invoke(data);
+            if (cds == null) {
+                logCooldownDebug(slot, "cds=null", 0, 0);
+                return 0;
+            }
+
+            var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
+            var getNeededTicks = cds.getClass().getMethod("getNeededTicks", String.class);
+            int current = (int) getCurrentTicks.invoke(cds, guid);
+            int needed = (int) getNeededTicks.invoke(cds, guid);
+
+            logCooldownDebug(slot, guid, current, needed);
+
+            if (needed > 0) {
+                return Math.min((float) current / needed, 1.0f);
             }
         } catch (Exception e) {
-            LOGGER.debug("Failed to get spell cooldown at slot {}: {}", slot, e.getMessage());
+            logCooldownDebug(slot, "Exception: " + e.getMessage(), 0, 0);
         }
         return 0;
+    }
+
+    private static void logCooldownDebug(int slot, String guid, int current, int needed) {
+        long now = System.currentTimeMillis();
+        boolean shouldLog = false;
+
+        if ((now - lastCooldownLogTime) > COOLDOWN_LOG_INTERVAL_MS) {
+            shouldLog = true;
+        } else if (slot != lastLoggedSlot || current != lastLoggedCurrent) {
+            if (current > 0 || lastLoggedCurrent > 0) {
+                shouldLog = true;
+            }
+        }
+
+        if (shouldLog) {
+            LOGGER.info("[CD Debug] Slot {} GUID={} current={} needed={}",
+                    slot, guid, current, needed);
+            lastCooldownLogTime = now;
+            lastLoggedSlot = slot;
+            lastLoggedCurrent = current;
+        }
     }
 
     /**
@@ -523,23 +567,32 @@ public class MineAndSlashHelper {
         if (!isMnsLoaded()) return 0;
         try {
             var spell = getHotbarSpell(player, slot);
-            if (spell != null) {
-                var getGUID = spell.getClass().getMethod("GUID");
-                String guid = (String) getGUID.invoke(spell);
-                
-                Object data = getCachedEntityData(player);
-                if (data != null) {
-                    var getCooldowns = data.getClass().getMethod("getCooldowns");
-                    Object cds = getCooldowns.invoke(data);
-                    if (cds != null) {
-                        var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
-                        int ticks = (int) getCurrentTicks.invoke(cds, guid);
-                        return ticks / 20;
-                    }
-                }
+            if (spell == null) {
+                return 0;
             }
+
+            var getGUID = spell.getClass().getMethod("GUID");
+            String guid = (String) getGUID.invoke(spell);
+            if (guid == null || guid.isEmpty()) {
+                return 0;
+            }
+
+            Object data = getCachedEntityData(player);
+            if (data == null) {
+                return 0;
+            }
+
+            var getCooldowns = data.getClass().getMethod("getCooldowns");
+            Object cds = getCooldowns.invoke(data);
+            if (cds == null) {
+                return 0;
+            }
+
+            var getCurrentTicks = cds.getClass().getMethod("getCooldownTicks", String.class);
+            int ticks = (int) getCurrentTicks.invoke(cds, guid);
+            return ticks / 20;
         } catch (Exception e) {
-            LOGGER.debug("Failed to get spell cooldown seconds at slot {}: {}", slot, e.getMessage());
+            // 例外はgetSpellCooldownPercentでログ出力済み
         }
         return 0;
     }

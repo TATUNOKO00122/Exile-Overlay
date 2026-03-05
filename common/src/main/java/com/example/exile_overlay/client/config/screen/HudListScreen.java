@@ -28,7 +28,7 @@ public class HudListScreen extends Screen {
 
     private Button hudPositionButton;
     private Button damagePopupButton;
-    private Button mobHealthBarButton;
+    // private Button mobHealthBarButton; // DISABLED: 3D HPBar
     private Button doneButton;
 
     public HudListScreen(Screen parent) {
@@ -65,24 +65,25 @@ public class HudListScreen extends Screen {
                 .build();
 
         // MOBヘルスバー設定ボタン
-        mobHealthBarButton = Button.builder(
-                Component.translatable("button.exile_overlay.mob_healthbar_config"),
-                button -> openMobHealthBarConfigScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
-                        BUTTON_HEIGHT)
-                .build();
+        // DISABLED: 3D HPBar
+        // mobHealthBarButton = Button.builder(
+        //         Component.translatable("button.exile_overlay.mob_healthbar_config"),
+        //         button -> openMobHealthBarConfigScreen())
+        //         .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
+        //                 BUTTON_HEIGHT)
+        //         .build();
 
         // 完了ボタン
         doneButton = Button.builder(
                 Component.translatable("button.exile_overlay.done"),
                 button -> onDone())
-                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH,
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
                         BUTTON_HEIGHT)
                 .build();
 
         addRenderableWidget(hudPositionButton);
         addRenderableWidget(damagePopupButton);
-        addRenderableWidget(mobHealthBarButton);
+        // addRenderableWidget(mobHealthBarButton); // DISABLED: 3D HPBar
         addRenderableWidget(doneButton);
     }
 
@@ -128,14 +129,15 @@ public class HudListScreen extends Screen {
         mc.setScreen(new DamagePopupConfigScreen(this));
     }
 
-    /**
-     * MOBヘルスバー設定画面を開く
-     */
-    private void openMobHealthBarConfigScreen() {
-        LOGGER.info("Opening mob health bar configuration screen");
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new MobHealthBarConfigScreen(this));
-    }
+    // DISABLED: 3D HPBar
+    // /**
+    //  * MOBヘルスバー設定画面を開く
+    //  */
+    // private void openMobHealthBarConfigScreen() {
+    //     LOGGER.info("Opening mob health bar configuration screen");
+    //     Minecraft mc = Minecraft.getInstance();
+    //     mc.setScreen(new MobHealthBarConfigScreen(this));
+    // }
 
     /**
      * 完了ボタン処理

@@ -125,7 +125,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 int seconds = MineAndSlashHelper.getSpellCooldownSeconds(player, slot);
                 if (seconds > 0) {
                     String text = String.valueOf(seconds);
-                    int textX = iconX + ICON_SIZE / 2 - mc.font.width(text) / 2;
+                    int textX = iconX + ICON_SIZE / 2 - mc.font.width(text) / 2 + 1;
                     int textY = iconY + ICON_SIZE / 2 - 4;
                     graphics.drawString(mc.font, text, textX + 1, textY + 1, 0xFF000000, false);
                     graphics.drawString(mc.font, text, textX, textY, 0xFFFFFF00, false);
