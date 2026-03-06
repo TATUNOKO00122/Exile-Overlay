@@ -252,28 +252,39 @@ public class DraggableHudConfigScreen extends Screen {
      * メタデータに基づいて座標計算
      */
     private void renderElementPreview(GuiGraphics graphics, DraggableElement element, int x, int y) {
-        int width = element.getWidth();
-        int height = element.getHeight();
+        int baseWidth = element.getBaseWidth();
+        int baseHeight = element.getBaseHeight();
+        float scale = element.getScale();
         boolean isVisible = element.isVisible();
+
+        // スケーリング適用後のサイズ
+        int width = (int) (baseWidth * scale);
+        int height = (int) (baseHeight * scale);
 
         IHudRenderer.HudRenderMetadata metadata = element.getRenderMetadata();
         IHudRenderer.Insets offset = metadata.getOffset();
         IHudRenderer.Insets expansion = metadata.getExpansion();
 
+        // スケーリングを考慮したexpansion
+        int scaledExpansionH = (int) (expansion.getHorizontal() * scale);
+        int scaledExpansionV = (int) (expansion.getVertical() * scale);
+        int scaledOffsetLeft = (int) (offset.left * scale);
+        int scaledOffsetTop = (int) (offset.top * scale);
+
         int left;
         int top;
         if (metadata.isTopLeftBased()) {
-            left = x + offset.left;
-            top = y + offset.top;
+            left = x + scaledOffsetLeft;
+            top = y + scaledOffsetTop;
         } else if (metadata.isBottomCenterBased()) {
-            left = x - width / 2 - expansion.left + offset.left;
-            top = y - height - expansion.top + offset.top;
+            left = x - width / 2 - (int) (expansion.left * scale) + scaledOffsetLeft;
+            top = y - height - (int) (expansion.top * scale) + scaledOffsetTop;
         } else {
-            left = x - width / 2 - expansion.left + offset.left;
-            top = y - height / 2 - expansion.top + offset.top;
+            left = x - width / 2 - (int) (expansion.left * scale) + scaledOffsetLeft;
+            top = y - height / 2 - (int) (expansion.top * scale) + scaledOffsetTop;
         }
-        int renderWidth = width + expansion.getHorizontal();
-        int renderHeight = height + expansion.getVertical();
+        int renderWidth = width + scaledExpansionH;
+        int renderHeight = height + scaledExpansionV;
 
         int baseAlpha = element == selectedElement ? 0x66 : 0x33;
         if (!isVisible) {
@@ -283,8 +294,6 @@ public class DraggableHudConfigScreen extends Screen {
         graphics.fill(left, top, left + renderWidth, top + renderHeight, color);
 
         graphics.renderOutline(left, top, renderWidth, renderHeight, isVisible ? 0xFFFFFFFF : 0xFF888888);
-
-
 
         renderToggleButton(graphics, element);
         renderOrientationButton(graphics, element);
@@ -695,8 +704,9 @@ public class DraggableHudConfigScreen extends Screen {
 
         boolean isHit(int mouseX, int mouseY, int screenWidth, int screenHeight) {
             int[] pos = getResolvedPosition(screenWidth, screenHeight);
-            int scaledWidth = getWidth();
-            int scaledHeight = getHeight();
+            float scale = position.getScale();
+            int scaledWidth = (int) (baseWidth * scale);
+            int scaledHeight = (int) (baseHeight * scale);
 
             // メタデータから設定を取得
             IHudRenderer renderer = HudRenderManager.getInstance().getHudRenderer(key);
@@ -711,23 +721,31 @@ public class DraggableHudConfigScreen extends Screen {
             IHudRenderer.Insets offset = metadata.getOffset();
             IHudRenderer.Insets expansion = metadata.getExpansion();
 
+            // スケーリングを適用
+            int scaledOffsetLeft = (int) (offset.left * scale);
+            int scaledOffsetTop = (int) (offset.top * scale);
+            int scaledExpansionLeft = (int) (expansion.left * scale);
+            int scaledExpansionTop = (int) (expansion.top * scale);
+            int scaledExpansionH = (int) (expansion.getHorizontal() * scale);
+            int scaledExpansionV = (int) (expansion.getVertical() * scale);
+
             int left;
             int top;
             if (metadata.isTopLeftBased()) {
                 // 左上基準
-                left = pos[0] + offset.left;
-                top = pos[1] + offset.top;
+                left = pos[0] + scaledOffsetLeft;
+                top = pos[1] + scaledOffsetTop;
             } else if (metadata.isBottomCenterBased()) {
                 // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
-                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
-                top = pos[1] - scaledHeight - expansion.top + offset.top;
+                left = pos[0] - scaledWidth / 2 - scaledExpansionLeft + scaledOffsetLeft;
+                top = pos[1] - scaledHeight - scaledExpansionTop + scaledOffsetTop;
             } else {
                 // 中心基準: XとYの両方が中心
-                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
-                top = pos[1] - scaledHeight / 2 - expansion.top + offset.top;
+                left = pos[0] - scaledWidth / 2 - scaledExpansionLeft + scaledOffsetLeft;
+                top = pos[1] - scaledHeight / 2 - scaledExpansionTop + scaledOffsetTop;
             }
-            int right = left + scaledWidth + expansion.getHorizontal();
-            int bottom = top + scaledHeight + expansion.getVertical();
+            int right = left + scaledWidth + scaledExpansionH;
+            int bottom = top + scaledHeight + scaledExpansionV;
 
             return mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom;
         }
@@ -757,7 +775,8 @@ public class DraggableHudConfigScreen extends Screen {
         }
 
         int getToggleButtonSize() {
-            int size = (int) (Math.min(baseWidth, baseHeight) * position.getScale() * 0.3f);
+            float scale = position.getScale();
+            int size = (int) (Math.min(baseWidth, baseHeight) * scale * 0.3f);
             return Math.max(TOGGLE_BUTTON_MIN_SIZE, Math.min(TOGGLE_BUTTON_MAX_SIZE, size));
         }
 
@@ -767,25 +786,32 @@ public class DraggableHudConfigScreen extends Screen {
 
         int[] getToggleButtonPosition(int screenWidth, int screenHeight) {
             int[] pos = getResolvedPosition(screenWidth, screenHeight);
-            int scaledWidth = getWidth();
-            int scaledHeight = getHeight();
+            float scale = position.getScale();
+            int scaledWidth = (int) (baseWidth * scale);
+            int scaledHeight = (int) (baseHeight * scale);
             int btnSize = getToggleButtonSize();
 
             IHudRenderer.HudRenderMetadata metadata = getRenderMetadata();
             IHudRenderer.Insets offset = metadata.getOffset();
             IHudRenderer.Insets expansion = metadata.getExpansion();
 
+            // スケーリングを適用
+            int scaledOffsetLeft = (int) (offset.left * scale);
+            int scaledOffsetTop = (int) (offset.top * scale);
+            int scaledExpansionLeft = (int) (expansion.left * scale);
+            int scaledExpansionTop = (int) (expansion.top * scale);
+
             int left;
             int top;
             if (metadata.isTopLeftBased()) {
-                left = pos[0] + offset.left;
-                top = pos[1] + offset.top;
+                left = pos[0] + scaledOffsetLeft;
+                top = pos[1] + scaledOffsetTop;
             } else if (metadata.isBottomCenterBased()) {
-                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
-                top = pos[1] - scaledHeight - expansion.top + offset.top;
+                left = pos[0] - scaledWidth / 2 - scaledExpansionLeft + scaledOffsetLeft;
+                top = pos[1] - scaledHeight - scaledExpansionTop + scaledOffsetTop;
             } else {
-                left = pos[0] - scaledWidth / 2 - expansion.left + offset.left;
-                top = pos[1] - scaledHeight / 2 - expansion.top + offset.top;
+                left = pos[0] - scaledWidth / 2 - scaledExpansionLeft + scaledOffsetLeft;
+                top = pos[1] - scaledHeight / 2 - scaledExpansionTop + scaledOffsetTop;
             }
 
             return new int[]{left, top};

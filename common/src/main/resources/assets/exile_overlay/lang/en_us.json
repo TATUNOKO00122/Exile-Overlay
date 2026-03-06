@@ -33,7 +33,10 @@
   "label.exile_overlay.display_settings": "Display Settings",
   "label.exile_overlay.numeric_settings": "Numeric Settings",
   "label.exile_overlay.size_settings": "Size Settings",
-  "key.exile_overlay.hud_config": "Open HUD Config",
+  "screen.exile_overlay.general_config.title": "General Settings",
+  "button.exile_overlay.general_config": "General Settings",
+  "checkbox.exile_overlay.use_percentage": "Use Percentage Display",
+  "key.exile_overlay.hud_config": "Open HUD Config"
   "category.exile_overlay.general": "Exile Overlay",
   "hud.exile_overlay.hotbar": "Hotbar",
   "hud.exile_overlay.damage_popup": "Damage Popup",

@@ -95,6 +95,9 @@ public class HudRenderManager {
 
         // ターゲット情報表示（レベル+名前+HP）
         this.registerCommand(new TargetInfoRenderer(), 75);
+
+        // 装備耐久表示
+        this.registerCommand(new ArmorDurabilityRenderer(), 85);
     }
 
     /**

@@ -104,6 +104,9 @@ public class HudPositionManager {
         // ターゲットMOB名: 画面上部中央
         defaults.put("target_mob_name", new HudPosition(Anchor.TOP_CENTER, 0, 30, 1.0f, true, false));
 
+        // 装備耐久: 画面左下（ホットバーの上）
+        defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_LEFT, 10, -80, 1.0f, true, false));
+
         LOGGER.debug("Registered {} default positions", defaults.size());
     }
     

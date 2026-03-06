@@ -14,11 +14,48 @@ Minecraft 1.20.1 mod using **Architectury** framework (Fabric + Forge).
 ./gradlew :fabric:build                      # Build Fabric only
 ./gradlew :forge:build                       # Build Forge only
 ./gradlew test                               # Run all tests
-./gradlew test --tests "ClassName"           # Run single test class
-./gradlew :common:test --tests "MethodHandlesBenchmark"
 ./gradlew :fabric:runClient                  # Run Fabric client
 ./gradlew :forge:runClient                   # Run Forge client
 ```
+
+## Project Structure
+
+```
+common/src/main/java/com/example/exile_overlay/
+├── api/                    # Public interfaces & data provider API (30 files)
+├── client/                 # Client-side rendering & UI (47 files)
+│   ├── config/            # Configuration & config screens
+│   ├── damage/            # Damage popup system
+│   └── render/            # HUD rendering pipeline
+├── mixin/                 # Mixin implementations (1 file)
+└── util/                  # Utility classes
+
+fabric/src/main/java/       # Fabric platform (7 files)
+forge/src/main/java/        # Forge platform (9 files)
+```
+
+## Where to Look
+
+| Task | Location | Notes |
+|------|----------|-------|
+| Add new MOD data provider | `common/src/main/java/com/example/exile_overlay/api/` | See `AbstractModDataProvider`, `IModDataProvider` |
+| Add HUD renderer | `common/src/main/java/com/example/exile_overlay/client/render/` | Register via `HudRenderManager` |
+| Add damage popup style | `common/src/main/java/com/example/exile_overlay/client/damage/` | `DamageFontRenderer`, `FontPreset` |
+| Add config screen | `common/src/main/java/com/example/exile_overlay/client/config/screen/` | Extend `DraggableHudConfigScreen` |
+| Platform-specific hook | `fabric/.../client/` or `forge/.../client/` | Keep minimal, delegate to common |
+| Mixin injection | `common/mixin/` or platform `mixin/` | Use `@Inject` at HEAD/TAIL |
+
+## Code Map
+
+| Symbol | Type | Location | Role |
+|--------|------|----------|------|
+| `ModDataProviderRegistry` | Class | `api/` | Entry point for MOD data access |
+| `HudRenderManager` | Class | `client/render/` | Central HUD render coordinator |
+| `DamagePopupManager` | Class | `client/damage/` | Damage number popup controller |
+| `IHudRenderer` | Interface | `api/` | HUD renderer contract |
+| `IModDataProvider` | Interface | `api/` | Data provider contract |
+| `ExampleModFabric` | Class | `fabric/` | Fabric entry point |
+| `ExampleModForge` | Class | `forge/` | Forge entry point |
 
 ## Code Style
 
@@ -28,106 +65,84 @@ Minecraft 1.20.1 mod using **Architectury** framework (Fabric + Forge).
 - **Max line length**: 120 characters
 - **Braces**: Same line (K&R style)
 - **No wildcard imports**
-- **No automatic formatter** (spotless) configured
 
 ### Naming Conventions
-- **Classes**: `PascalCase` (e.g., `HudRenderManager`)
-- **Methods/Fields**: `camelCase` (e.g., `renderHotbar`)
-- **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `BG_WIDTH`)
-- **Packages**: lowercase reverse domain (`com.example.exile_overlay`)
+- **Classes**: `PascalCase`
+- **Methods/Fields**: `camelCase`
+- **Constants**: `SCREAMING_SNAKE_CASE`
 - **Mixin unique fields**: `exileOverlay$fieldName` prefix
 - **Resource locations**: `snake_case`
 
 ### Import Order
 ```java
-import net.minecraft.*;            // Minecraft classes
-import net.fabricmc.*;             // Fabric API
-import net.minecraftforge.*;       // Forge API
-import dev.architectury.*;         // Architectury API
-import org.spongepowered.asm.*;    // Mixin
-import com.example.exile_overlay.*; // Project classes
-import java.util.*;                 // Java standard library
+import net.minecraft.*;
+import net.fabricmc.*;
+import net.minecraftforge.*;
+import dev.architectury.*;
+import org.spongepowered.asm.*;
+import com.example.exile_overlay.*;
+import java.util.*;
 ```
 
-### Types & Safety
-- Use explicit types, avoid `var`
-- Mark parameters as `final` where appropriate
-- Always null-check `Minecraft.getInstance().player` before use
-- Use `@Unique` for private mixin fields/methods
-- Use `@Environment(EnvType.CLIENT)` for client-only mixins
+## Architecture Rules
 
-### Error Handling
-- Wrap all mixin code in try-catch blocks
-- Use SLF4J logger: `LoggerFactory.getLogger("exile_overlay/ClassName")`
-- Return early for null states: `if (player == null) return;`
-- Handle side checks at method start: `if (!entity.level().isClientSide()) return;`
+1. **Common-first**: Implement in `common/` if platform-agnostic
+2. **@ExpectPlatform**: Use for platform-specific implementations
+3. **IDataSource**: Use interface for data abstraction
+4. **HudRenderManager**: Register renderers via `registerCommand()`
+5. **rendererIndex**: Use map for `IHudRenderer` lookup by config key
 
 ## Mixin Rules
 
-- Place mixins in `com.example.exile_overlay.mixin` package
-- Use `@Inject` at `HEAD` or `TAIL` when possible
-- Avoid `@Overwrite` unless absolutely necessary
-- Use `CallbackInfo` for void methods, `CallbackInfoReturnable<T>` for return types
+- Place in `com.example.exile_overlay.mixin` package
+- Use `@Inject` at `HEAD` or `TAIL`
+- Avoid `@Overwrite`
+- Wrap in try-catch with SLF4J logger
+- Use `@Unique` for private fields/methods
+- Mark client-only: `@Environment(EnvType.CLIENT)`
 
-### Mixin Pattern
+### Pattern
 ```java
 @Environment(EnvType.CLIENT)
-@Mixin(LivingEntity.class)
-public abstract class DamageMixin {
-    @Unique private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
-    @Unique private float exileOverlay$lastHealth = -1;
+@Mixin(TargetClass.class)
+public abstract class MyMixin {
+    @Unique private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/MyMixin");
 
-    @Inject(method = "setHealth", at = @At("TAIL"))
-    private void exileOverlay$onSetHealth(float health, CallbackInfo ci) {
+    @Inject(method = "targetMethod", at = @At("TAIL"))
+    private void exileOverlay$onMethod(CallbackInfo ci) {
         try {
-            LivingEntity entity = (LivingEntity) (Object) this;
-            if (!entity.level().isClientSide()) return;
             // Logic here
         } catch (Exception e) {
-            LOGGER.error("Failed to handle setHealth", e);
+            LOGGER.error("Failed", e);
         }
     }
 }
 ```
 
-## Architecture Guidelines
+## Rendering Guidelines
 
-1. **Always implement in `common`** first if platform-agnostic
-2. Use `@ExpectPlatform` for platform-specific implementations
-3. Test on both Fabric and Forge
-4. Use `IDataSource` interface for data abstraction
-5. Register renderers in `HudRenderManager` via `registerCommand()`
-6. Use `rendererIndex` map for IHudRenderer lookup by config key
+- Use `GuiGraphics` for 2D rendering
+- Enable blend: `RenderSystem.enableBlend()`
+- Push/pop pose stack
+- Check `mc.screen != null` to skip when GUI open
+- Render thread only for graphics
 
-## Development Guidelines
+## Safety Rules
 
-### Memory Management
-- Reuse StringBuilder: `sb.setLength(0)` instead of creating new instances
-- Avoid object allocation in render/tick methods
-- Use primitive types (long) as map keys instead of UUID.toString()
+### Error Handling
+- Wrap mixin code in try-catch
+- Return early for null: `if (player == null) return;`
+- Side checks: `if (!entity.level().isClientSide()) return;`
 
-### Rendering
-- Use `GuiGraphics` for 2D rendering (1.20.1+)
-- Enable blend mode: `RenderSystem.enableBlend()`
-- Push/pop pose stack: `graphics.pose().pushPose()` / `popPose()`
-- Check `mc.screen != null` before drawing to skip when GUI open
+### Memory
+- Reuse `StringBuilder` via `setLength(0)`
+- Avoid allocation in render/tick methods
+- Use primitive keys (long) vs `UUID.toString()`
 
 ### Thread Safety
-- Rendering: **Render Thread** only
-- Data access: Use `ConcurrentHashMap` for cross-thread sharing
-- GUI updates: Use `Minecraft.getInstance().execute()`
-
-## Project Structure
-
-```
-common/src/main/java/com/example/exile_overlay/
-├── api/                    # Public interfaces & abstractions
-├── client/damage/          # Damage popup system
-├── client/config/          # Configuration & UI
-├── client/render/          # Rendering pipeline
-├── mixin/                  # Mixin implementations
-└── util/                   # Utility classes
-```
+- Rendering: Render Thread only
+- Shared data: Use `ConcurrentHashMap`
+- GUI updates: `Minecraft.getInstance().execute()`
 
 ## Dependencies
 
@@ -143,6 +158,11 @@ common/src/main/java/com/example/exile_overlay/
 | Issue | Solution |
 |-------|----------|
 | Mixin not applying | Check mixin config JSON and target class names |
-| Texture not loading | Verify path `assets/exile_overlay/textures/` and ResourceLocation mod ID |
-| Build failures | Run `./gradlew clean`, verify Java 17 installed |
-| NullPointerException in render | Ensure `mc.screen != null` check before drawing |
+| Texture not loading | Verify path `assets/exile_overlay/textures/`, check ResourceLocation mod ID |
+| Build failures | Run `./gradlew clean`, verify Java 17 |
+| NPE in render | Ensure `mc.screen != null` check before drawing |
+
+## References
+
+- See `MOD_COMPATIBILITY_API.md` for data provider API details
+- See `api/AGENTS.md` for API module specifics

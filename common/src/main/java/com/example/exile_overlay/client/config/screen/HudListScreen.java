@@ -26,6 +26,7 @@ public class HudListScreen extends Screen {
 
     private final Screen parent;
 
+    private Button generalConfigButton;
     private Button hudPositionButton;
     private Button damagePopupButton;
     // private Button mobHealthBarButton; // DISABLED: 3D HPBar
@@ -49,18 +50,25 @@ public class HudListScreen extends Screen {
         int startY = Math.max(10, (this.height - totalHeight) / 2);
         int widgetStartY = startY + titleHeight + labelSpacing;
 
+        // 全般設定ボタン（一番上）
+        generalConfigButton = Button.builder(
+                Component.translatable("button.exile_overlay.general_config"),
+                button -> openGeneralConfigScreen())
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .build();
+
         // HUD位置設定ボタン
         hudPositionButton = Button.builder(
                 Component.translatable("button.exile_overlay.hud_position"),
                 button -> openHudPositionScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY, BUTTON_WIDTH, BUTTON_HEIGHT)
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 1, BUTTON_WIDTH, BUTTON_HEIGHT)
                 .build();
 
         // Damageポップアップ設定ボタン
         damagePopupButton = Button.builder(
                 Component.translatable("button.exile_overlay.damage_popup_config"),
                 button -> openDamagePopupConfigScreen())
-                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + BUTTON_HEIGHT + BUTTON_SPACING, BUTTON_WIDTH,
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
                         BUTTON_HEIGHT)
                 .build();
 
@@ -69,7 +77,7 @@ public class HudListScreen extends Screen {
         // mobHealthBarButton = Button.builder(
         //         Component.translatable("button.exile_overlay.mob_healthbar_config"),
         //         button -> openMobHealthBarConfigScreen())
-        //         .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
+        //         .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH,
         //                 BUTTON_HEIGHT)
         //         .build();
 
@@ -77,10 +85,11 @@ public class HudListScreen extends Screen {
         doneButton = Button.builder(
                 Component.translatable("button.exile_overlay.done"),
                 button -> onDone())
-                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 2, BUTTON_WIDTH,
+                .bounds(centerX - BUTTON_WIDTH / 2, widgetStartY + (BUTTON_HEIGHT + BUTTON_SPACING) * 3, BUTTON_WIDTH,
                         BUTTON_HEIGHT)
                 .build();
 
+        addRenderableWidget(generalConfigButton);
         addRenderableWidget(hudPositionButton);
         addRenderableWidget(damagePopupButton);
         // addRenderableWidget(mobHealthBarButton); // DISABLED: 3D HPBar
@@ -109,6 +118,15 @@ public class HudListScreen extends Screen {
      */
     private void renderScreenBackground(GuiGraphics graphics) {
         graphics.fill(0, 0, this.width, this.height, BACKGROUND_COLOR);
+    }
+
+    /**
+     * 全般設定画面を開く
+     */
+    private void openGeneralConfigScreen() {
+        LOGGER.info("Opening general configuration screen");
+        Minecraft mc = Minecraft.getInstance();
+        mc.setScreen(new GeneralConfigScreen(this));
     }
 
     /**
