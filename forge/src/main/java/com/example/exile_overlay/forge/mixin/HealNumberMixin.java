@@ -41,8 +41,8 @@ public class HealNumberMixin {
                     return;
                 }
                 
-                // Playerへのダメージ表示設定をチェック（回復も同様に制御）
-                if (!config.isShowPlayerDamage() && living instanceof Player) {
+                // Playerへの回復表示設定をチェック
+                if (living instanceof Player && !config.isShowPlayerHealing()) {
                     ci.cancel();
                     return;
                 }
