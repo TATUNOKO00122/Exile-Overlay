@@ -103,8 +103,11 @@ public class DamagePopupManager {
             return;
         }
 
-        if (!config.isShowPlayerDamage() && entity instanceof Player) {
-            return;
+        // Playerへの回復表示設定をチェック
+        if (entity instanceof Player) {
+            if (!config.isShowPlayerHealing()) {
+                return;
+            }
         }
 
         LOGGER.debug("Heal detected: {} to {}", healAmount, entity.getType().toShortString());

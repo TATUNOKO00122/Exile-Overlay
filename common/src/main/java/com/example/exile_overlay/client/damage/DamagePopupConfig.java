@@ -31,6 +31,7 @@ public class DamagePopupConfig {
     private float verticalSpeed = 0.05f;
     private boolean showPlayerDamage = false;
     private boolean showHealing = true;
+    private boolean showPlayerHealing = true;
     
     // HJUD機能: ダメージスタッキング設定
     private boolean enableDamageStacking = true;
@@ -91,6 +92,7 @@ public class DamagePopupConfig {
             if (obj.has("verticalSpeed")) verticalSpeed = obj.get("verticalSpeed").getAsFloat();
             if (obj.has("showPlayerDamage")) showPlayerDamage = obj.get("showPlayerDamage").getAsBoolean();
             if (obj.has("showHealing")) showHealing = obj.get("showHealing").getAsBoolean();
+            if (obj.has("showPlayerHealing")) showPlayerHealing = obj.get("showPlayerHealing").getAsBoolean();
             
             // HJUD機能: ダメージスタッキング設定の読み込み
             if (obj.has("enableDamageStacking")) enableDamageStacking = obj.get("enableDamageStacking").getAsBoolean();
@@ -147,6 +149,7 @@ public class DamagePopupConfig {
         obj.addProperty("verticalSpeed", verticalSpeed);
         obj.addProperty("showPlayerDamage", showPlayerDamage);
         obj.addProperty("showHealing", showHealing);
+        obj.addProperty("showPlayerHealing", showPlayerHealing);
         
         // HJUD機能: ダメージスタッキング設定の保存
         obj.addProperty("enableDamageStacking", enableDamageStacking);
@@ -190,6 +193,7 @@ public class DamagePopupConfig {
     public float getVerticalSpeed() { return verticalSpeed; }
     public boolean isShowPlayerDamage() { return showPlayerDamage; }
     public boolean isShowHealing() { return showHealing; }
+    public boolean isShowPlayerHealing() { return showPlayerHealing; }
     
     // HJUD機能: ダメージスタッキング設定のゲッター
     public boolean isEnableDamageStacking() { return enableDamageStacking; }
@@ -227,6 +231,7 @@ public class DamagePopupConfig {
     public void setShowDamage(boolean show) { this.showDamage = show; }
     public void setShowHealing(boolean show) { this.showHealing = show; }
     public void setShowPlayerDamage(boolean show) { this.showPlayerDamage = show; }
+    public void setShowPlayerHealing(boolean show) { this.showPlayerHealing = show; }
     public void setEnableShadow(boolean enable) { this.enableShadow = enable; }
     public void setBaseScale(float scale) { this.baseScale = scale; }
     public void setCriticalScale(float scale) { this.criticalScale = scale; }

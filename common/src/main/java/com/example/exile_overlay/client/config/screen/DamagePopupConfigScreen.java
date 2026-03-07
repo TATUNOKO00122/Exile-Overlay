@@ -32,6 +32,7 @@ public class DamagePopupConfigScreen extends Screen {
     private Checkbox showDamageCheckbox;
     private Checkbox showHealingCheckbox;
     private Checkbox showPlayerDamageCheckbox;
+    private Checkbox showPlayerHealingCheckbox;
     private Checkbox enableShadowCheckbox;
     private Checkbox enableStackingCheckbox;
 
@@ -66,7 +67,7 @@ public class DamagePopupConfigScreen extends Screen {
         int leftColumnX = centerX - columnWidth - columnSpacing / 2;
         int rightColumnX = centerX + columnSpacing / 2;
 
-        int itemsPerColumn = 7;
+        int itemsPerColumn = 8;
         int titleHeight = 20;
         int labelHeight = 20;
         int footerHeight = 40;
@@ -90,6 +91,11 @@ public class DamagePopupConfigScreen extends Screen {
         showPlayerDamageCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
                 Component.translatable("checkbox.exile_overlay.show_player_damage"), config.isShowPlayerDamage());
         addRenderableWidget(showPlayerDamageCheckbox);
+        leftY += elementSpacing;
+
+        showPlayerHealingCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
+                Component.translatable("checkbox.exile_overlay.show_player_healing"), config.isShowPlayerHealing());
+        addRenderableWidget(showPlayerHealingCheckbox);
         leftY += elementSpacing;
 
         enableShadowCheckbox = new Checkbox(leftColumnX, leftY, columnWidth, buttonHeight,
@@ -154,7 +160,8 @@ public class DamagePopupConfigScreen extends Screen {
                 value -> Component.literal(String.valueOf(value.intValue())));
         addRenderableWidget(maxDamageTextsSlider);
 
-        int contentBottom = Math.max(leftY, rightY) + buttonHeight;
+        // contentBottomは最後の要素のbottom位置（次の要素用のspacingを除く）
+        int contentBottom = Math.max(leftY - elementSpacing, rightY) + buttonHeight;
         int buttonY = Math.min(contentBottom + 20, this.height - buttonHeight - 10);
         int actionButtonWidth = 150;
 
@@ -178,7 +185,7 @@ public class DamagePopupConfigScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderScreenBackground(graphics);
 
-        int itemsPerColumn = 7;
+        int itemsPerColumn = 8;
         int titleHeight = 20;
         int labelHeight = 20;
         int footerHeight = 40;
@@ -215,6 +222,7 @@ public class DamagePopupConfigScreen extends Screen {
         config.setShowDamage(showDamageCheckbox.selected());
         config.setShowHealing(showHealingCheckbox.selected());
         config.setShowPlayerDamage(showPlayerDamageCheckbox.selected());
+        config.setShowPlayerHealing(showPlayerHealingCheckbox.selected());
         config.setEnableShadow(enableShadowCheckbox.selected());
         config.setBaseScale((float) baseScaleSlider.getValue());
         config.setCriticalScale((float) criticalScaleSlider.getValue());
