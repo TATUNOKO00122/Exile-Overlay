@@ -38,6 +38,8 @@ public class MethodHandlesUtil {
     private static Class<?> resourceTypeClass = null;
     private static Class<?> unitClass = null;
     private static Class<?> healthUtilsClass = null;
+    private static Class<?> elementsClass = null;
+    private static Class<?> damageEventClass = null;
     
     // === MethodHandles ===
     private static MethodHandle LOAD_UNIT = null;
@@ -54,6 +56,9 @@ public class MethodHandlesUtil {
     private static MethodHandle IS_BLOOD_MAGE = null;
     private static MethodHandle GET_CURRENT_HEALTH = null;
     private static MethodHandle GET_MAX_HEALTH = null;
+    private static MethodHandle GET_LAST_DAMAGE_TAKEN = null;
+    private static MethodHandle GET_DAMAGE_EVENT_ELEMENT = null;
+    private static MethodHandle GET_ELEMENTS_FORMAT = null;
     
     // === ResourceType enum values ===
     private static Object MANA_TYPE = null;
@@ -79,6 +84,8 @@ public class MethodHandlesUtil {
             resourceTypeClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.ResourceType");
             unitClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.Unit");
             healthUtilsClass = Class.forName("com.robertx22.mine_and_slash.uncommon.utilityclasses.HealthUtils");
+            elementsClass = Class.forName("com.robertx22.mine_and_slash.uncommon.enumclasses.Elements");
+            damageEventClass = Class.forName("com.robertx22.mine_and_slash.uncommon.effectdatas.DamageEvent");
             
             LOAD_UNIT = lookupMethod(loadClass, "Unit", Entity.class);
             GET_RESOURCES = lookupMethod(entityDataClass, "getResources");
@@ -94,6 +101,11 @@ public class MethodHandlesUtil {
             IS_BLOOD_MAGE = lookupMethod(unitClass, "isBloodMage");
             GET_CURRENT_HEALTH = lookupMethod(healthUtilsClass, "getCurrentHealth", LivingEntity.class);
             GET_MAX_HEALTH = lookupMethod(healthUtilsClass, "getMaxHealth", LivingEntity.class);
+            
+            // 属性（Element）関連のメソッドをLookup
+            GET_LAST_DAMAGE_TAKEN = lookupFieldGetter(entityDataClass, "lastDamageTaken");
+            GET_DAMAGE_EVENT_ELEMENT = lookupMethod(damageEventClass, "getElement");
+            GET_ELEMENTS_FORMAT = lookupFieldGetter(elementsClass, "format");
             
             MANA_TYPE = getEnumValue(resourceTypeClass, "mana");
             MAGIC_SHIELD_TYPE = getEnumValue(resourceTypeClass, "magic_shield");
@@ -112,6 +124,8 @@ public class MethodHandlesUtil {
                 LOGGER.debug("  GET_MAGIC_SHIELD: {}", GET_MAGIC_SHIELD != null ? "OK" : "NULL");
                 LOGGER.debug("  GET_ENERGY: {}", GET_ENERGY != null ? "OK" : "NULL");
                 LOGGER.debug("  GET_BLOOD: {}", GET_BLOOD != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_LAST_DAMAGE_TAKEN: {}", GET_LAST_DAMAGE_TAKEN != null ? "OK" : "NULL");
+                LOGGER.debug("  GET_DAMAGE_EVENT_ELEMENT: {}", GET_DAMAGE_EVENT_ELEMENT != null ? "OK" : "NULL");
             }
             
             if (available) {
@@ -155,6 +169,19 @@ public class MethodHandlesUtil {
         }
     }
     
+    /**
+     * フィールドのGetter MethodHandleをLookup
+     */
+    private static MethodHandle lookupFieldGetter(Class<?> clazz, String fieldName) {
+        try {
+            java.lang.reflect.Field field = clazz.getField(fieldName);
+            return PUBLIC_LOOKUP.unreflectGetter(field);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to lookup field getter {}.{}: {}", clazz.getSimpleName(), fieldName, e.getMessage());
+            return null;
+        }
+    }
+
     /**
      * enum値を取得
      */
@@ -274,5 +301,127 @@ public class MethodHandlesUtil {
     
     public static Object getBloodType() {
         return BLOOD_TYPE;
+    }
+
+    // ========== 属性（Element）取得 ==========
+
+    /**
+     * エンティティの最後に受けたダメージの属性（Element）を取得
+     * @param entity LivingEntity
+     * @return Elements enum値、取得失敗時はnull
+     */
+    public static Object getLastDamageElement(LivingEntity entity) throws Throwable {
+        if (GET_LAST_DAMAGE_TAKEN == null || GET_DAMAGE_EVENT_ELEMENT == null || entity == null) {
+            return null;
+        }
+
+        // EntityDataを取得
+        Object entityData = LOAD_UNIT.invoke(entity);
+        if (entityData == null) return null;
+
+        // lastDamageTakenフィールドを取得
+        Object damageEvent = GET_LAST_DAMAGE_TAKEN.invoke(entityData);
+        if (damageEvent == null) return null;
+
+        // getElement()を呼び出し
+        return GET_DAMAGE_EVENT_ELEMENT.invoke(damageEvent);
+    }
+
+    /**
+     * Elements enumの色（ChatFormatting）を取得
+     * @param element Elements enum値
+     * @return ChatFormatting、取得失敗時はnull
+     */
+    public static Object getElementFormat(Object element) throws Throwable {
+        if (GET_ELEMENTS_FORMAT == null || element == null) {
+            return null;
+        }
+        return GET_ELEMENTS_FORMAT.invoke(element);
+    }
+
+    /**
+     * 属性名からElements enum値を取得
+     * @param name 属性名（"Physical", "Fire", "Cold", "Nature", "Shadow"など）
+     * @return Elements enum値、取得失敗時はnull
+     */
+    public static Object getElementByName(String name) {
+        if (elementsClass == null || name == null) {
+            return null;
+        }
+        try {
+            return elementsClass.getField(name.toUpperCase()).get(null);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get Element by name: {}", name);
+            return null;
+        }
+    }
+
+    /**
+     * 属性に対応する色コード（int）を取得
+     * M&SのDamageポップアップ色と同じ色を返す
+     * @param element Elements enum値
+     * @return ARGB色コード、取得失敗時は0xFFFFFF（白）
+     */
+    public static int getElementColor(Object element) {
+        if (element == null) {
+            return 0xFFFFFF; // 白（デフォルト）
+        }
+
+        try {
+            // Elements.format（ChatFormatting）を取得
+            Object format = GET_ELEMENTS_FORMAT.invoke(element);
+            if (format == null) return 0xFFFFFF;
+
+            // ChatFormattingの色を取得
+            // ChatFormattingはMinecraftの標準的な色定義
+            String formatName = format.toString();
+            return chatFormattingToColor(format);
+        } catch (Throwable t) {
+            LOGGER.debug("Error getting element color: {}", t.getMessage());
+            return 0xFFFFFF;
+        }
+    }
+
+    /**
+     * ChatFormattingをARGB色コードに変換
+     */
+    private static int chatFormattingToColor(Object format) {
+        if (format == null) return 0xFFFFFF;
+
+        String name = format.toString();
+        return switch (name) {
+            case "GOLD" -> 0xFFAA00;          // Physical - 金色
+            case "RED" -> 0xFF5555;           // Fire - 赤
+            case "AQUA" -> 0x55FFFF;          // Cold (Water) - 水色
+            case "YELLOW" -> 0xFFFF55;        // Nature (Lightning) - 黄色
+            case "DARK_PURPLE" -> 0xAA00AA;   // Shadow (Chaos) - 紫
+            case "LIGHT_PURPLE" -> 0xFF55FF;  // Elemental/All - 薄紫
+            case "DARK_RED" -> 0xAA0000;
+            case "GREEN" -> 0x55FF55;
+            case "DARK_GREEN" -> 0x00AA00;
+            case "BLUE" -> 0x5555FF;
+            case "DARK_BLUE" -> 0x0000AA;
+            case "DARK_AQUA" -> 0x00AAAA;
+            case "DARK_GRAY" -> 0x555555;
+            case "GRAY" -> 0xAAAAAA;
+            case "BLACK" -> 0x000000;
+            case "WHITE" -> 0xFFFFFF;
+            default -> 0xFFFFFF;
+        };
+    }
+
+    /**
+     * 属性名（String）から直接色コードを取得する便利メソッド
+     * @param entity LivingEntity（被弾者）
+     * @return ARGB色コード、取得失敗時は0xFFFFFF（白）
+     */
+    public static int getLastDamageElementColor(LivingEntity entity) {
+        try {
+            Object element = getLastDamageElement(entity);
+            return getElementColor(element);
+        } catch (Throwable t) {
+            LOGGER.debug("Error getting last damage element color: {}", t.getMessage());
+            return 0xFFFFFF;
+        }
     }
 }

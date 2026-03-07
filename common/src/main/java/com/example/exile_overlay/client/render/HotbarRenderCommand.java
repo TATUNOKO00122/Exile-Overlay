@@ -73,7 +73,7 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
 
     // テキスト定数（中心座標、HJUDと同じ値）
     private static final float LEVEL_CENTER_X = 319.5f;
-    private static final float LEVEL_CENTER_Y = 204.5f;
+    private static final float LEVEL_CENTER_Y = 206.0f;
     
     // レイアウト設定
     private final int screenOffsetY;
@@ -224,7 +224,7 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         int modLevel = (int) ModDataProviderRegistry.getValue(mc.player, DataType.LEVEL);
 
         String vanillaStr = String.valueOf(vanillaLevel);
-        String separator = " / ";
+        String separator = "/";
         String modStr = String.valueOf(modLevel);
 
         // 各テキストの幅を計算

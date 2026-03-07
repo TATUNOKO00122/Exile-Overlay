@@ -39,7 +39,7 @@ public class DraggableHudConfigScreen extends Screen {
     private static final int SNAP_GUIDE_COLOR = 0xFFFF5555;
     private static final int SNAP_GUIDE_ALPHA = 0x66;
     private static final int SNAP_DISTANCE = 10;
-    private static final float MIN_SCALE = 0.5f;
+    private static final float MIN_SCALE = 0.3f;
     private static final float MAX_SCALE = 2.0f;
     private static final float SCALE_STEP = 0.1f;
     private static final int TOGGLE_BUTTON_MIN_SIZE = 5;

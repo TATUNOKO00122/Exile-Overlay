@@ -59,7 +59,7 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
 
     // テキスト定数
     private static final int LEVEL_TEXT_X = 319;
-    private static final int LEVEL_TEXT_Y = 204;
+    private static final int LEVEL_TEXT_Y = 210;
     
     // 更新間隔（ミリ秒）- 経験値は頻繁に変化しないため2秒間隔
     private static final long EXP_UPDATE_INTERVAL_MS = 2000;
@@ -240,7 +240,7 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
         int modLevel = (int) levelDataSource.getValue(player);
         
         String vanillaStr = String.valueOf(vanillaLevel);
-        String separator = " / ";
+        String separator = "/";
         String modStr = String.valueOf(modLevel);
         
         // 各テキストの幅を計算
@@ -249,7 +249,7 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
         int modWidth = mc.font.width(modStr);
         int totalWidth = vanillaWidth + sepWidth + modWidth;
         
-        float scale = 0.7f;
+        float scale = 0.63f;
         float startX = LEVEL_TEXT_X - (totalWidth * scale) / 2;
         float y = LEVEL_TEXT_Y - (mc.font.lineHeight * scale) / 2;
         

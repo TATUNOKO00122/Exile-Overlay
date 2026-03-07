@@ -84,28 +84,28 @@ public class HudPositionManager {
     private void registerDefaults() {
         // ホットバー: 画面下部中央
         // Orb類はホットバーに連動して表示されるため、独立した位置設定は不要
-        defaults.put("hotbar", new HudPosition(Anchor.BOTTOM_CENTER, 0, -22));
+        defaults.put("hotbar", new HudPosition(Anchor.BOTTOM_CENTER, -1, 0));
 
         // ダメージポップアップ: 中央付近
         defaults.put("damage_popup", new HudPosition(Anchor.CENTER, 0, -50));
 
-        // バフオーバーレイ: 右上（設定画面では中央付近に表示されるように調整）
-        defaults.put("buff_overlay", new HudPosition(Anchor.TOP_RIGHT, -40, 40));
+        // バフオーバーレイ: 左上
+        defaults.put("buff_overlay", new HudPosition(Anchor.TOP_LEFT, 0, 0, 0.6f, true, false));
 
-        // バニラ酸素ゲージ: ホットバーの上、左寄せ
-        defaults.put("vanilla_air", new HudPosition(Anchor.BOTTOM_LEFT, 10, -50));
+        // バニラ酸素ゲージ: ホットバーの上、中央寄せ
+        defaults.put("vanilla_air", new HudPosition(Anchor.BOTTOM_CENTER, 12, -39, 0.7f, true, false));
 
-        // バニラ食料ゲージ: ホットバーの上、右寄せ
-        defaults.put("vanilla_food", new HudPosition(Anchor.BOTTOM_RIGHT, -90, -50));
+        // バニラ食料ゲージ: ホットバーの上、中央寄せ
+        defaults.put("vanilla_food", new HudPosition(Anchor.BOTTOM_CENTER, 12, -33, 0.7f, true, false));
 
-        // スキルホットバー: 画面左中央（縦向きがデフォルト）
-        defaults.put("skill_hotbar", new HudPosition(Anchor.LEFT, 10, 0, 1.0f, true, false));
+        // スキルホットバー: 画面中央やや下
+        defaults.put("skill_hotbar", new HudPosition(Anchor.CENTER, -56, 46, 0.7f, true, true));
 
         // ターゲットMOB名: 画面上部中央
-        defaults.put("target_mob_name", new HudPosition(Anchor.TOP_CENTER, 0, 30, 1.0f, true, false));
+        defaults.put("target_mob_name", new HudPosition(Anchor.TOP_CENTER, -1, 44, 0.5f, true, false));
 
-        // 装備耐久: 画面左下（ホットバーの上）
-        defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_LEFT, 10, -80, 1.0f, true, false));
+        // 装備耐久: 画面下部中央、左寄せ
+        defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_CENTER, -141, 0, 0.5f, true, false));
 
         LOGGER.debug("Registered {} default positions", defaults.size());
     }

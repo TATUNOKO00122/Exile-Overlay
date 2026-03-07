@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +42,9 @@ public class EquipmentDisplayConfig {
     }
 
     private Path getConfigPath() {
-        String gameDir = System.getProperty("user.dir");
-        return Paths.get(gameDir, "config", CONFIG_FILE_NAME);
+        return Minecraft.getInstance().gameDirectory.toPath()
+                .resolve("config")
+                .resolve(CONFIG_FILE_NAME);
     }
 
     public void load() {

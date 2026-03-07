@@ -1,9 +1,11 @@
 package com.example.exile_overlay.forge.mixin;
 
+import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.DamagePopupManager;
 import com.example.exile_overlay.client.damage.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
@@ -31,6 +33,20 @@ public class HealNumberMixin {
             float healAmount = ((Number) numberMethod.invoke(self)).floatValue();
             
             if (entity instanceof LivingEntity living && healAmount > 0) {
+                DamagePopupConfig config = DamagePopupConfig.getInstance();
+                
+                // 回復表示設定をチェック
+                if (!config.isShowHealing()) {
+                    ci.cancel();
+                    return;
+                }
+                
+                // Playerへのダメージ表示設定をチェック（回復も同様に制御）
+                if (!config.isShowPlayerDamage() && living instanceof Player) {
+                    ci.cancel();
+                    return;
+                }
+                
                 // エンティティの頭上に表示（positionは足元なので高さを加算）
                 var position = living.position().add(0, living.getBbHeight() * 1.2, 0);
                 DamagePopupManager.getInstance().addDamageNumber(

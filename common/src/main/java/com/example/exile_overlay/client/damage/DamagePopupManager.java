@@ -76,7 +76,7 @@ public class DamagePopupManager {
         DamagePopupConfig config = DamagePopupConfig.getInstance();
         Minecraft mc = Minecraft.getInstance();
 
-        if (!config.isShowPlayerDamage() && entity == mc.player) {
+        if (!config.isShowPlayerDamage() && entity instanceof Player) {
             return;
         }
 
@@ -103,8 +103,7 @@ public class DamagePopupManager {
             return;
         }
 
-        Minecraft mc = Minecraft.getInstance();
-        if (!config.isShowPlayerDamage() && entity == mc.player) {
+        if (!config.isShowPlayerDamage() && entity instanceof Player) {
             return;
         }
 
