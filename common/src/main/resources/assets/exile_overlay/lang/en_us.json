@@ -14,6 +14,7 @@
   "checkbox.exile_overlay.show_damage": "Show Damage",
   "checkbox.exile_overlay.show_healing": "Show Healing",
   "checkbox.exile_overlay.show_player_damage": "Show Player Damage",
+  "checkbox.exile_overlay.show_player_healing": "Show Player Healing",
   "checkbox.exile_overlay.enable_shadow": "Enable Shadow",
   "checkbox.exile_overlay.enable_stacking": "Enable Damage Stacking",
   "checkbox.exile_overlay.use_custom_font": "Use Custom Font",
