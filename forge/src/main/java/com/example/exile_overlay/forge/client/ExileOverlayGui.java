@@ -3,6 +3,7 @@ package com.example.exile_overlay.forge.client;
 import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
@@ -46,6 +47,16 @@ public class ExileOverlayGui {
             LOGGER.debug("[ExileOverlay] Canceling vanilla overlay: {}", overlayId);
             event.setCanceled(true);
             return;
+        }
+
+        // ボートに乗っている時はジャンプバーを非表示
+        if (event.getOverlay() == VanillaGuiOverlay.JUMP_BAR.type()) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player != null && mc.player.getVehicle() instanceof Boat) {
+                LOGGER.debug("[ExileOverlay] Canceling jump bar while riding boat");
+                event.setCanceled(true);
+                return;
+            }
         }
 
         // Mine and Slash のオーバーレイをキャンセル
