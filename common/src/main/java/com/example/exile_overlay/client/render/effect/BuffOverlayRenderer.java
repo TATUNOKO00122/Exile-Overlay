@@ -249,11 +249,12 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             progress = Math.max(0.0f, Math.min(1.0f, progress));
             int barWidth = (int) (barMaxWidth * progress);
 
-            long now = System.currentTimeMillis();
-            if (now - lastLogTime > 1000) {
-                LOGGER.info("[BUFF BAR] id={}, cur={}, max={}, progress={}, width={}", 
-                    effect.getId(), currentDuration, maxDur, progress, barWidth);
-            }
+            // デバッグログは必要時のみ有効化（パフォーマンス影響を避けるためコメントアウト）
+            // long now = System.currentTimeMillis();
+            // if (now - lastLogTime > 1000) {
+            //     LOGGER.debug("[BUFF BAR] id={}, cur={}, max={}, progress={}, width={}", 
+            //         effect.getId(), currentDuration, maxDur, progress, barWidth);
+            // }
 
             graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
             if (barWidth > 0) {

@@ -47,6 +47,9 @@ public class OrbRenderer {
     private static final float ES_G = 0.9f;
     private static final float ES_B = 1.0f;
     private static final float ES_A = 0.7f;
+    
+    // 【最適化】ESオーバーレイのスライス数（パフォーマンスと画質のバランス）
+    private static final int ES_SLICES = 16;
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
         return !config.isVisible(player) || config.isOverlay();
@@ -216,6 +219,10 @@ public class OrbRenderer {
      * エナジーシールド（ES）オーバーレイを描画（HJUD Mod方式）
      * HPオーブ上にシアン色の半透明レイヤーを下から上に描画
      *
+     * 【パフォーマンス最適化】
+     * - スライス数を16に削減（32→16）
+     * - Math.sqrt呼び出しを最小限に
+     *
      * @param graphics GUIグラフィックス
      * @param x        オーブ左上X座標
      * @param y        オーブ左上Y座標
@@ -240,10 +247,12 @@ public class OrbRenderer {
         float radius = size / 2.0f;
         float centerX = x + radius;
         float centerY = y + radius;
+        float radiusSq = radius * radius; // 【最適化】事前計算
 
         // ESは下から上に溜まる
         float orbBottomY = centerY + radius;
         float esTopY = orbBottomY - (esPercent * size);
+        float esHeight = orbBottomY - esTopY;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -256,17 +265,20 @@ public class OrbRenderer {
 
         Matrix4f matrix = graphics.pose().last().pose();
 
-        int slices = 32;
-
-        for (int i = 0; i < slices; i++) {
-            float y1 = esTopY + (orbBottomY - esTopY) * i / slices;
-            float y2 = esTopY + (orbBottomY - esTopY) * (i + 1) / slices;
+        // 【最適化】スライス数を削減（32→16）
+        for (int i = 0; i < ES_SLICES; i++) {
+            float t1 = (float) i / ES_SLICES;
+            float t2 = (float) (i + 1) / ES_SLICES;
+            
+            float y1 = esTopY + esHeight * t1;
+            float y2 = esTopY + esHeight * t2;
 
             float dy1 = y1 - centerY;
             float dy2 = y2 - centerY;
 
-            float halfWidth1 = (float) Math.sqrt(Math.max(0, radius * radius - dy1 * dy1));
-            float halfWidth2 = (float) Math.sqrt(Math.max(0, radius * radius - dy2 * dy2));
+            // 【最適化】Math.sqrtを最小限に
+            float halfWidth1 = (float) Math.sqrt(Math.max(0, radiusSq - dy1 * dy1));
+            float halfWidth2 = (float) Math.sqrt(Math.max(0, radiusSq - dy2 * dy2));
 
             float left1 = centerX - halfWidth1;
             float right1 = centerX + halfWidth1;

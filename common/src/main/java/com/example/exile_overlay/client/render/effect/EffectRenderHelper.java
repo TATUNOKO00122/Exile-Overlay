@@ -17,6 +17,10 @@ import java.util.*;
 /**
  * バフ/デバフの統合管理とレンダリングヘルパー
  * VanillaとMine and Slashの効果を統合して表示します。
+ * 
+ * 【パフォーマンス最適化】
+ * - オブジェクトプールによるWrapper再利用
+ * - キャッシュ済みリストによるアロケーション削減
  */
 public class EffectRenderHelper {
 
@@ -26,6 +30,12 @@ public class EffectRenderHelper {
 
     // Global state maps to track visual position across frames
     private static final Map<String, VisualState> displayStates = new HashMap<>();
+    
+    // 【最適化】オブジェクトプール - 毎フレームのアロケーションを回避
+    private static final List<DisplayableEffect> effectPool = new ArrayList<>(32);
+    private static final List<DisplayableEffect> cachedResult = new ArrayList<>(32);
+    private static final Map<String, VanillaEffectWrapper> vanillaWrapperCache = new HashMap<>();
+    private static final Map<String, MnSEffectWrapper> mnsWrapperCache = new HashMap<>();
 
     public static class VisualState {
         public float currentX;
@@ -56,11 +66,25 @@ public class EffectRenderHelper {
 
     // Wrapper for Vanilla Effects
     public static class VanillaEffectWrapper implements DisplayableEffect {
-        private final MobEffectInstance instance;
-        private final TextureAtlasSprite sprite;
+        private MobEffectInstance instance;
+        private TextureAtlasSprite sprite;
 
         public VanillaEffectWrapper(MobEffectInstance instance, TextureAtlasSprite sprite) {
             this.instance = instance;
+            this.sprite = sprite;
+        }
+        
+        /**
+         * インスタンスを更新（オブジェクト再利用用）
+         */
+        public void updateInstance(MobEffectInstance instance) {
+            this.instance = instance;
+        }
+        
+        /**
+         * スプライトを更新
+         */
+        public void updateSprite(TextureAtlasSprite sprite) {
             this.sprite = sprite;
         }
 
@@ -114,9 +138,16 @@ public class EffectRenderHelper {
 
     // Wrapper for Mine and Slash Effects
     public static class MnSEffectWrapper implements DisplayableEffect {
-        private final ExileEffectInfo info;
+        private ExileEffectInfo info;
 
         public MnSEffectWrapper(ExileEffectInfo info) {
+            this.info = info;
+        }
+        
+        /**
+         * 情報を更新（オブジェクト再利用用）
+         */
+        public void updateInfo(ExileEffectInfo info) {
             this.info = info;
         }
 
@@ -170,15 +201,26 @@ public class EffectRenderHelper {
     }
 
     public static List<DisplayableEffect> getUnifiedEffects(Player player, boolean beneficial) {
-        List<DisplayableEffect> combined = new ArrayList<>();
         Minecraft mc = Minecraft.getInstance();
+
+        // 【最適化】キャッシュをクリアして再利用（アロケーション削減）
+        cachedResult.clear();
 
         // 1. Gather Vanilla
         for (MobEffectInstance effect : player.getActiveEffects()) {
             boolean isBen = effect.getEffect().getCategory() == MobEffectCategory.BENEFICIAL;
             if (isBen == beneficial) {
-                TextureAtlasSprite sprite = mc.getMobEffectTextures().get(effect.getEffect());
-                combined.add(new VanillaEffectWrapper(effect, sprite));
+                String cacheKey = "vanilla:" + MobEffect.getId(effect.getEffect());
+                VanillaEffectWrapper wrapper = vanillaWrapperCache.get(cacheKey);
+                if (wrapper == null) {
+                    TextureAtlasSprite sprite = mc.getMobEffectTextures().get(effect.getEffect());
+                    wrapper = new VanillaEffectWrapper(effect, sprite);
+                    vanillaWrapperCache.put(cacheKey, wrapper);
+                } else {
+                    // 既存のラッパーを更新（アロケーション回避）
+                    wrapper.updateInstance(effect);
+                }
+                cachedResult.add(wrapper);
             }
         }
 
@@ -188,11 +230,20 @@ public class EffectRenderHelper {
                 : MineAndSlashHelper.getExileDebuffs(player);
 
         for (ExileEffectInfo info : mnsEffects) {
-            combined.add(new MnSEffectWrapper(info));
+            String cacheKey = "mns:" + info.id;
+            MnSEffectWrapper wrapper = mnsWrapperCache.get(cacheKey);
+            if (wrapper == null) {
+                wrapper = new MnSEffectWrapper(info);
+                mnsWrapperCache.put(cacheKey, wrapper);
+            } else {
+                // 既存のラッパーを更新
+                wrapper.updateInfo(info);
+            }
+            cachedResult.add(wrapper);
         }
 
         // 3. Sort: Infinite -> Longest -> Shortest
-        combined.sort((a, b) -> {
+        cachedResult.sort((a, b) -> {
             boolean aInf = a.isInfinite();
             boolean bInf = b.isInfinite();
 
@@ -203,7 +254,7 @@ public class EffectRenderHelper {
             return Integer.compare(b.getDuration(), a.getDuration());
         });
 
-        return combined;
+        return cachedResult;
     }
 
     private static void updateVisualStates(List<DisplayableEffect> currentEffects) {
@@ -233,6 +284,17 @@ public class EffectRenderHelper {
                 state.flashTimer--;
             }
         }
+    }
+    
+    /**
+     * ワールド切り替え時などにキャッシュをクリア
+     * メモリリーク防止用
+     */
+    public static void clearCache() {
+        vanillaWrapperCache.clear();
+        mnsWrapperCache.clear();
+        displayStates.clear();
+        cachedResult.clear();
     }
 
     public static float updatePosition(VisualState state, float targetX, float partialTick) {
