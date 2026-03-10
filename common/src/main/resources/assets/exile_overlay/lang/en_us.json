@@ -25,6 +25,7 @@
   "slider.exile_overlay.fade_in": "Fade In",
   "slider.exile_overlay.fade_out": "Fade Out",
   "slider.exile_overlay.max_texts": "Max Texts",
+  "slider.exile_overlay.day_counter_scale": "Day Counter Scale",
   "slider.exile_overlay.value.base_scale": "%s",
   "slider.exile_overlay.value.critical_scale": "%s",
   "slider.exile_overlay.value.display_duration": "%s ticks",

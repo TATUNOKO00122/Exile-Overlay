@@ -1,8 +1,11 @@
 package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
+import com.example.exile_overlay.client.config.position.HudPosition;
+import com.example.exile_overlay.client.config.position.HudPositionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
@@ -21,12 +24,14 @@ public class GeneralConfigScreen extends Screen {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeneralConfigScreen.class);
     private static final int BACKGROUND_COLOR = 0xCC000000;
+    private static final String DAY_COUNTER_KEY = "day_counter";
 
     private final Screen parent;
     private final EquipmentDisplayConfig config;
 
     private Checkbox usePercentageCheckbox;
     private Checkbox enableShadowCheckbox;
+    private SliderButton dayCounterScaleSlider;
 
     public GeneralConfigScreen(Screen parent) {
         super(Component.translatable("screen.exile_overlay.general_config.title"));
@@ -46,7 +51,7 @@ public class GeneralConfigScreen extends Screen {
         int titleHeight = 20;
         int labelHeight = 20;
         int footerHeight = 50;
-        int itemCount = 3;
+        int itemCount = 4;
         int contentHeight = titleHeight + labelHeight + (itemCount * elementSpacing) + footerHeight;
 
         int startY = Math.max(10, (this.height - contentHeight) / 2);
@@ -67,6 +72,16 @@ public class GeneralConfigScreen extends Screen {
                 Component.translatable("checkbox.exile_overlay.enable_shadow"),
                 config.isEnableShadow());
         addRenderableWidget(enableShadowCheckbox);
+        currentY += elementSpacing;
+
+        // 日数カウンター scaleスライダー
+        HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
+        float currentScale = dayCounterPos.getScale();
+        dayCounterScaleSlider = new SliderButton(widgetX, currentY, columnWidth, buttonHeight,
+                Component.translatable("slider.exile_overlay.day_counter_scale"),
+                currentScale, 0.5f, 3.0f, 0.1f,
+                value -> Component.literal(String.format("%.1f", value)));
+        addRenderableWidget(dayCounterScaleSlider);
 
         // ボタン行
         int buttonY = currentY + elementSpacing + 20;
@@ -108,6 +123,13 @@ public class GeneralConfigScreen extends Screen {
         config.setEnableShadow(enableShadowCheckbox.selected());
         config.save();
 
+        // 日数カウンターscaleを保存
+        float dayCounterScale = (float) dayCounterScaleSlider.getValue();
+        HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
+        HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, dayCounterPos.withScale(dayCounterScale));
+        HudPositionManager.getInstance().saveToFile();
+        LOGGER.info("Saved day counter scale: {}", dayCounterScale);
+
         this.minecraft.setScreen(parent);
     }
 
@@ -124,5 +146,55 @@ public class GeneralConfigScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    /**
+     * カスタムスライダーボタン
+     */
+    private static class SliderButton extends AbstractSliderButton {
+        private final double minValue;
+        private final double maxValue;
+        private final double step;
+        private final Component title;
+        private final java.util.function.Function<Double, Component> valueFormatter;
+
+        public SliderButton(int x, int y, int width, int height, Component title,
+                double currentValue, double minValue, double maxValue, double step,
+                java.util.function.Function<Double, Component> valueFormatter) {
+            super(x, y, width, height, title, (currentValue - minValue) / (maxValue - minValue));
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+            this.step = step;
+            this.title = title;
+            this.valueFormatter = valueFormatter;
+            updateMessage();
+        }
+
+        @Override
+        protected void updateMessage() {
+            Component valueComponent = valueFormatter.apply(getValue());
+            this.setMessage(Component.literal("").append(title).append(": ").append(valueComponent));
+        }
+
+        @Override
+        protected void applyValue() {
+            // 値の変更時の処理
+        }
+
+        public double getValue() {
+            double rawValue = minValue + this.value * (maxValue - minValue);
+            if (step >= 1.0) {
+                return Math.round(rawValue);
+            } else {
+                int decimals = 0;
+                double tempStep = step;
+                while (tempStep < 1.0 && decimals < 10) {
+                    tempStep *= 10;
+                    decimals++;
+                }
+                double multiplier = Math.pow(10, decimals);
+                return Math.round(rawValue * multiplier) / multiplier;
+            }
+        }
     }
 }

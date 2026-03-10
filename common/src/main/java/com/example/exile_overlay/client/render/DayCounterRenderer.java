@@ -4,7 +4,6 @@ import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
-import com.example.exile_overlay.client.config.position.Anchor;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import net.minecraft.client.Minecraft;
@@ -214,16 +213,5 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
     @Override
     public boolean isDraggable() {
         return false; // Fixed position in center
-    }
-
-    @Override
-    public HudPosition getPosition() {
-        // Day counter is always centered, create a fixed position
-        return new HudPosition(Anchor.CENTER, 0, -40, 1.5f, true, false);
-    }
-
-    @Override
-    public float getScale() {
-        return 1.5f; // Larger scale for day counter
     }
 }
