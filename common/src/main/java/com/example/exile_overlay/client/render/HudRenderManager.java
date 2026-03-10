@@ -98,6 +98,9 @@ public class HudRenderManager {
 
         // 装備耐久表示
         this.registerCommand(new ArmorDurabilityRenderer(), 85);
+
+        // 日数カウンター（タイプライターアニメーション）
+        this.registerCommand(new DayCounterRenderer(), 200);
     }
 
     /**
