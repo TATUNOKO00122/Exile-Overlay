@@ -29,9 +29,11 @@ public class AutoQuickLootHandler {
 
     private static boolean initialized = false;
     private static Class<?> packetsClass = null;
+    private static Class<?> myPacketClass = null;
     private static Class<?> lootMenuPacketClass = null;
     private static Class<?> modeClass = null;
     private static Object dropMode = null;
+    private static Method sendToServerMethod = null;
     private static Field drawableListField = null;
 
     private static void initializeReflection() {
@@ -40,6 +42,7 @@ public class AutoQuickLootHandler {
 
         try {
             packetsClass = Class.forName("com.robertx22.library_of_exile.main.Packets");
+            myPacketClass = Class.forName("com.robertx22.library_of_exile.main.MyPacket");
             lootMenuPacketClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.packets.backpack.BackPackLootMenuPacket");
             modeClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.packets.backpack.BackPackLootMenuPacket$Mode");
 
@@ -50,11 +53,20 @@ public class AutoQuickLootHandler {
                 }
             }
 
+            for (Method m : packetsClass.getMethods()) {
+                if (m.getName().equals("sendToServer") && m.getParameterCount() == 1) {
+                    sendToServerMethod = m;
+                    break;
+                }
+            }
+
             drawableListField = findDrawableListField();
-            if (drawableListField != null) {
-                LOGGER.info("Auto Quick Loot initialized. Found drawable list field: {}", drawableListField.getName());
+            
+            if (sendToServerMethod != null && drawableListField != null) {
+                LOGGER.info("Auto Quick Loot initialized successfully");
             } else {
-                LOGGER.warn("Auto Quick Loot: Could not find drawable list field in Screen class");
+                LOGGER.warn("Auto Quick Loot: sendToServerMethod={}, drawableListField={}", 
+                    sendToServerMethod != null, drawableListField != null);
             }
         } catch (ClassNotFoundException e) {
             LOGGER.debug("Mine and Slash not found, Auto Quick Loot will be disabled");
@@ -80,7 +92,8 @@ public class AutoQuickLootHandler {
         }
 
         initializeReflection();
-        if (packetsClass == null || lootMenuPacketClass == null || modeClass == null || dropMode == null) {
+        if (packetsClass == null || lootMenuPacketClass == null || modeClass == null || 
+            dropMode == null || sendToServerMethod == null) {
             return;
         }
 
@@ -121,8 +134,7 @@ public class AutoQuickLootHandler {
         if (foundButton) {
             try {
                 Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(dropMode);
-                Method sendToServer = packetsClass.getMethod("sendToServer", Object.class);
-                sendToServer.invoke(null, packet);
+                sendToServerMethod.invoke(null, packet);
 
                 mc.setScreen(null);
                 triggered.put(screen, true);
