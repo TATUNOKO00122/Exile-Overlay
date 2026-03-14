@@ -50,7 +50,7 @@ public class AutoQuickLootHandler {
                 }
             }
 
-            drawablesField = Screen.class.getDeclaredField("drawables");
+            drawablesField = Screen.class.getDeclaredField("renderables");
             drawablesField.setAccessible(true);
 
             LOGGER.info("Auto Quick Loot reflection initialized successfully");
