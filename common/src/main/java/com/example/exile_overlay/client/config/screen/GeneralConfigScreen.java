@@ -31,6 +31,7 @@ public class GeneralConfigScreen extends Screen {
 
     private Checkbox usePercentageCheckbox;
     private Checkbox enableShadowCheckbox;
+    private Checkbox autoQuickLootCheckbox;
     private SliderButton dayCounterScaleSlider;
 
     public GeneralConfigScreen(Screen parent) {
@@ -51,7 +52,7 @@ public class GeneralConfigScreen extends Screen {
         int titleHeight = 20;
         int labelHeight = 20;
         int footerHeight = 50;
-        int itemCount = 4;
+        int itemCount = 5;
         int contentHeight = titleHeight + labelHeight + (itemCount * elementSpacing) + footerHeight;
 
         int startY = Math.max(10, (this.height - contentHeight) / 2);
@@ -72,6 +73,13 @@ public class GeneralConfigScreen extends Screen {
                 Component.translatable("checkbox.exile_overlay.enable_shadow"),
                 config.isEnableShadow());
         addRenderableWidget(enableShadowCheckbox);
+        currentY += elementSpacing;
+
+        // Auto Quick Lootチェックボックス
+        autoQuickLootCheckbox = new Checkbox(widgetX, currentY, columnWidth, buttonHeight,
+                Component.translatable("checkbox.exile_overlay.auto_quick_loot"),
+                config.isAutoQuickLootEnabled());
+        addRenderableWidget(autoQuickLootCheckbox);
         currentY += elementSpacing;
 
         // 日数カウンター scaleスライダー
@@ -121,6 +129,7 @@ public class GeneralConfigScreen extends Screen {
 
         config.setUsePercentage(usePercentageCheckbox.selected());
         config.setEnableShadow(enableShadowCheckbox.selected());
+        config.setAutoQuickLootEnabled(autoQuickLootCheckbox.selected());
         config.save();
 
         // 日数カウンターscaleを保存

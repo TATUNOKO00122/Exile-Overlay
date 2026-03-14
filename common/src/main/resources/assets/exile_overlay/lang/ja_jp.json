@@ -37,6 +37,7 @@
   "screen.exile_overlay.general_config.title": "全般設定",
   "button.exile_overlay.general_config": "全般設定",
   "checkbox.exile_overlay.use_percentage": "パーセント表示を使用",
+  "checkbox.exile_overlay.auto_quick_loot": "Auto Quick Loot (Lootrチェストで左Ctrl長押し)",
   "key.exile_overlay.hud_config": "HUD設定を開く",
   "category.exile_overlay.general": "Exile Overlay",
   "hud.exile_overlay.hotbar": "ホットバー",

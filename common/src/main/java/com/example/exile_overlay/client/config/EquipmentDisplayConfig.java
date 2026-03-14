@@ -29,6 +29,7 @@ public class EquipmentDisplayConfig {
     // 設定値
     private boolean usePercentage = false;  // デフォルトfalse（実数値表示）
     private boolean enableShadow = true;    // デフォルトtrue（影有効）
+    private boolean autoQuickLootEnabled = true;  // デフォルトtrue（Auto Quick Loot有効）
 
     private EquipmentDisplayConfig() {
     }
@@ -64,8 +65,11 @@ public class EquipmentDisplayConfig {
             if (obj.has("enableShadow")) {
                 enableShadow = obj.get("enableShadow").getAsBoolean();
             }
+            if (obj.has("autoQuickLootEnabled")) {
+                autoQuickLootEnabled = obj.get("autoQuickLootEnabled").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}", usePercentage, enableShadow);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, autoQuickLootEnabled={}", usePercentage, enableShadow, autoQuickLootEnabled);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -83,6 +87,7 @@ public class EquipmentDisplayConfig {
         JsonObject obj = new JsonObject();
         obj.addProperty("usePercentage", usePercentage);
         obj.addProperty("enableShadow", enableShadow);
+        obj.addProperty("autoQuickLootEnabled", autoQuickLootEnabled);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -108,5 +113,13 @@ public class EquipmentDisplayConfig {
 
     public void setEnableShadow(boolean enable) {
         this.enableShadow = enable;
+    }
+
+    public boolean isAutoQuickLootEnabled() {
+        return autoQuickLootEnabled;
+    }
+
+    public void setAutoQuickLootEnabled(boolean enabled) {
+        this.autoQuickLootEnabled = enabled;
     }
 }

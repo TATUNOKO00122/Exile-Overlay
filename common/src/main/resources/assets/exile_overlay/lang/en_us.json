@@ -38,6 +38,7 @@
   "screen.exile_overlay.general_config.title": "General Settings",
   "button.exile_overlay.general_config": "General Settings",
   "checkbox.exile_overlay.use_percentage": "Use Percentage Display",
+  "checkbox.exile_overlay.auto_quick_loot": "Auto Quick Loot (Hold Left Ctrl on Lootr Chest)",
   "key.exile_overlay.hud_config": "Open HUD Config",
   "category.exile_overlay.general": "Exile Overlay",
   "hud.exile_overlay.hotbar": "Hotbar",
