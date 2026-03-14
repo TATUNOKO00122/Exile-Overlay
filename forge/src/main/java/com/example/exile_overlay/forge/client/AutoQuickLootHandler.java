@@ -32,7 +32,7 @@ public class AutoQuickLootHandler {
     private static Class<?> lootMenuPacketClass = null;
     private static Class<?> modeClass = null;
     private static Object dropMode = null;
-    private static Field drawablesField = null;
+    private static Field drawableListField = null;
 
     private static void initializeReflection() {
         if (initialized) return;
@@ -50,15 +50,27 @@ public class AutoQuickLootHandler {
                 }
             }
 
-            drawablesField = Screen.class.getDeclaredField("renderables");
-            drawablesField.setAccessible(true);
-
-            LOGGER.info("Auto Quick Loot reflection initialized successfully");
+            drawableListField = findDrawableListField();
+            if (drawableListField != null) {
+                LOGGER.info("Auto Quick Loot initialized. Found drawable list field: {}", drawableListField.getName());
+            } else {
+                LOGGER.warn("Auto Quick Loot: Could not find drawable list field in Screen class");
+            }
         } catch (ClassNotFoundException e) {
             LOGGER.debug("Mine and Slash not found, Auto Quick Loot will be disabled");
         } catch (Exception e) {
             LOGGER.error("Failed to initialize Auto Quick Loot reflection", e);
         }
+    }
+
+    private static Field findDrawableListField() {
+        for (Field f : Screen.class.getDeclaredFields()) {
+            if (List.class.isAssignableFrom(f.getType())) {
+                f.setAccessible(true);
+                return f;
+            }
+        }
+        return null;
     }
 
     @SubscribeEvent
@@ -104,22 +116,7 @@ public class AutoQuickLootHandler {
             return;
         }
 
-        boolean foundButton = false;
-        try {
-            if (drawablesField != null) {
-                List<?> drawables = (List<?>) drawablesField.get(screen);
-                if (drawables != null) {
-                    for (Object obj : drawables) {
-                        if (obj.getClass().getName().contains("BackpackQuickLootButton")) {
-                            foundButton = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to access drawables field", e);
-        }
+        boolean foundButton = findButtonInScreen(screen);
 
         if (foundButton) {
             try {
@@ -129,10 +126,34 @@ public class AutoQuickLootHandler {
 
                 mc.setScreen(null);
                 triggered.put(screen, true);
-                LOGGER.debug("Auto Quick Loot triggered for lootr:lootr_chest");
+                LOGGER.info("Auto Quick Loot triggered for lootr:lootr_chest");
             } catch (Exception e) {
                 LOGGER.error("Failed to send BackPackLootMenuPacket", e);
             }
         }
+    }
+
+    private static boolean findButtonInScreen(Screen screen) {
+        if (drawableListField == null) {
+            return false;
+        }
+
+        try {
+            List<?> drawables = (List<?>) drawableListField.get(screen);
+            if (drawables == null) {
+                return false;
+            }
+
+            for (Object obj : drawables) {
+                String className = obj.getClass().getName();
+                if (className.contains("BackpackQuickLootButton")) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to access drawable list", e);
+        }
+
+        return false;
     }
 }
