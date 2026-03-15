@@ -32,8 +32,9 @@ public class EffectRenderHelper {
     private static final Map<String, VisualState> displayStates = new HashMap<>();
     
     // 【最適化】オブジェクトプール - 毎フレームのアロケーションを回避
-    private static final List<DisplayableEffect> effectPool = new ArrayList<>(32);
-    private static final List<DisplayableEffect> cachedResult = new ArrayList<>(32);
+    // バフとデバフで別々のキャッシュを使用（同じ参照を返す問題を回避）
+    private static final List<DisplayableEffect> cachedBuffs = new ArrayList<>(32);
+    private static final List<DisplayableEffect> cachedDebuffs = new ArrayList<>(32);
     private static final Map<String, VanillaEffectWrapper> vanillaWrapperCache = new HashMap<>();
     private static final Map<String, MnSEffectWrapper> mnsWrapperCache = new HashMap<>();
 
@@ -203,7 +204,8 @@ public class EffectRenderHelper {
     public static List<DisplayableEffect> getUnifiedEffects(Player player, boolean beneficial) {
         Minecraft mc = Minecraft.getInstance();
 
-        // 【最適化】キャッシュをクリアして再利用（アロケーション削減）
+        // beneficial に応じて適切なキャッシュを使用
+        List<DisplayableEffect> cachedResult = beneficial ? cachedBuffs : cachedDebuffs;
         cachedResult.clear();
 
         // 1. Gather Vanilla
@@ -217,7 +219,6 @@ public class EffectRenderHelper {
                     wrapper = new VanillaEffectWrapper(effect, sprite);
                     vanillaWrapperCache.put(cacheKey, wrapper);
                 } else {
-                    // 既存のラッパーを更新（アロケーション回避）
                     wrapper.updateInstance(effect);
                 }
                 cachedResult.add(wrapper);
@@ -236,7 +237,6 @@ public class EffectRenderHelper {
                 wrapper = new MnSEffectWrapper(info);
                 mnsWrapperCache.put(cacheKey, wrapper);
             } else {
-                // 既存のラッパーを更新
                 wrapper.updateInfo(info);
             }
             cachedResult.add(wrapper);
@@ -294,7 +294,8 @@ public class EffectRenderHelper {
         vanillaWrapperCache.clear();
         mnsWrapperCache.clear();
         displayStates.clear();
-        cachedResult.clear();
+        cachedBuffs.clear();
+        cachedDebuffs.clear();
     }
 
     public static float updatePosition(VisualState state, float targetX, float partialTick) {

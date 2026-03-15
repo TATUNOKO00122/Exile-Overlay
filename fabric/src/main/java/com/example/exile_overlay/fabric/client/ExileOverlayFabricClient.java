@@ -5,7 +5,6 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
-import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -50,14 +49,6 @@ public class ExileOverlayFabricClient implements ClientModInitializer {
                 mc.getWindow().getGuiScaledWidth(),
                 mc.getWindow().getGuiScaledHeight()
             );
-        });
-
-        // バフオーバーレイの登録（設定画面を開いていても描画する）
-        HudRenderCallback.EVENT.register((graphics, tickDelta) -> {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
-                BuffOverlayRenderer.render(graphics, tickDelta);
-            }
         });
 
         // ダメージポップアップの登録
