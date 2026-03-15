@@ -29,7 +29,7 @@ public class EquipmentDisplayConfig {
     // 設定値
     private boolean usePercentage = false;  // デフォルトfalse（実数値表示）
     private boolean enableShadow = true;    // デフォルトtrue（影有効）
-    private boolean autoQuickLootEnabled = true;  // デフォルトtrue（Auto Quick Loot有効）
+    private boolean autoQuickLootEnabled = false;  // デフォルトfalse（Auto Quick Loot無効）
 
     private EquipmentDisplayConfig() {
     }

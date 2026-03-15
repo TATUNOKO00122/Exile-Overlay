@@ -1,7 +1,7 @@
 package com.example.exile_overlay.client.config;
 
 import com.example.exile_overlay.client.config.position.HudPositionManager;
-import com.example.exile_overlay.client.config.screen.HudListScreen;
+import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.slf4j.Logger;
@@ -17,7 +17,7 @@ import java.util.function.Function;
 public final class ModMenuApi {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ModMenuApi.class);
-    private static Function<Screen, Screen> configScreenFactory = HudListScreen::new;
+    private static Function<Screen, Screen> configScreenFactory = ConfigScreen::new;
     
     private ModMenuApi() {
         // ユーティリティクラス

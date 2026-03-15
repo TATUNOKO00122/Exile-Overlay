@@ -351,6 +351,10 @@ public class DraggableHudConfigScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (mouseY >= this.height - 35) {
+            return super.mouseClicked(mouseX, mouseY, button);
+        }
+
         activeSnapGuidesX.clear();
         activeSnapGuidesY.clear();
 
