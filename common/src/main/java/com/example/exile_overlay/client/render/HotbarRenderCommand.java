@@ -197,13 +197,13 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     }
     
     private void renderExpBars(GuiGraphics graphics, Minecraft mc) {
-        // MOD経験値 (黄色)
+        // MOD経験値 (明るい黄土色)
         float currentModExp = ModDataProviderRegistry.getValue(mc.player, DataType.EXP);
         float maxModExp = ModDataProviderRegistry.getMaxValue(mc.player, DataType.EXP_REQUIRED);
-        renderSingleExpBar(graphics, MOD_EXP_BAR_Y, currentModExp, maxModExp, 0xFFFFFF99);
+        renderSingleExpBar(graphics, MOD_EXP_BAR_Y, currentModExp, maxModExp, 0xFFF0C040);
         
-        // バニラ経験値 (緑)
-        renderSingleExpBar(graphics, VANILLA_EXP_BAR_Y, mc.player.experienceProgress, 1.0f, 0xFF00CC00);
+        // バニラ経験値 (濃ゆい明るいオリーブ)
+        renderSingleExpBar(graphics, VANILLA_EXP_BAR_Y, mc.player.experienceProgress, 1.0f, 0xFF40B040);
     }
     
     private void renderSingleExpBar(GuiGraphics graphics, int y, float current, float max, int color) {
