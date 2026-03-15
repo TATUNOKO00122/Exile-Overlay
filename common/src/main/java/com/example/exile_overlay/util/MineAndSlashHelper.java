@@ -735,4 +735,26 @@ public class MineAndSlashHelper {
         }
         return -1;
     }
+
+    /**
+     * Mine and SlashのNeat HPバーの有効/無効を設定
+     * 
+     * @param enabled true: HPバーを表示, false: HPバーを非表示
+     * @return 設定が成功した場合true
+     */
+    public static boolean setNeatHpBarEnabled(boolean enabled) {
+        try {
+            Class<?> neatConfigClass = Class.forName("com.robertx22.mine_and_slash.a_libraries.neat.NeatConfig");
+            java.lang.reflect.Field drawField = neatConfigClass.getField("draw");
+            drawField.setBoolean(null, enabled);
+            LOGGER.info("Set Mine and Slash Neat HP Bar to: {}", enabled);
+            return true;
+        } catch (ClassNotFoundException e) {
+            LOGGER.debug("Mine and Slash not found, skipping Neat HP Bar setting.");
+            return false;
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            LOGGER.error("Failed to set Mine and Slash Neat HP Bar: {}", e.getMessage());
+            return false;
+        }
+    }
 }

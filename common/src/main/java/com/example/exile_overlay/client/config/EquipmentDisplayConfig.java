@@ -30,6 +30,7 @@ public class EquipmentDisplayConfig {
     private boolean usePercentage = false;  // デフォルトfalse（実数値表示）
     private boolean enableShadow = true;    // デフォルトtrue（影有効）
     private boolean autoQuickLootEnabled = false;  // デフォルトfalse（Auto Quick Loot無効）
+    private boolean disableMnsHpBar = true;  // デフォルトtrue（Mine and Slash HPバーを無効化）
 
     private EquipmentDisplayConfig() {
     }
@@ -68,8 +69,11 @@ public class EquipmentDisplayConfig {
             if (obj.has("autoQuickLootEnabled")) {
                 autoQuickLootEnabled = obj.get("autoQuickLootEnabled").getAsBoolean();
             }
+            if (obj.has("disableMnsHpBar")) {
+                disableMnsHpBar = obj.get("disableMnsHpBar").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, autoQuickLootEnabled={}", usePercentage, enableShadow, autoQuickLootEnabled);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, autoQuickLootEnabled={}, disableMnsHpBar={}", usePercentage, enableShadow, autoQuickLootEnabled, disableMnsHpBar);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -88,6 +92,7 @@ public class EquipmentDisplayConfig {
         obj.addProperty("usePercentage", usePercentage);
         obj.addProperty("enableShadow", enableShadow);
         obj.addProperty("autoQuickLootEnabled", autoQuickLootEnabled);
+        obj.addProperty("disableMnsHpBar", disableMnsHpBar);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -121,5 +126,13 @@ public class EquipmentDisplayConfig {
 
     public void setAutoQuickLootEnabled(boolean enabled) {
         this.autoQuickLootEnabled = enabled;
+    }
+
+    public boolean isDisableMnsHpBar() {
+        return disableMnsHpBar;
+    }
+
+    public void setDisableMnsHpBar(boolean disable) {
+        this.disableMnsHpBar = disable;
     }
 }

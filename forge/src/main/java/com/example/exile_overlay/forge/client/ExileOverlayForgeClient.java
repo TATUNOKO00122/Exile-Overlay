@@ -1,6 +1,7 @@
 package com.example.exile_overlay.forge.client;
 
 import com.example.exile_overlay.ExampleMod;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
@@ -60,8 +61,11 @@ public class ExileOverlayForgeClient {
             // カスタムフォントの初期化
             initializeCustomFont();
 
-            // Mine and Slashの独自のNeat(HPバー)描画を無効化
-            disableMineAndSlashNeat();
+            // Mine and SlashのNeat HPバー設定を適用（設定に基づく）
+            EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+            if (equipConfig.isDisableMnsHpBar()) {
+                disableMineAndSlashNeat();
+            }
 
             LOGGER.info("ExileOverlayForgeClient initialized");
         });

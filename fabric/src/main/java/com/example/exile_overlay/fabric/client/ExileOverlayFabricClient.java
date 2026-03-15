@@ -1,10 +1,12 @@
 package com.example.exile_overlay.fabric.client;
 
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
+import com.example.exile_overlay.util.MineAndSlashHelper;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -59,6 +61,12 @@ public class ExileOverlayFabricClient implements ClientModInitializer {
 
         // カスタムフォントの初期化
         initializeCustomFont();
+
+        // Mine and SlashのNeat HPバー設定を適用（設定に基づく）
+        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+        if (equipConfig.isDisableMnsHpBar()) {
+            MineAndSlashHelper.setNeatHpBarEnabled(false);
+        }
 
         // キーバインディングの登録
         registerKeyBindings();

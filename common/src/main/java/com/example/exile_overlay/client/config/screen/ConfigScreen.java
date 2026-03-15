@@ -6,6 +6,7 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
+import com.example.exile_overlay.util.MineAndSlashHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -158,6 +159,20 @@ public class ConfigScreen extends Screen {
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_quick_loot.tooltip")))
                         .build());
         y += sp;
+        
+        if (MineAndSlashHelper.isLoaded()) {
+            y = addSection(y, "section.exile_overlay.mns_compat", tx);
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()), btn -> {
+                        config.setDisableMnsHpBar(!config.isDisableMnsHpBar());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()));
+                        MineAndSlashHelper.setNeatHpBarEnabled(!config.isDisableMnsHpBar());
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.disable_mns_hpbar.tooltip")))
+                            .build());
+            y += sp;
+        }
         
         y = addSection(y, "section.exile_overlay.day_counter", tx);
         
@@ -330,7 +345,10 @@ public class ConfigScreen extends Screen {
         config.setUsePercentage(false);
         config.setEnableShadow(true);
         config.setAutoQuickLootEnabled(false);
+        config.setDisableMnsHpBar(true);
         config.save();
+        
+        MineAndSlashHelper.setNeatHpBarEnabled(false);
         
         DamagePopupConfig damageConfig = DamagePopupConfig.getInstance();
         damageConfig.setShowDamage(true);
