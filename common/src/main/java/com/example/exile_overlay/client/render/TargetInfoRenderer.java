@@ -43,10 +43,10 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final int BAR_X = 5;
     private static final int BAR_Y = 20;
-    private static final int BAR_WIDTH = 212;
+    private static final int BAR_WIDTH = 213;
     private static final int BAR_HEIGHT = 10;
 
-    private static final int HP_BAR_COLOR = 0xFFA82020;
+    private static final int HP_BAR_COLOR = 0xFFCC2020;
     private static final int HP_BG_COLOR = 0x80000000;
 
     private static final int NAME_Y = 22;
