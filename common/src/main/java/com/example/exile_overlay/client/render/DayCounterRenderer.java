@@ -89,14 +89,11 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
             return;
         }
 
-        // Get current day (Minecraft day = dayTime / 24000)
         long dayTime = mc.level.getDayTime();
-        long currentDay = dayTime / 24000L + 1; // +1 to make Day 1 the first day
-        long timeOfDay = dayTime % 24000L;
+        long currentDay = dayTime / 24000L + 1;
 
-        // Detect new day (time 0-1000 is early morning)
-        if (currentDay != lastDay && timeOfDay < 1000) {
-            if (lastDay != -1) { // Don't trigger on first load
+        if (currentDay != lastDay) {
+            if (lastDay != -1) {
                 startAnimation(currentDay, mc);
             }
             lastDay = currentDay;

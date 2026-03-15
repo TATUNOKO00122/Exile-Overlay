@@ -32,6 +32,7 @@ public class GeneralConfigScreen extends Screen {
     private Checkbox usePercentageCheckbox;
     private Checkbox enableShadowCheckbox;
     private Checkbox autoQuickLootCheckbox;
+    private Checkbox dayCounterEnabledCheckbox;
     private SliderButton dayCounterScaleSlider;
 
     public GeneralConfigScreen(Screen parent) {
@@ -52,8 +53,10 @@ public class GeneralConfigScreen extends Screen {
         int titleHeight = 20;
         int labelHeight = 20;
         int footerHeight = 50;
+        int sectionHeaderHeight = 25;
         int itemCount = 5;
-        int contentHeight = titleHeight + labelHeight + (itemCount * elementSpacing) + footerHeight;
+        int dayCounterItems = 2;
+        int contentHeight = titleHeight + labelHeight + (itemCount * elementSpacing) + sectionHeaderHeight + (dayCounterItems * elementSpacing) + footerHeight;
 
         int startY = Math.max(10, (this.height - contentHeight) / 2);
         int widgetStartY = startY + titleHeight + labelHeight;
@@ -80,15 +83,26 @@ public class GeneralConfigScreen extends Screen {
                 Component.translatable("checkbox.exile_overlay.auto_quick_loot"),
                 config.isAutoQuickLootEnabled());
         addRenderableWidget(autoQuickLootCheckbox);
+        currentY += elementSpacing + 10;
+
+        // セクション区切り用のスペース（render()で描画）
+        currentY += 10;
+
+        // 日数カウンター有効チェックボックス
+        HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
+        dayCounterEnabledCheckbox = new Checkbox(widgetX, currentY, columnWidth, buttonHeight,
+                Component.translatable("checkbox.exile_overlay.day_counter_enabled"),
+                dayCounterPos.isVisible());
+        addRenderableWidget(dayCounterEnabledCheckbox);
         currentY += elementSpacing;
 
         // 日数カウンター scaleスライダー
-        HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
         float currentScale = dayCounterPos.getScale();
         dayCounterScaleSlider = new SliderButton(widgetX, currentY, columnWidth, buttonHeight,
                 Component.translatable("slider.exile_overlay.day_counter_scale"),
                 currentScale, 0.5f, 3.0f, 0.1f,
                 value -> Component.literal(String.format("%.1f", value)));
+        dayCounterScaleSlider.active = dayCounterPos.isVisible();
         addRenderableWidget(dayCounterScaleSlider);
 
         // ボタン行
@@ -117,6 +131,15 @@ public class GeneralConfigScreen extends Screen {
 
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
 
+        // 日数カウンターセクション区切り
+        int centerX = this.width / 2;
+        int sectionY = autoQuickLootCheckbox.getY() + 38;
+        String sectionTitle = "─── " + Component.translatable("section.exile_overlay.day_counter").getString() + " ───";
+        graphics.drawCenteredString(this.font, sectionTitle, centerX, sectionY, 0xAAAAAA);
+
+        // チェックボックス状態に応じてスライダーの有効/無効を更新
+        dayCounterScaleSlider.active = dayCounterEnabledCheckbox.selected();
+
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -132,12 +155,14 @@ public class GeneralConfigScreen extends Screen {
         config.setAutoQuickLootEnabled(autoQuickLootCheckbox.selected());
         config.save();
 
-        // 日数カウンターscaleを保存
+        // 日数カウンター設定を保存
         float dayCounterScale = (float) dayCounterScaleSlider.getValue();
+        boolean dayCounterEnabled = dayCounterEnabledCheckbox.selected();
         HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
-        HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, dayCounterPos.withScale(dayCounterScale));
+        HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, 
+            dayCounterPos.withScale(dayCounterScale).withVisible(dayCounterEnabled));
         HudPositionManager.getInstance().saveToFile();
-        LOGGER.info("Saved day counter scale: {}", dayCounterScale);
+        LOGGER.info("Saved day counter: enabled={}, scale={}", dayCounterEnabled, dayCounterScale);
 
         this.minecraft.setScreen(parent);
     }

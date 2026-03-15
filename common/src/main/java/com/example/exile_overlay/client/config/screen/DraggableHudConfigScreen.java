@@ -127,8 +127,9 @@ public class DraggableHudConfigScreen extends Screen {
 
         // 位置マネージャーに登録されている全てのキーに対応する要素を作成
         for (String key : positionManager.getDefaultPositions().keySet()) {
-            // ダメージポップアップはHUDではないため、ドラッグ設定から除外
-            if ("damage_popup".equals(key)) {
+            // ダメージポップアップと日数カウンターはHUD設定画面から除外
+            // 日数カウンターは一時的なアニメーション表示のみで位置変更不要
+            if ("damage_popup".equals(key) || "day_counter".equals(key)) {
                 continue;
             }
 

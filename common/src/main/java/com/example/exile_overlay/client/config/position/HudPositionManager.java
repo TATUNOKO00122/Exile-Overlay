@@ -107,9 +107,6 @@ public class HudPositionManager {
         // 装備耐久: 画面下部中央、左寄せ
         defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_CENTER, -141, 0, 0.5f, true, false));
 
-        // 日数カウンター: 画面中央上部、タイプライターアニメーション
-        defaults.put("day_counter", new HudPosition(Anchor.CENTER, 0, -40, 1.0f, true, false));
-
         LOGGER.debug("Registered {} default positions", defaults.size());
     }
     
