@@ -294,7 +294,7 @@ public class DraggableHudConfigScreen extends Screen {
         int color = (baseAlpha << 24) | (isVisible ? 0x4444FF : 0xFF4444);
         graphics.fill(left, top, left + renderWidth, top + renderHeight, color);
 
-        graphics.renderOutline(left, top, renderWidth, renderHeight, isVisible ? 0xFFFFFFFF : 0xFF888888);
+        graphics.renderOutline(left, top, renderWidth, renderHeight, isVisible ? 0x88FFFFFF : 0xFF888888);
 
         renderToggleButton(graphics, element);
         renderOrientationButton(graphics, element);
@@ -307,9 +307,7 @@ public class DraggableHudConfigScreen extends Screen {
 
         int btnColor = isVisible ? TOGGLE_BUTTON_COLOR_VISIBLE : TOGGLE_BUTTON_COLOR_HIDDEN;
         graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
-        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0xFFFFFFFF);
-
-
+        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0x88FFFFFF);
     }
 
     private void renderOrientationButton(GuiGraphics graphics, DraggableElement element) {
@@ -323,7 +321,7 @@ public class DraggableHudConfigScreen extends Screen {
 
         int btnColor = isHorizontal ? ORIENTATION_BUTTON_COLOR_ACTIVE : ORIENTATION_BUTTON_COLOR;
         graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
-        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0xFFFFFFFF);
+        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0x88FFFFFF);
     }
 
     /**
@@ -351,10 +349,7 @@ public class DraggableHudConfigScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (mouseY >= this.height - 35) {
-            return super.mouseClicked(mouseX, mouseY, button);
-        }
-
+        // HUD要素の判定を先に行う
         activeSnapGuidesX.clear();
         activeSnapGuidesY.clear();
 
@@ -387,6 +382,11 @@ public class DraggableHudConfigScreen extends Screen {
                 selectedElement = null;
                 resetButton.active = false;
             }
+        }
+
+        // HUD要素がヒットしなかった場合のみボタン領域を処理
+        if (mouseY >= this.height - 35) {
+            return super.mouseClicked(mouseX, mouseY, button);
         }
 
         return super.mouseClicked(mouseX, mouseY, button);

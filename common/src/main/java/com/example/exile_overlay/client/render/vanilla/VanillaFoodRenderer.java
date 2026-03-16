@@ -109,6 +109,11 @@ public class VanillaFoodRenderer implements IHudRenderer, IRenderCommand {
     }
 
     @Override
+    public boolean isDraggable() {
+        return true;
+    }
+
+    @Override
     public void execute(GuiGraphics graphics, RenderContext ctx) {
         render(graphics, ctx);
     }
