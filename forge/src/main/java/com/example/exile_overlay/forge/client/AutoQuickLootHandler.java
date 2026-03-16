@@ -3,7 +3,6 @@ package com.example.exile_overlay.forge.client;
 import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.util.LootrHelper;
-import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -13,10 +12,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +47,6 @@ public class AutoQuickLootHandler {
 
     public static void registerKeyMapping(KeyMapping mapping) {
         quickLootKey = mapping;
-    }
-
-    public static KeyMapping getKeyMapping() {
-        return quickLootKey;
     }
 
     private static void initializeReflection() {
@@ -103,24 +98,22 @@ public class AutoQuickLootHandler {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (!LootrHelper.isLoaded()) return;
-
-        cleanupExpiredCooldowns();
-
         if (!EquipmentDisplayConfig.getInstance().isAutoQuickLootEnabled()) return;
 
         initializeReflection();
         if (!isReflectionReady()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null || mc.screen == null) return;
+        if (mc.player == null || mc.level == null) return;
 
         if (!isKeyPressed(mc)) return;
 
-        BlockPos targetPos = getTargetBlockPos(mc);
-        if (targetPos == null || isOnCooldown(targetPos)) return;
+        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
+
+        BlockPos targetPos = blockHit.getBlockPos();
+        if (isOnCooldown(targetPos)) return;
 
         BlockState state = mc.level.getBlockState(targetPos);
         Block block = state.getBlock();
@@ -128,14 +121,10 @@ public class AutoQuickLootHandler {
 
         if (!LOOTR_BLOCKS.contains(blockId)) return;
 
-        if (hasQuickLootButton(mc.screen)) {
-            executeQuickLoot(mc, targetPos, blockId);
+        Screen screen = event.getScreen();
+        if (hasQuickLootButton(screen)) {
+            executeQuickLoot(mc, targetPos, blockId, screen);
         }
-    }
-
-    private static void cleanupExpiredCooldowns() {
-        long now = System.currentTimeMillis();
-        cooldownTracker.entrySet().removeIf(entry -> (now - entry.getValue()) > COOLDOWN_MS * 2);
     }
 
     private static boolean isReflectionReady() {
@@ -148,12 +137,7 @@ public class AutoQuickLootHandler {
             return quickLootKey.isDown();
         }
         long window = mc.getWindow().getWindow();
-        return org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
-    }
-
-    private static BlockPos getTargetBlockPos(Minecraft mc) {
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return null;
-        return blockHit.getBlockPos();
+        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS;
     }
 
     private static boolean isOnCooldown(BlockPos pos) {
@@ -181,7 +165,7 @@ public class AutoQuickLootHandler {
         return false;
     }
 
-    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId) {
+    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId, Screen screen) {
         try {
             Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(dropMode);
             sendToServerMethod.invoke(null, packet);
