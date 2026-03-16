@@ -20,12 +20,19 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 @Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT)
 public class AutoQuickLootHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/AutoQuickLoot");
     private static final WeakHashMap<Screen, Boolean> triggered = new WeakHashMap<>();
+    private static final Set<String> LOOTR_BLOCKS = Set.of(
+        "lootr:lootr_chest",
+        "lootr:lootr_trapped_chest",
+        "lootr:lootr_barrel",
+        "lootr:lootr_shulker"
+    );
 
     private static boolean initialized = false;
     private static Class<?> packetsClass = null;
@@ -121,7 +128,7 @@ public class AutoQuickLootHandler {
         Block block = state.getBlock();
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
 
-        if (!blockId.equals("lootr:lootr_chest")) {
+        if (!LOOTR_BLOCKS.contains(blockId)) {
             return;
         }
 
@@ -138,7 +145,7 @@ public class AutoQuickLootHandler {
 
                 mc.setScreen(null);
                 triggered.put(screen, true);
-                LOGGER.info("Auto Quick Loot triggered for lootr:lootr_chest");
+                LOGGER.info("Auto Quick Loot triggered for {}", blockId);
             } catch (Exception e) {
                 LOGGER.error("Failed to send BackPackLootMenuPacket", e);
             }
