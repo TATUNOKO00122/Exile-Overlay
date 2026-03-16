@@ -55,6 +55,8 @@
   "exile_overlay.config.fade_out.tooltip": "Fade out animation duration",
   "exile_overlay.config.max_texts": "Max Texts: %s",
   "exile_overlay.config.max_texts.tooltip": "Maximum number of damage numbers on screen",
+  "exile_overlay.config.popup_height": "Popup Height: %.2f",
+  "exile_overlay.config.popup_height.tooltip": "Height position ratio (0.0=feet, 1.0=head)",
   "exile_overlay.config.open_hud_editor": "Open HUD Position Editor",
   "exile_overlay.config.open_hud_editor.tooltip": "Open the drag-and-drop HUD position editor",
   "key.exile_overlay.hud_config": "Open HUD Config",

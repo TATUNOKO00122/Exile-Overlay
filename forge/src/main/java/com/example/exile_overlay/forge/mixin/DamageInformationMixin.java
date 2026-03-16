@@ -79,7 +79,8 @@ public class DamageInformationMixin {
                 int finalColor = color; // 属性色を優先
                 
                 // エンティティの頭上に表示（positionは足元なので高さを加算）
-                var position = living.position().add(0, living.getBbHeight() * 1.2, 0);
+                float heightRatio = DamagePopupConfig.getInstance().getPopupHeightRatio();
+                var position = living.position().add(0, living.getBbHeight() * heightRatio, 0);
                 DamagePopupManager.getInstance().addDamageNumber(
                     position, 
                     totalDamage, 

@@ -247,15 +247,6 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
         
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.enable_stacking", config.isEnableDamageStacking()), btn -> {
-                    config.setEnableDamageStacking(!config.isEnableDamageStacking());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.enable_stacking", config.isEnableDamageStacking()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.enable_stacking.tooltip")))
-                        .build());
-        y += sp;
-        
         addRightWidget(Button.builder(getFontPresetComponent(config.getFontPreset()), btn -> {
             FontPreset[] presets = FontPreset.values();
             int currentIndex = config.getFontPreset().ordinal();
@@ -291,6 +282,10 @@ public class ConfigScreen extends Screen {
         
         addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.max_texts",
                 config.getMaxDamageTexts(), 5, 50, val -> config.setMaxDamageTexts(val)));
+        y += sp;
+        
+        addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.popup_height",
+                config.getPopupHeightRatio(), 0.0f, 1.0f, val -> config.setPopupHeightRatio(val)));
         
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
@@ -356,14 +351,14 @@ public class ConfigScreen extends Screen {
         damageConfig.setShowPlayerDamage(false);
         damageConfig.setShowPlayerHealing(true);
         damageConfig.setEnableShadow(true);
-        damageConfig.setEnableDamageStacking(true);
-        damageConfig.setFontPreset(FontPreset.JERSEY20);
-        damageConfig.setBaseScale(0.08f);
-        damageConfig.setCriticalScale(0.12f);
-        damageConfig.setDisplayDuration(60);
+        damageConfig.setFontPreset(FontPreset.LINESEED);
+        damageConfig.setBaseScale(0.03f);
+        damageConfig.setCriticalScale(0.04f);
+        damageConfig.setDisplayDuration(30);
         damageConfig.setFadeInDuration(5);
-        damageConfig.setFadeOutDuration(15);
+        damageConfig.setFadeOutDuration(10);
         damageConfig.setMaxDamageTexts(20);
+        damageConfig.setPopupHeightRatio(0.8f);
         damageConfig.save();
         
         HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);

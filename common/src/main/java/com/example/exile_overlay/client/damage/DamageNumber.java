@@ -27,13 +27,11 @@ public class DamageNumber {
         float zOffset = (float) (Math.random() - 0.5) * spread;
         this.position = position.add(xOffset, 0, zOffset);
 
-        this.velocity = new Vec3(0, config.getVerticalSpeed(), 0);
+        this.velocity = Vec3.ZERO;
     }
 
     public void tick() {
         life++;
-        position = position.add(velocity);
-        velocity = velocity.scale(0.95);
     }
 
     public void addDamage(float amount) {

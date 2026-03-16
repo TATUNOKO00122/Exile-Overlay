@@ -17,28 +17,21 @@ public class DamagePopupConfig {
     private static final String CONFIG_FILE_NAME = "exile_overlay_damage_popup.json";
     private static DamagePopupConfig instance;
 
-    private float baseScale = 0.08f;
-    private float criticalScale = 0.12f;
-    private int displayDuration = 60;
+    private float baseScale = 0.03f;
+    private float criticalScale = 0.04f;
+    private int displayDuration = 30;
     private boolean enableShadow = true;
     private float horizontalSpread = 0.5f;
     private int fadeInDuration = 5;
-    private int fadeOutDuration = 15;
+    private int fadeOutDuration = 10;
     private boolean showDamage = true;
     private int maxDamageTexts = 20;
-    private float repulsionRadius = 0.5f;
-    private float repulsionStrength = 0.05f;
-    private float verticalSpeed = 0.05f;
+    private float popupHeightRatio = 0.8f;
     private boolean showPlayerDamage = false;
     private boolean showHealing = true;
     private boolean showPlayerHealing = true;
-    
-    // HJUD機能: ダメージスタッキング設定
-    private boolean enableDamageStacking = true;
-    private float stackingRadius = 0.8f;
-    
-    // フォントプリセット設定
-    private FontPreset fontPreset = FontPreset.JERSEY20;
+
+    private FontPreset fontPreset = FontPreset.LINESEED;
     private int customFontSize = 64;
 
     private int normalDamageColor = 0xFFFFFF;
@@ -87,18 +80,11 @@ public class DamagePopupConfig {
             if (obj.has("fadeOutDuration")) fadeOutDuration = obj.get("fadeOutDuration").getAsInt();
             if (obj.has("showDamage")) showDamage = obj.get("showDamage").getAsBoolean();
             if (obj.has("maxDamageTexts")) maxDamageTexts = obj.get("maxDamageTexts").getAsInt();
-            if (obj.has("repulsionRadius")) repulsionRadius = obj.get("repulsionRadius").getAsFloat();
-            if (obj.has("repulsionStrength")) repulsionStrength = obj.get("repulsionStrength").getAsFloat();
-            if (obj.has("verticalSpeed")) verticalSpeed = obj.get("verticalSpeed").getAsFloat();
+            if (obj.has("popupHeightRatio")) popupHeightRatio = obj.get("popupHeightRatio").getAsFloat();
             if (obj.has("showPlayerDamage")) showPlayerDamage = obj.get("showPlayerDamage").getAsBoolean();
             if (obj.has("showHealing")) showHealing = obj.get("showHealing").getAsBoolean();
             if (obj.has("showPlayerHealing")) showPlayerHealing = obj.get("showPlayerHealing").getAsBoolean();
-            
-            // HJUD機能: ダメージスタッキング設定の読み込み
-            if (obj.has("enableDamageStacking")) enableDamageStacking = obj.get("enableDamageStacking").getAsBoolean();
-            if (obj.has("stackingRadius")) stackingRadius = obj.get("stackingRadius").getAsFloat();
-            
-            // フォントプリセット設定の読み込み
+
             if (obj.has("fontPreset")) {
                 fontPreset = FontPreset.fromName(obj.get("fontPreset").getAsString());
             } else if (obj.has("customFontPath")) {
@@ -144,18 +130,11 @@ public class DamagePopupConfig {
         obj.addProperty("fadeOutDuration", fadeOutDuration);
         obj.addProperty("showDamage", showDamage);
         obj.addProperty("maxDamageTexts", maxDamageTexts);
-        obj.addProperty("repulsionRadius", repulsionRadius);
-        obj.addProperty("repulsionStrength", repulsionStrength);
-        obj.addProperty("verticalSpeed", verticalSpeed);
+        obj.addProperty("popupHeightRatio", popupHeightRatio);
         obj.addProperty("showPlayerDamage", showPlayerDamage);
         obj.addProperty("showHealing", showHealing);
         obj.addProperty("showPlayerHealing", showPlayerHealing);
-        
-        // HJUD機能: ダメージスタッキング設定の保存
-        obj.addProperty("enableDamageStacking", enableDamageStacking);
-        obj.addProperty("stackingRadius", stackingRadius);
-        
-        // フォントプリセット設定の保存
+
         obj.addProperty("fontPreset", fontPreset.name());
         obj.addProperty("customFontSize", customFontSize);
 
@@ -188,18 +167,11 @@ public class DamagePopupConfig {
     public int getFadeOutDuration() { return fadeOutDuration; }
     public boolean isShowDamage() { return showDamage; }
     public int getMaxDamageTexts() { return maxDamageTexts; }
-    public float getRepulsionRadius() { return repulsionRadius; }
-    public float getRepulsionStrength() { return repulsionStrength; }
-    public float getVerticalSpeed() { return verticalSpeed; }
+    public float getPopupHeightRatio() { return popupHeightRatio; }
     public boolean isShowPlayerDamage() { return showPlayerDamage; }
     public boolean isShowHealing() { return showHealing; }
     public boolean isShowPlayerHealing() { return showPlayerHealing; }
-    
-    // HJUD機能: ダメージスタッキング設定のゲッター
-    public boolean isEnableDamageStacking() { return enableDamageStacking; }
-    public float getStackingRadius() { return stackingRadius; }
-    
-    // フォントプリセット設定のゲッター
+
     public FontPreset getFontPreset() { return fontPreset; }
     public boolean isUseCustomFont() { return fontPreset.isCustomFont(); }
     public String getCustomFontPath() { return fontPreset.getResourcePath(); }
@@ -239,16 +211,11 @@ public class DamagePopupConfig {
     public void setFadeInDuration(int duration) { this.fadeInDuration = duration; }
     public void setFadeOutDuration(int duration) { this.fadeOutDuration = duration; }
     public void setMaxDamageTexts(int max) { this.maxDamageTexts = max; }
+    public void setPopupHeightRatio(float ratio) { this.popupHeightRatio = ratio; }
 
-    // HJUD機能: ダメージスタッキング設定のセッター
-    public void setEnableDamageStacking(boolean enable) { this.enableDamageStacking = enable; }
-    public void setStackingRadius(float radius) { this.stackingRadius = radius; }
-
-    // フォントプリセット設定のセッター
     public void setFontPreset(FontPreset preset) { this.fontPreset = preset; }
     public void setCustomFontSize(int size) { this.customFontSize = size; }
 
-    // 色設定のセッター
     public void setNormalDamageColor(int color) { this.normalDamageColor = color; }
     public void setCriticalDamageColor(int color) { this.criticalDamageColor = color; }
     public void setHealingColor(int color) { this.healingColor = color; }

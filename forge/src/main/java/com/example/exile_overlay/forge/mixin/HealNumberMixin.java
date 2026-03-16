@@ -48,7 +48,7 @@ public class HealNumberMixin {
                 }
                 
                 // エンティティの頭上に表示（positionは足元なので高さを加算）
-                var position = living.position().add(0, living.getBbHeight() * 1.2, 0);
+                var position = living.position().add(0, living.getBbHeight() * config.getPopupHeightRatio(), 0);
                 DamagePopupManager.getInstance().addDamageNumber(
                     position,
                     healAmount,

@@ -55,6 +55,8 @@
   "exile_overlay.config.fade_out.tooltip": "フェードアウトアニメーションの時間",
   "exile_overlay.config.max_texts": "最大表示数: %s",
   "exile_overlay.config.max_texts.tooltip": "画面上のダメージ数値の最大数",
+  "exile_overlay.config.popup_height": "表示高さ: %.2f",
+  "exile_overlay.config.popup_height.tooltip": "高さ位置の比率（0.0=足元、1.0=頭上）",
   "exile_overlay.config.open_hud_editor": "HUD位置エディタを開く",
   "exile_overlay.config.open_hud_editor.tooltip": "ドラッグ＆ドロップでHUD位置を編集",
   "key.exile_overlay.hud_config": "HUD設定を開く",
