@@ -2,6 +2,9 @@ package com.example.exile_overlay.forge.client;
 
 import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
+import com.example.exile_overlay.util.LootrHelper;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -10,23 +13,23 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT)
 public class AutoQuickLootHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/AutoQuickLoot");
-    private static final WeakHashMap<Screen, Boolean> triggered = new WeakHashMap<>();
+    private static final long COOLDOWN_MS = 3000;
+    private static final Map<BlockPos, Long> cooldownTracker = new ConcurrentHashMap<>();
     private static final Set<String> LOOTR_BLOCKS = Set.of(
         "lootr:lootr_chest",
         "lootr:lootr_trapped_chest",
@@ -35,21 +38,28 @@ public class AutoQuickLootHandler {
     );
 
     private static boolean initialized = false;
-    private static Class<?> packetsClass = null;
-    private static Class<?> myPacketClass = null;
     private static Class<?> lootMenuPacketClass = null;
     private static Class<?> modeClass = null;
     private static Object dropMode = null;
     private static Method sendToServerMethod = null;
-    private static Field drawableListField = null;
+    private static Field renderablesField = null;
+
+    private static KeyMapping quickLootKey;
+
+    public static void registerKeyMapping(KeyMapping mapping) {
+        quickLootKey = mapping;
+    }
+
+    public static KeyMapping getKeyMapping() {
+        return quickLootKey;
+    }
 
     private static void initializeReflection() {
         if (initialized) return;
         initialized = true;
 
         try {
-            packetsClass = Class.forName("com.robertx22.library_of_exile.main.Packets");
-            myPacketClass = Class.forName("com.robertx22.library_of_exile.main.MyPacket");
+            Class<?> packetsClass = Class.forName("com.robertx22.library_of_exile.main.Packets");
             lootMenuPacketClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.packets.backpack.BackPackLootMenuPacket");
             modeClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.packets.backpack.BackPackLootMenuPacket$Mode");
 
@@ -67,22 +77,22 @@ public class AutoQuickLootHandler {
                 }
             }
 
-            drawableListField = findDrawableListField();
-            
-            if (sendToServerMethod != null && drawableListField != null) {
+            renderablesField = findRenderablesField();
+
+            if (sendToServerMethod != null && renderablesField != null && dropMode != null) {
                 LOGGER.info("Auto Quick Loot initialized successfully");
             } else {
-                LOGGER.warn("Auto Quick Loot: sendToServerMethod={}, drawableListField={}", 
-                    sendToServerMethod != null, drawableListField != null);
+                LOGGER.warn("Auto Quick Loot partial init: sendToServer={}, renderables={}, dropMode={}",
+                    sendToServerMethod != null, renderablesField != null, dropMode != null);
             }
         } catch (ClassNotFoundException e) {
-            LOGGER.debug("Mine and Slash not found, Auto Quick Loot will be disabled");
+            LOGGER.debug("Mine and Slash not found, Auto Quick Loot disabled");
         } catch (Exception e) {
-            LOGGER.error("Failed to initialize Auto Quick Loot reflection", e);
+            LOGGER.error("Failed to initialize Auto Quick Loot", e);
         }
     }
 
-    private static Field findDrawableListField() {
+    private static Field findRenderablesField() {
         for (Field f : Screen.class.getDeclaredFields()) {
             if (List.class.isAssignableFrom(f.getType())) {
                 f.setAccessible(true);
@@ -93,86 +103,94 @@ public class AutoQuickLootHandler {
     }
 
     @SubscribeEvent
-    public static void onScreenRender(ScreenEvent.Render.Post event) {
-        if (!EquipmentDisplayConfig.getInstance().isAutoQuickLootEnabled()) {
-            return;
-        }
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!LootrHelper.isLoaded()) return;
+
+        cleanupExpiredCooldowns();
+
+        if (!EquipmentDisplayConfig.getInstance().isAutoQuickLootEnabled()) return;
 
         initializeReflection();
-        if (packetsClass == null || lootMenuPacketClass == null || modeClass == null || 
-            dropMode == null || sendToServerMethod == null) {
-            return;
-        }
-
-        Screen screen = event.getScreen();
-        if (screen == null) {
-            return;
-        }
-
-        long window = Minecraft.getInstance().getWindow().getWindow();
-        if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) != GLFW.GLFW_PRESS) {
-            return;
-        }
+        if (!isReflectionReady()) return;
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) {
-            return;
-        }
+        if (mc.player == null || mc.level == null || mc.screen == null) return;
 
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) {
-            return;
-        }
+        if (!isKeyPressed(mc)) return;
 
-        BlockPos pos = blockHit.getBlockPos();
-        BlockState state = mc.level.getBlockState(pos);
+        BlockPos targetPos = getTargetBlockPos(mc);
+        if (targetPos == null || isOnCooldown(targetPos)) return;
+
+        BlockState state = mc.level.getBlockState(targetPos);
         Block block = state.getBlock();
         String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
 
-        if (!LOOTR_BLOCKS.contains(blockId)) {
-            return;
-        }
+        if (!LOOTR_BLOCKS.contains(blockId)) return;
 
-        if (triggered.getOrDefault(screen, false)) {
-            return;
-        }
-
-        boolean foundButton = findButtonInScreen(screen);
-
-        if (foundButton) {
-            try {
-                Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(dropMode);
-                sendToServerMethod.invoke(null, packet);
-
-                mc.setScreen(null);
-                triggered.put(screen, true);
-                LOGGER.info("Auto Quick Loot triggered for {}", blockId);
-            } catch (Exception e) {
-                LOGGER.error("Failed to send BackPackLootMenuPacket", e);
-            }
+        if (hasQuickLootButton(mc.screen)) {
+            executeQuickLoot(mc, targetPos, blockId);
         }
     }
 
-    private static boolean findButtonInScreen(Screen screen) {
-        if (drawableListField == null) {
-            return false;
+    private static void cleanupExpiredCooldowns() {
+        long now = System.currentTimeMillis();
+        cooldownTracker.entrySet().removeIf(entry -> (now - entry.getValue()) > COOLDOWN_MS * 2);
+    }
+
+    private static boolean isReflectionReady() {
+        return lootMenuPacketClass != null && modeClass != null &&
+               dropMode != null && sendToServerMethod != null && renderablesField != null;
+    }
+
+    private static boolean isKeyPressed(Minecraft mc) {
+        if (quickLootKey != null) {
+            return quickLootKey.isDown();
         }
+        long window = mc.getWindow().getWindow();
+        return org.lwjgl.glfw.GLFW.glfwGetKey(window, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_CONTROL) == org.lwjgl.glfw.GLFW.GLFW_PRESS;
+    }
+
+    private static BlockPos getTargetBlockPos(Minecraft mc) {
+        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return null;
+        return blockHit.getBlockPos();
+    }
+
+    private static boolean isOnCooldown(BlockPos pos) {
+        Long lastTrigger = cooldownTracker.get(pos);
+        if (lastTrigger == null) return false;
+        return (System.currentTimeMillis() - lastTrigger) < COOLDOWN_MS;
+    }
+
+    private static boolean hasQuickLootButton(Screen screen) {
+        if (renderablesField == null) return false;
 
         try {
-            List<?> drawables = (List<?>) drawableListField.get(screen);
-            if (drawables == null) {
-                return false;
-            }
+            List<?> renderables = (List<?>) renderablesField.get(screen);
+            if (renderables == null) return false;
 
-            for (Object obj : drawables) {
+            for (Object obj : renderables) {
                 String className = obj.getClass().getName();
                 if (className.contains("BackpackQuickLootButton")) {
                     return true;
                 }
             }
         } catch (Exception e) {
-            LOGGER.debug("Failed to access drawable list", e);
+            LOGGER.debug("Failed to check screen buttons", e);
         }
-
         return false;
+    }
+
+    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId) {
+        try {
+            Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(dropMode);
+            sendToServerMethod.invoke(null, packet);
+
+            mc.setScreen(null);
+            cooldownTracker.put(pos, System.currentTimeMillis());
+            LOGGER.info("Quick loot executed for {}", blockId);
+        } catch (Exception e) {
+            LOGGER.error("Failed to execute quick loot", e);
+        }
     }
 }

@@ -6,6 +6,7 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
+import com.example.exile_overlay.util.LootrHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -149,16 +150,18 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
         
-        y = addSection(y, "section.exile_overlay.auto_quick_loot", tx);
-        
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()), btn -> {
-                    config.setAutoQuickLootEnabled(!config.isAutoQuickLootEnabled());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_quick_loot.tooltip")))
-                        .build());
-        y += sp;
+        if (LootrHelper.isLoaded()) {
+            y = addSection(y, "section.exile_overlay.auto_quick_loot", tx);
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()), btn -> {
+                        config.setAutoQuickLootEnabled(!config.isAutoQuickLootEnabled());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_quick_loot.tooltip")))
+                            .build());
+            y += sp;
+        }
         
         if (MineAndSlashHelper.isLoaded()) {
             y = addSection(y, "section.exile_overlay.mns_compat", tx);
