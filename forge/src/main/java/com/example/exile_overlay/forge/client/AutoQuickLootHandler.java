@@ -3,7 +3,6 @@ package com.example.exile_overlay.forge.client;
 import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.util.LootrHelper;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
@@ -27,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT)
 public class AutoQuickLootHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/AutoQuickLoot");
-    private static final long COOLDOWN_MS = 3000;
+    private static final long COOLDOWN_MS = 1000;
     private static final Map<BlockPos, Long> cooldownTracker = new ConcurrentHashMap<>();
     private static final Set<String> LOOTR_BLOCKS = Set.of(
         "lootr:lootr_chest",
@@ -42,12 +41,6 @@ public class AutoQuickLootHandler {
     private static Object dropMode = null;
     private static Method sendToServerMethod = null;
     private static Field renderablesField = null;
-
-    private static KeyMapping quickLootKey;
-
-    public static void registerKeyMapping(KeyMapping mapping) {
-        quickLootKey = mapping;
-    }
 
     private static void initializeReflection() {
         if (initialized) return;
@@ -123,7 +116,7 @@ public class AutoQuickLootHandler {
 
         Screen screen = event.getScreen();
         if (hasQuickLootButton(screen)) {
-            executeQuickLoot(mc, targetPos, blockId, screen);
+            executeQuickLoot(mc, targetPos, blockId);
         }
     }
 
@@ -133,9 +126,6 @@ public class AutoQuickLootHandler {
     }
 
     private static boolean isKeyPressed(Minecraft mc) {
-        if (quickLootKey != null) {
-            return quickLootKey.isDown();
-        }
         long window = mc.getWindow().getWindow();
         return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS;
     }
@@ -165,7 +155,7 @@ public class AutoQuickLootHandler {
         return false;
     }
 
-    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId, Screen screen) {
+    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId) {
         try {
             Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(dropMode);
             sendToServerMethod.invoke(null, packet);
