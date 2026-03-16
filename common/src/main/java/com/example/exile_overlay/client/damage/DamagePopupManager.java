@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DamagePopupManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamagePopupManager");
-    private static DamagePopupManager instance;
+    private static final DamagePopupManager INSTANCE = new DamagePopupManager();
 
     private final List<DamageNumber> damageNumbers = new ArrayList<>();
     private final Map<Integer, Float> lastHealthMap = new ConcurrentHashMap<>();
@@ -31,10 +31,7 @@ public class DamagePopupManager {
     }
 
     public static DamagePopupManager getInstance() {
-        if (instance == null) {
-            instance = new DamagePopupManager();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     public void onHealthChanged(LivingEntity entity, float newHealth) {

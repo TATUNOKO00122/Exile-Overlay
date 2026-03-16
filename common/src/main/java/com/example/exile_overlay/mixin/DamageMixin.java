@@ -20,7 +20,7 @@ public abstract class DamageMixin {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageMixin");
 
     @Unique
-    private float exileOverlay$lastHealth = -1;
+    private float exileOverlay$lastHealth = Float.NaN;
 
     @Inject(method = "setHealth", at = @At("TAIL"))
     private void exileOverlay$onSetHealth(float health, CallbackInfo ci) {
@@ -30,7 +30,8 @@ public abstract class DamageMixin {
                 return;
             }
 
-            if (exileOverlay$lastHealth < 0) {
+            // Float.NaNで初期化未完了を判定（初期化順序の問題を回避）
+            if (Float.isNaN(exileOverlay$lastHealth)) {
                 exileOverlay$lastHealth = health;
                 return;
             }
@@ -43,22 +44,6 @@ public abstract class DamageMixin {
             exileOverlay$lastHealth = health;
         } catch (Exception e) {
             LOGGER.error("Failed to handle setHealth", e);
-        }
-    }
-
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void exileOverlay$onTick(CallbackInfo ci) {
-        try {
-            LivingEntity entity = (LivingEntity) (Object) this;
-            if (!entity.level().isClientSide()) {
-                return;
-            }
-
-            if (exileOverlay$lastHealth < 0) {
-                exileOverlay$lastHealth = entity.getHealth();
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to handle tick", e);
         }
     }
 }

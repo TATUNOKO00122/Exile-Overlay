@@ -160,79 +160,80 @@ public class RenderPipelineImpl implements IRenderPipeline {
     }
     
     private void renderLayerInternal(RenderLayer layer, GuiGraphics graphics, RenderContext ctx) {
-        // 【最適化】synchronizedブロック内でイテレーション準備のみ行い、
-        // 実際のレンダリングはロック外で実行
-        // コマンド登録/解除はメインスレッドで行われるため、レンダリング中の変更はない
+        // 【最適化】synchronizedブロック内でコマンドリストのスナップショットのみ取得
+        // 実際のレンダリングはロック外で実行し、FPS低下を防止
+        
+        List<PrioritizedCommand> commandsSnapshot;
+        synchronized (commandLock) {
+            List<PrioritizedCommand> commands = commandsByLayer.get(layer);
+            if (commands.isEmpty()) {
+                return;
+            }
+            // 新しいリストを作成してコピー（ロック内でのみ実行）
+            commandsSnapshot = new ArrayList<>(commands);
+        }
         
         layer.setupRenderState();
         
         try {
-            synchronized (commandLock) {
-                List<PrioritizedCommand> commands = commandsByLayer.get(layer);
-                if (commands.isEmpty()) {
-                    return;
+            for (PrioritizedCommand pc : commandsSnapshot) {
+                IRenderCommand command = pc.command;
+                String commandId = command.getId();
+                
+                CircuitBreaker cb = circuitBreakers.get(commandId);
+                if (cb != null && !cb.allowExecution()) {
+                    if (blockedCommandsLogged.add(commandId)) {
+                        LOGGER.warn("Command '{}' is blocked due to repeated failures (circuit breaker OPEN)", 
+                            commandId);
+                    }
+                    continue;
                 }
                 
-                // ロック内でイテレーション（レンダリング中はリストが変更されない前提）
-                for (PrioritizedCommand pc : commands) {
-                    IRenderCommand command = pc.command;
-                    String commandId = command.getId();
+                if (!command.isVisible(ctx)) {
+                    continue;
+                }
+                
+                try {
+                    command.execute(graphics, ctx);
                     
-                    CircuitBreaker cb = circuitBreakers.get(commandId);
-                    if (cb != null && !cb.allowExecution()) {
-                        if (blockedCommandsLogged.add(commandId)) {
-                            LOGGER.warn("Command '{}' is blocked due to repeated failures (circuit breaker OPEN)", 
-                                commandId);
-                        }
-                        continue;
+                    if (cb != null) {
+                        cb.recordSuccess();
+                        blockedCommandsLogged.remove(commandId);
                     }
                     
-                    if (!command.isVisible(ctx)) {
-                        continue;
+                } catch (RuntimeException e) {
+                    if (cb != null) {
+                        cb.recordFailure();
                     }
                     
-                    try {
-                        command.execute(graphics, ctx);
-                        
-                        if (cb != null) {
-                            cb.recordSuccess();
-                            blockedCommandsLogged.remove(commandId);
-                        }
-                        
-                    } catch (RuntimeException e) {
-                        if (cb != null) {
-                            cb.recordFailure();
-                        }
-                        
-                        LOGGER.error("Recoverable error in render command '{}': {}", 
-                            commandId, e.getMessage(), e);
-                        
-                        errorLog.add(commandId, new HudError(
-                            commandId,
-                            HudError.ErrorType.RECOVERABLE,
-                            "Render execution failed: " + e.getMessage(),
-                            e
-                        ));
-                        
-                        continue;
-                        
-                    } catch (Error e) {
-                        if (cb != null) {
-                            cb.recordFailure();
-                        }
-                        
-                        LOGGER.error("Critical error in render command '{}': {}", 
-                            commandId, e.getMessage(), e);
-                        
-                        errorLog.add(commandId, new HudError(
-                            commandId,
-                            HudError.ErrorType.CRITICAL,
-                            "Critical error: " + e.getMessage(),
-                            e
-                        ));
-                        
-                        throw e;
+                    LOGGER.error("Recoverable error in render command '{}': {}", 
+                        commandId, e.getMessage(), e);
+                    
+                    errorLog.add(commandId, new HudError(
+                        commandId,
+                        HudError.ErrorType.RECOVERABLE,
+                        "Render execution failed: " + e.getMessage(),
+                        e
+                    ));
+                    
+                    continue;
+                    
+                } catch (Error e) {
+                    if (cb != null) {
+                        cb.recordFailure();
                     }
+                    
+                    LOGGER.error("Critical error in render command '{}': {}", 
+                        commandId, e.getMessage(), e);
+                    
+                    errorLog.add(commandId, new HudError(
+                        commandId,
+                        HudError.ErrorType.CRITICAL,
+                        "Critical error: " + e.getMessage(),
+                        e
+                    ));
+                    
+                    throw e;
                 }
             }
         } finally {

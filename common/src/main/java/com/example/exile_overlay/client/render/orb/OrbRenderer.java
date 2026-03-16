@@ -50,6 +50,28 @@ public class OrbRenderer {
     
     // 【最適化】ESオーバーレイのスライス数（パフォーマンスと画質のバランス）
     private static final int ES_SLICES = 16;
+    
+    // 【最適化】sqrt結果キャッシュ（半径1.0基準）
+    // -1.0〜1.0を256段階でキャッシュ
+    private static final int SQRT_CACHE_SIZE = 256;
+    private static final float[] SQRT_CACHE = new float[SQRT_CACHE_SIZE];
+    
+    static {
+        // sqrt(1 - y^2)を事前計算（yは-1〜1の範囲）
+        for (int i = 0; i < SQRT_CACHE_SIZE; i++) {
+            float y = (i / (float)(SQRT_CACHE_SIZE - 1)) * 2.0f - 1.0f; // -1 to 1
+            float ySq = y * y;
+            SQRT_CACHE[i] = (float) Math.sqrt(Math.max(0, 1.0f - ySq));
+        }
+    }
+    
+    // 【最適化】キャッシュからsqrt値を取得
+    private static float getSqrtFromCache(float normalizedY) {
+        // normalizedY: -1.0 〜 1.0
+        int index = (int) ((normalizedY + 1.0f) * 0.5f * (SQRT_CACHE_SIZE - 1));
+        index = Math.max(0, Math.min(SQRT_CACHE_SIZE - 1, index));
+        return SQRT_CACHE[index];
+    }
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
         return !config.isVisible(player) || config.isOverlay();
@@ -276,9 +298,9 @@ public class OrbRenderer {
             float dy1 = y1 - centerY;
             float dy2 = y2 - centerY;
 
-            // 【最適化】Math.sqrtを最小限に
-            float halfWidth1 = (float) Math.sqrt(Math.max(0, radiusSq - dy1 * dy1));
-            float halfWidth2 = (float) Math.sqrt(Math.max(0, radiusSq - dy2 * dy2));
+            // 【最適化】sqrtをキャッシュから取得
+            float halfWidth1 = getSqrtFromCache(dy1 / radius) * radius;
+            float halfWidth2 = getSqrtFromCache(dy2 / radius) * radius;
 
             float left1 = centerX - halfWidth1;
             float right1 = centerX + halfWidth1;

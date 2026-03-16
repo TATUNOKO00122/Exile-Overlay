@@ -30,8 +30,8 @@ public class UnifiedCache {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final UnifiedCache INSTANCE = new UnifiedCache();
     
-    // プレイヤーID → データキャッシュマップ（プリミティブlongキーで高速化）
-    private final Map<Long, Map<DataType, CachedValue>> playerCaches = new ConcurrentHashMap<>();
+    // プレイヤーUUID → データキャッシュマップ（UUID全体を文字列キーとして使用）
+    private final Map<String, Map<DataType, CachedValue>> playerCaches = new ConcurrentHashMap<>();
     
     // グローバルフレームカウンター（外部からincrementされる）
     private volatile long globalFrameCounter = 0;
@@ -93,8 +93,8 @@ public class UnifiedCache {
             }
         }
 
-        // UUID.getMostSignificantBits() を使用して文字列変換を回避
-        long playerKey = player.getUUID().getMostSignificantBits();
+        // UUID全体を文字列として使用（衝突回避）
+        String playerKey = player.getUUID().toString();
         Map<DataType, CachedValue> playerCache = playerCaches.computeIfAbsent(
             playerKey, k -> new ConcurrentHashMap<>()
         );
@@ -117,7 +117,7 @@ public class UnifiedCache {
             return 0f;
         }
 
-        long playerKey = player.getUUID().getMostSignificantBits();
+        String playerKey = player.getUUID().toString();
         Map<DataType, CachedValue> playerCache = playerCaches.computeIfAbsent(
             playerKey, k -> new ConcurrentHashMap<>()
         );
@@ -133,7 +133,7 @@ public class UnifiedCache {
     public void invalidate(Player player, DataType type) {
         if (player == null) return;
 
-        long playerKey = player.getUUID().getMostSignificantBits();
+        String playerKey = player.getUUID().toString();
         Map<DataType, CachedValue> playerCache = playerCaches.get(playerKey);
         if (playerCache != null) {
             CachedValue cv = playerCache.get(type);
@@ -149,7 +149,7 @@ public class UnifiedCache {
     public void invalidateAll(Player player) {
         if (player == null) return;
 
-        long playerKey = player.getUUID().getMostSignificantBits();
+        String playerKey = player.getUUID().toString();
         Map<DataType, CachedValue> playerCache = playerCaches.get(playerKey);
         if (playerCache != null) {
             playerCache.values().forEach(CachedValue::invalidate);
@@ -163,7 +163,7 @@ public class UnifiedCache {
     public void removePlayer(Player player) {
         if (player == null) return;
 
-        long playerKey = player.getUUID().getMostSignificantBits();
+        String playerKey = player.getUUID().toString();
         playerCaches.remove(playerKey);
         LOGGER.debug("Removed cache for player: {}", player.getName().getString());
     }

@@ -283,12 +283,185 @@ public class MineAndSlashDataProvider extends AbstractModDataProvider {
     }
     
     /**
-     * キャッシュを無効化（UnifiedCacheに委譲）
-     * @deprecated UnifiedCache.invalidateAll() を使用してください
+     * 全リソースデータを一括取得（パフォーマンス最適化用）
+     * getEntityData/getResourcesの呼び出しを1回に抑える
+     * 
+     * @param player 対象プレイヤー
+     * @return 全リソースデータを含むMap
      */
-    @Deprecated
-    public void invalidateCache() {
-        // UnifiedCacheに一元化されたため、個別のキャッシュ無効化は不要
-        LOGGER.debug("invalidateCache() is deprecated. Use UnifiedCache.invalidateAll() instead.");
+    public BatchResources fetchAllResources(Player player) {
+        if (!isAvailable() || player == null) {
+            return BatchResources.EMPTY;
+        }
+        
+        try {
+            Object entityData = MethodHandlesUtil.loadUnit(player);
+            if (entityData == null) {
+                return BatchResources.EMPTY;
+            }
+            
+            Object resources = MethodHandlesUtil.getResources(entityData);
+            Object unit = MethodHandlesUtil.getUnit(entityData);
+            
+            return new BatchResources(
+                entityData,
+                resources,
+                unit,
+                player
+            );
+        } catch (Throwable t) {
+            LOGGER.debug("Error fetching batch resources: {}", t.getMessage());
+            return BatchResources.EMPTY;
+        }
+    }
+    
+    /**
+     * 一括取得したリソースデータを保持するレコード
+     */
+    public static class BatchResources {
+        public static final BatchResources EMPTY = new BatchResources(null, null, null, null);
+        
+        public final Object entityData;
+        public final Object resources;
+        public final Object unit;
+        public final Player player;
+        
+        BatchResources(Object entityData, Object resources, Object unit, Player player) {
+            this.entityData = entityData;
+            this.resources = resources;
+            this.unit = unit;
+            this.player = player;
+        }
+        
+        public boolean isValid() {
+            return entityData != null;
+        }
+        
+        public float getMana() {
+            if (resources == null) return 0f;
+            try {
+                return MethodHandlesUtil.getMana(resources);
+            } catch (Throwable t) {
+                return 0f;
+            }
+        }
+        
+        public float getMagicShield() {
+            if (resources == null) return 0f;
+            try {
+                return MethodHandlesUtil.getMagicShield(resources);
+            } catch (Throwable t) {
+                return 0f;
+            }
+        }
+        
+        public float getEnergy() {
+            if (resources == null) return 0f;
+            try {
+                return MethodHandlesUtil.getEnergy(resources);
+            } catch (Throwable t) {
+                return 0f;
+            }
+        }
+        
+        public float getBlood() {
+            if (resources == null) return 0f;
+            try {
+                return MethodHandlesUtil.getBlood(resources);
+            } catch (Throwable t) {
+                return 0f;
+            }
+        }
+        
+        public float getMaxMana() {
+            if (entityData == null) return 1f;
+            try {
+                return MethodHandlesUtil.getMaximumResource(entityData, MethodHandlesUtil.getManaType());
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
+        
+        public float getMaxMagicShield() {
+            if (entityData == null) return 1f;
+            try {
+                return MethodHandlesUtil.getMaximumResource(entityData, MethodHandlesUtil.getMagicShieldType());
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
+        
+        public float getMaxEnergy() {
+            if (entityData == null) return 1f;
+            try {
+                return MethodHandlesUtil.getMaximumResource(entityData, MethodHandlesUtil.getEnergyType());
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
+        
+        public float getMaxBlood() {
+            if (entityData == null) return 1f;
+            try {
+                return MethodHandlesUtil.getMaximumResource(entityData, MethodHandlesUtil.getBloodType());
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
+        
+        public int getLevel() {
+            if (entityData == null) return 0;
+            try {
+                return MethodHandlesUtil.getLevel(entityData);
+            } catch (Throwable t) {
+                return 0;
+            }
+        }
+        
+        public float getExp() {
+            if (entityData == null) return 0f;
+            try {
+                return MethodHandlesUtil.getExp(entityData);
+            } catch (Throwable t) {
+                return 0f;
+            }
+        }
+        
+        public float getExpRequired() {
+            if (entityData == null) return 1f;
+            try {
+                return MethodHandlesUtil.getExpRequired(entityData);
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
+        
+        public boolean isBloodMage() {
+            if (unit == null) return false;
+            try {
+                return MethodHandlesUtil.isBloodMage(unit);
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+        
+        public float getCurrentHealth() {
+            if (player == null) return 0f;
+            try {
+                float value = MethodHandlesUtil.getCurrentHealth(player);
+                return value > 0 ? value : player.getHealth();
+            } catch (Throwable t) {
+                return player != null ? player.getHealth() : 0f;
+            }
+        }
+        
+        public float getMaxHealth() {
+            if (player == null) return 1f;
+            try {
+                return MethodHandlesUtil.getMaxHealth(player);
+            } catch (Throwable t) {
+                return 1f;
+            }
+        }
     }
 }

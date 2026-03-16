@@ -8,6 +8,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GPUシェーダー方式オーブレンダラー
@@ -21,11 +23,16 @@ import org.joml.Matrix4f;
  */
 public class OrbShaderRenderer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrbShaderRenderer.class);
+
     // シェーダーインスタンス
     private static ShaderInstance orbLiquidShader;
 
     // アニメーション時間
     private static float animationTime = 0.0f;
+    
+    // シェーダー未初期化警告の抑制用
+    private static boolean shaderUnavailableWarned = false;
 
     /**
      * シェーダーを登録（プラットフォーム固有のイベントから呼び出される）
@@ -76,7 +83,16 @@ public class OrbShaderRenderer {
 
     public static void drawCircularFill(GuiGraphics graphics, int x, int y, int size,
             float fillPercent, int color) {
-        if (fillPercent <= 0 || orbLiquidShader == null) {
+        if (fillPercent <= 0) {
+            return;
+        }
+        
+        if (orbLiquidShader == null) {
+            if (!shaderUnavailableWarned) {
+                LOGGER.warn("Orb liquid shader not available. Orb rendering will be skipped. " +
+                    "Check if orb_liquid.json shader is properly registered.");
+                shaderUnavailableWarned = true;
+            }
             return;
         }
 
