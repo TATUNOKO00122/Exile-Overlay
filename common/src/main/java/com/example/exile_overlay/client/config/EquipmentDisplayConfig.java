@@ -30,7 +30,7 @@ public class EquipmentDisplayConfig {
     private boolean usePercentage = false;  // デフォルトfalse（実数値表示）
     private boolean enableShadow = true;    // デフォルトtrue（影有効）
     private boolean autoQuickLootEnabled = false;  // デフォルトfalse（Auto Quick Loot無効）
-    private boolean disableMnsHpBar = true;  // デフォルトtrue（Mine and Slash HPバーを無効化）
+    private boolean disableMnsHpBar = false;  // デフォルトfalse（Mine and Slash HPバーを有効）
 
     private EquipmentDisplayConfig() {
     }
