@@ -31,6 +31,8 @@
   "exile_overlay.config.day_counter_enabled.tooltip": "Show day counter on screen",
   "exile_overlay.config.day_counter_scale": "Scale: %.2f",
   "exile_overlay.config.day_counter_scale.tooltip": "Size of the day counter display",
+  "exile_overlay.config.day_counter_volume": "Volume: %s%%",
+  "exile_overlay.config.day_counter_volume.tooltip": "Typewriter sound volume (0% to mute)",
   "exile_overlay.config.show_damage": "Show Damage: %s",
   "exile_overlay.config.show_damage.tooltip": "Display damage numbers",
   "exile_overlay.config.show_healing": "Show Healing: %s",

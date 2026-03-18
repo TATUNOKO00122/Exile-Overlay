@@ -31,6 +31,8 @@
   "exile_overlay.config.day_counter_enabled.tooltip": "画面に日数カウンターを表示",
   "exile_overlay.config.day_counter_scale": "スケール: %.2f",
   "exile_overlay.config.day_counter_scale.tooltip": "日数カウンターの表示サイズ",
+  "exile_overlay.config.day_counter_volume": "音量: %s%%",
+  "exile_overlay.config.day_counter_volume.tooltip": "タイプライター音の音量（0%でミュート）",
   "exile_overlay.config.show_damage": "ダメージ表示: %s",
   "exile_overlay.config.show_damage.tooltip": "ダメージ数値を表示",
   "exile_overlay.config.show_healing": "回復表示: %s",

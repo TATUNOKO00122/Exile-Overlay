@@ -6,6 +6,7 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
+import com.example.exile_overlay.client.render.DayCounterConfig;
 import com.example.exile_overlay.util.LootrHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import net.minecraft.client.Minecraft;
@@ -195,6 +196,14 @@ public class ConfigScreen extends Screen {
                 dayCounterPos.getScale(), 0.5f, 3.0f, val -> {
                     HudPosition pos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
                     HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, pos.withScale(val));
+                }));
+        y += sp;
+        
+        DayCounterConfig dayCounterConfig = DayCounterConfig.getInstance();
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.day_counter_volume",
+                dayCounterConfig.getSoundVolume(), 0, 100, val -> {
+                    dayCounterConfig.setSoundVolume(val);
+                    dayCounterConfig.save();
                 }));
         
         contentHeight = y - (30 - (int) scrollOffset) + sp;

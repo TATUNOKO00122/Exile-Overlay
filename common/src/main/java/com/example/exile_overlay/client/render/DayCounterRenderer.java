@@ -8,8 +8,9 @@ import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,7 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
 
     // Configuration key
     private static final String CONFIG_KEY = "day_counter";
+    private static final SoundEvent TYPEWRITER_SOUND = SoundEvent.createVariableRangeEvent(new ResourceLocation("minecraft:ui.stonecutter.select_recipe"));
 
     public DayCounterRenderer() {
     }
@@ -175,10 +177,15 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
             return;
         }
 
+        float volume = DayCounterConfig.getInstance().getSoundVolumeFloat();
+        if (volume <= 0.0f) {
+            return;
+        }
+
         // Play sound on key frames
         if (tick == ANIM_START || tick == ANIM_DASH2 || tick == ANIM_SPACE ||
             tick == ANIM_D || tick == ANIM_DA || tick == ANIM_DAY || tick == ANIM_NUMBER) {
-            mc.player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.MASTER, 0.4f, 2.0f);
+            mc.player.playNotifySound(TYPEWRITER_SOUND, SoundSource.MASTER, volume, 1.90f);
         }
     }
 
