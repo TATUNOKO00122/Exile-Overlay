@@ -25,13 +25,8 @@ versionRange = "[1.20.1,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.exile_overlay]]
-modId = "architectury"
-mandatory = true
-versionRange = "[9.2.14,)"
-ordering = "AFTER"
-side = "BOTH"
+[[mixins]]
+config = "exile_overlay.mixins.json"
 
-# Mixin設定 - クライアントサイドのみ
 [[mixins]]
 config = "exile_overlay-forge.mixins.json"

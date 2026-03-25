@@ -9,6 +9,4 @@ pluginManagement {
 
 rootProject.name = 'exile_overlay'
 
-include 'common'
-include 'fabric'
 include 'forge'
