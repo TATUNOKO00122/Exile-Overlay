@@ -14,7 +14,6 @@ public class FavoriteKeyBindings {
     private static final Logger LOGGER = LoggerFactory.getLogger(FavoriteKeyBindings.class);
 
     public static KeyMapping KEY_TOGGLE;
-    public static KeyMapping KEY_BYPASS;
 
     private static final String CATEGORY = "category.exile_overlay.favorite";
 
@@ -26,37 +25,28 @@ public class FavoriteKeyBindings {
                 GLFW.GLFW_KEY_LEFT_ALT,
                 CATEGORY
         );
-        KEY_BYPASS = new KeyMapping(
-                "key.exile_overlay.favorite.bypass",
-                GLFW.GLFW_KEY_V,
-                CATEGORY
-        );
-        LOGGER.info("FavoriteKeyBindings initialized: Toggle=LEFT_ALT, Bypass=V");
+        LOGGER.info("FavoriteKeyBindings initialized: Toggle=LEFT_ALT");
     }
 
     public static void register(Consumer<KeyMapping> registry) {
-        if (KEY_TOGGLE == null || KEY_BYPASS == null) {
+        if (KEY_TOGGLE == null) {
             init();
         }
         registry.accept(KEY_TOGGLE);
-        registry.accept(KEY_BYPASS);
         LOGGER.info("FavoriteKeyBindings registered");
     }
 
     public static boolean isToggle() {
-        return isKeyDown(GLFW.GLFW_KEY_LEFT_ALT);
-    }
-
-    public static boolean isBypass() {
-        return isKeyDown(GLFW.GLFW_KEY_V);
-    }
-
-    private static boolean isKeyDown(int glfwKeyCode) {
-        try {
-            long window = Minecraft.getInstance().getWindow().getWindow();
-            return GLFW.glfwGetKey(window, glfwKeyCode) == GLFW.GLFW_PRESS;
-        } catch (Exception e) {
-            return false;
+        if (KEY_TOGGLE == null) return false;
+        
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getWindow() != null) {
+            InputConstants.Key boundKey = KEY_TOGGLE.getKey();
+            if (boundKey.getType() == InputConstants.Type.KEYSYM) {
+                long window = mc.getWindow().getWindow();
+                return InputConstants.isKeyDown(window, boundKey.getValue());
+            }
         }
+        return KEY_TOGGLE.isDown();
     }
 }

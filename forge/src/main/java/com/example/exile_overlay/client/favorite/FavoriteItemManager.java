@@ -82,10 +82,6 @@ public class FavoriteItemManager {
         return isFavorite(playerSlotId);
     }
 
-    public boolean isBypassActive() {
-        return FavoriteKeyBindings.isBypass();
-    }
-
     public boolean isToggleKeyPressed() {
         return FavoriteKeyBindings.isToggle();
     }

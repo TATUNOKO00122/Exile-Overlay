@@ -48,10 +48,6 @@ public abstract class FavoriteItemMixin {
             return;
         }
 
-        if (manager.isBypassActive()) {
-            return;
-        }
-
         if (manager.isFavorite(playerSlotId)) {
             ci.cancel();
             LOGGER.debug("Blocked click on favorite slot {}", playerSlotId);

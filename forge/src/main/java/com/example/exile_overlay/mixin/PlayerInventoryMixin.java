@@ -24,10 +24,6 @@ public abstract class PlayerInventoryMixin {
             return;
         }
 
-        if (manager.isBypassActive()) {
-            return;
-        }
-
         if (slotIndex >= 0 && slotIndex <= 40 && manager.isFavorite(slotIndex)) {
             cir.setReturnValue(ItemStack.EMPTY);
             LOGGER.debug("Blocked removal from favorite slot {}", slotIndex);
@@ -38,10 +34,6 @@ public abstract class PlayerInventoryMixin {
     private void exileOverlay$onRemoveItemNoUpdate(int slotIndex, CallbackInfoReturnable<ItemStack> cir) {
         FavoriteItemManager manager = FavoriteItemManager.getInstance();
         if (manager == null) {
-            return;
-        }
-
-        if (manager.isBypassActive()) {
             return;
         }
 

@@ -24,10 +24,6 @@ public abstract class PlayerDropItemMixin {
             return;
         }
 
-        if (manager.isBypassActive()) {
-            return;
-        }
-
         LocalPlayer self = (LocalPlayer) (Object) this;
         int selectedSlot = self.getInventory().selected;
 
