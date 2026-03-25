@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
@@ -27,7 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AutoQuickLootHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/AutoQuickLoot");
     private static final long COOLDOWN_MS = 1000;
+    private static final int MAX_WAIT_FRAMES = 15;
     private static final Map<BlockPos, Long> cooldownTracker = new ConcurrentHashMap<>();
+    
+    private static BlockPos cachedTargetPos = null;
+    private static int waitFrames = 0;
     private static final Set<String> LOOTR_BLOCKS = Set.of(
         "lootr:lootr_chest",
         "lootr:lootr_trapped_chest",
@@ -91,32 +94,62 @@ public class AutoQuickLootHandler {
     }
 
     @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        if (!LootrHelper.isLoaded()) return;
+        if (!EquipmentDisplayConfig.getInstance().isAutoQuickLootEnabled()) return;
+        
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
+        
+        BlockPos pos = blockHit.getBlockPos();
+        BlockState state = mc.level.getBlockState(pos);
+        String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        
+        if (LOOTR_BLOCKS.contains(blockId)) {
+            cachedTargetPos = pos;
+            waitFrames = 0;
+            LOGGER.debug("Cached target block: {} at {}", blockId, pos);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onScreenClosing(ScreenEvent.Closing event) {
+        cachedTargetPos = null;
+        waitFrames = 0;
+    }
+
+    @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (!LootrHelper.isLoaded()) return;
         if (!EquipmentDisplayConfig.getInstance().isAutoQuickLootEnabled()) return;
-
+        
         initializeReflection();
         if (!isReflectionReady()) return;
-
+        
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
-
+        
+        if (cachedTargetPos == null) return;
+        
         if (!isKeyPressed(mc)) return;
-
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
-
-        BlockPos targetPos = blockHit.getBlockPos();
-        if (isOnCooldown(targetPos)) return;
-
-        BlockState state = mc.level.getBlockState(targetPos);
-        Block block = state.getBlock();
-        String blockId = BuiltInRegistries.BLOCK.getKey(block).toString();
-
-        if (!LOOTR_BLOCKS.contains(blockId)) return;
-
+        
+        if (isOnCooldown(cachedTargetPos)) return;
+        
         Screen screen = event.getScreen();
         if (hasQuickLootButton(screen)) {
-            executeQuickLoot(mc, targetPos, blockId);
+            BlockState state = mc.level.getBlockState(cachedTargetPos);
+            String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+            executeQuickLoot(mc, cachedTargetPos, blockId);
+            cachedTargetPos = null;
+            waitFrames = 0;
+        } else {
+            waitFrames++;
+            if (waitFrames > MAX_WAIT_FRAMES) {
+                LOGGER.debug("Quick loot button not found after {} frames, giving up", MAX_WAIT_FRAMES);
+                cachedTargetPos = null;
+                waitFrames = 0;
+            }
         }
     }
 
