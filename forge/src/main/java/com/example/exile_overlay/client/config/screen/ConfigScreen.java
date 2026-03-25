@@ -178,6 +178,20 @@ public class ConfigScreen extends Screen {
             y += sp;
         }
         
+        // Dungeon Realm互換性セクション
+        if (com.example.exile_overlay.api.DungeonRealmReflection.isAvailable()) {
+            y = addSection(y, "section.exile_overlay.dungeon_realm_compat", tx);
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_dungeon_scoreboard", config.isCancelDungeonRealmScoreboard()), btn -> {
+                        config.setCancelDungeonRealmScoreboard(!config.isCancelDungeonRealmScoreboard());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_dungeon_scoreboard", config.isCancelDungeonRealmScoreboard()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_dungeon_scoreboard.tooltip")))
+                            .build());
+            y += sp;
+        }
+        
         y = addSection(y, "section.exile_overlay.day_counter", tx);
         
         HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
@@ -353,6 +367,7 @@ public class ConfigScreen extends Screen {
         config.setEnableShadow(true);
         config.setAutoQuickLootEnabled(false);
         config.setDisableMnsHpBar(true);
+        config.setCancelDungeonRealmScoreboard(true);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);

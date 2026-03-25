@@ -98,7 +98,24 @@ public enum DataType {
      * ORB_2がBlood（血魔法）モードかどうか
      * 更新頻度: STATIC（クラス変更時のみ）
      */
-    ORB_2_IS_BLOOD("orb2.is_blood", false, Boolean.class, UpdateFrequency.STATIC);
+    ORB_2_IS_BLOOD("orb2.is_blood", false, Boolean.class, UpdateFrequency.STATIC),
+    
+    // ========== Dungeon Realm データ ==========
+    DUNGEON_KILL_PERCENT("dungeon.kill_percent", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_LOOT_PERCENT("dungeon.loot_percent", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_RARITY_TIER("dungeon.rarity_tier", 0, Integer.class, UpdateFrequency.SLOW),
+    DUNGEON_RARITY_NAME("dungeon.rarity_name", "", String.class, UpdateFrequency.SLOW),
+    DUNGEON_MOB_KILLS("dungeon.mob_kills", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_ELITE_KILLS("dungeon.elite_kills", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_MINIBOSS_KILLS("dungeon.miniboss_kills", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_MOB_SPAWN_COUNT("dungeon.mob_spawn_count", 0, Integer.class, UpdateFrequency.SLOW),
+    DUNGEON_ELITE_SPAWN_COUNT("dungeon.elite_spawn_count", 0, Integer.class, UpdateFrequency.SLOW),
+    DUNGEON_MINIBOSS_SPAWN_COUNT("dungeon.miniboss_spawn_count", 0, Integer.class, UpdateFrequency.SLOW),
+    DUNGEON_CHESTS_LOOTED("dungeon.chests_looted", 0, Integer.class, UpdateFrequency.NORMAL),
+    DUNGEON_CHESTS_TOTAL("dungeon.chests_total", 0, Integer.class, UpdateFrequency.SLOW),
+    DUNGEON_IS_UBER("dungeon.is_uber", false, Boolean.class, UpdateFrequency.STATIC),
+    DUNGEON_ID("dungeon.id", "", String.class, UpdateFrequency.STATIC),
+    DUNGEON_IS_INSIDE("dungeon.is_inside", false, Boolean.class, UpdateFrequency.NORMAL);
     
     private final String key;
     private final Object defaultValue;

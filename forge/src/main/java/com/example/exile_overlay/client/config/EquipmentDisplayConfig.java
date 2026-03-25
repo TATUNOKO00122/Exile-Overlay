@@ -31,6 +31,7 @@ public class EquipmentDisplayConfig {
     private boolean enableShadow = true;    // デフォルトtrue（影有効）
     private boolean autoQuickLootEnabled = false;  // デフォルトfalse（Auto Quick Loot無効）
     private boolean disableMnsHpBar = false;  // デフォルトfalse（Mine and Slash HPバーを有効）
+    private boolean cancelDungeonRealmScoreboard = true;  // デフォルトtrue（Dungeon Realm Scoreboardをキャンセル）
 
     private EquipmentDisplayConfig() {
     }
@@ -72,8 +73,11 @@ public class EquipmentDisplayConfig {
             if (obj.has("disableMnsHpBar")) {
                 disableMnsHpBar = obj.get("disableMnsHpBar").getAsBoolean();
             }
+            if (obj.has("cancelDungeonRealmScoreboard")) {
+                cancelDungeonRealmScoreboard = obj.get("cancelDungeonRealmScoreboard").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, autoQuickLootEnabled={}, disableMnsHpBar={}", usePercentage, enableShadow, autoQuickLootEnabled, disableMnsHpBar);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, autoQuickLootEnabled={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}", usePercentage, enableShadow, autoQuickLootEnabled, disableMnsHpBar, cancelDungeonRealmScoreboard);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -93,6 +97,7 @@ public class EquipmentDisplayConfig {
         obj.addProperty("enableShadow", enableShadow);
         obj.addProperty("autoQuickLootEnabled", autoQuickLootEnabled);
         obj.addProperty("disableMnsHpBar", disableMnsHpBar);
+        obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -134,5 +139,13 @@ public class EquipmentDisplayConfig {
 
     public void setDisableMnsHpBar(boolean disable) {
         this.disableMnsHpBar = disable;
+    }
+
+    public boolean isCancelDungeonRealmScoreboard() {
+        return cancelDungeonRealmScoreboard;
+    }
+
+    public void setCancelDungeonRealmScoreboard(boolean cancel) {
+        this.cancelDungeonRealmScoreboard = cancel;
     }
 }

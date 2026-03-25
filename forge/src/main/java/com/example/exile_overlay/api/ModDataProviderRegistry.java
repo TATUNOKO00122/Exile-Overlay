@@ -125,6 +125,9 @@ public class ModDataProviderRegistry {
         // Mine and Slashプロバイダーを登録（利用可能な場合のみ有効）
         register(new MineAndSlashDataProvider());
 
+        // Dungeon Realmプロバイダーを登録（ダンジョン情報用）
+        register(new DungeonRealmDataProvider());
+
         initialized = true;
     }
 

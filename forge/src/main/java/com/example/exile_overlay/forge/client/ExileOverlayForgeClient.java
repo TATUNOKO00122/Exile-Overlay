@@ -1,6 +1,9 @@
 package com.example.exile_overlay.forge.client;
 
 import com.example.exile_overlay.ExampleMod;
+import com.example.exile_overlay.api.DungeonRealmDataProvider;
+import com.example.exile_overlay.api.DungeonRealmReflection;
+import com.example.exile_overlay.api.ModDataProviderRegistry;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.favorite.FavoriteKeyBindings;
@@ -97,12 +100,33 @@ public class ExileOverlayForgeClient {
                 });
     }
 
+    private static int scoreboardClearCounter = 0;
+    private static final int SCOREBOARD_CLEAR_INTERVAL = 20; // 20 ticks = 1秒
+
     private static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().player != null) {
             if (hudConfigKey != null && hudConfigKey.consumeClick()) {
                 LOGGER.info("HUD config key pressed on Forge, opening config screen");
                 ModMenuApi.openConfigScreen();
             }
+            
+            // Dungeon Realm Scoreboard クリア処理
+            if (EquipmentDisplayConfig.getInstance().isCancelDungeonRealmScoreboard()) {
+                scoreboardClearCounter++;
+                if (scoreboardClearCounter >= SCOREBOARD_CLEAR_INTERVAL) {
+                    scoreboardClearCounter = 0;
+                    clearDungeonScoreboard();
+                }
+            }
+        }
+    }
+
+    private static void clearDungeonScoreboard() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        
+        if (DungeonRealmReflection.isAvailable()) {
+            DungeonRealmReflection.clearScoreboard(mc.player);
         }
     }
 
