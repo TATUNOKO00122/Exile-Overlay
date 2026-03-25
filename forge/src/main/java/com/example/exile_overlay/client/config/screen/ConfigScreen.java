@@ -128,6 +128,20 @@ public class ConfigScreen extends Screen {
                 Component.translatable(enabled ? "exile_overlay.config.on" : "exile_overlay.config.off"));
     }
 
+    private Component getModeOnlyComponent(EquipmentDisplayConfig.QuickLootMode mode) {
+        String modeKey = mode == EquipmentDisplayConfig.QuickLootMode.LOOT 
+                ? "exile_overlay.config.mode.loot" 
+                : "exile_overlay.config.mode.drop";
+        return Component.translatable(modeKey);
+    }
+
+    private Component getQuickLootModeComponent(String key, EquipmentDisplayConfig.QuickLootMode mode) {
+        String modeKey = mode == EquipmentDisplayConfig.QuickLootMode.LOOT 
+                ? "exile_overlay.config.mode.loot" 
+                : "exile_overlay.config.mode.drop";
+        return Component.translatable(key, Component.translatable(modeKey));
+    }
+
     private void buildGeneralTab(int x, int y, int w, int h, int sp, int tx) {
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         
@@ -152,14 +166,56 @@ public class ConfigScreen extends Screen {
         y += sp;
         
         if (LootrHelper.isLoaded()) {
-            y = addSection(y, "section.exile_overlay.auto_quick_loot", tx);
+            y = addSection(y, "section.exile_overlay.quick_loot", tx);
             
             addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()), btn -> {
-                        config.setAutoQuickLootEnabled(!config.isAutoQuickLootEnabled());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.auto_quick_loot", config.isAutoQuickLootEnabled()));
+                    Button.builder(getOnOffComponent("exile_overlay.config.quick_loot_enabled", config.isQuickLootEnabled()), btn -> {
+                        config.setQuickLootEnabled(!config.isQuickLootEnabled());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.quick_loot_enabled", config.isQuickLootEnabled()));
                     }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_quick_loot.tooltip")))
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.quick_loot_enabled.tooltip")))
+                            .build());
+            y += sp;
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.auto_execute", config.isAutoQuickLootEnabled()), btn -> {
+                        config.setAutoQuickLootEnabled(!config.isAutoQuickLootEnabled());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.auto_execute", config.isAutoQuickLootEnabled()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_execute.tooltip")))
+                            .build());
+            y += sp;
+            
+            addRightWidget(
+                    Button.builder(getModeOnlyComponent(config.getAutoQuickLootMode()), btn -> {
+                        EquipmentDisplayConfig.QuickLootMode next = config.getAutoQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT 
+                                ? EquipmentDisplayConfig.QuickLootMode.DROP 
+                                : EquipmentDisplayConfig.QuickLootMode.LOOT;
+                        config.setAutoQuickLootMode(next);
+                        btn.setMessage(getModeOnlyComponent(next));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_execute_mode.tooltip")))
+                            .build());
+            y += sp;
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.key_execute", config.isKeyQuickLootEnabled()), btn -> {
+                        config.setKeyQuickLootEnabled(!config.isKeyQuickLootEnabled());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.key_execute", config.isKeyQuickLootEnabled()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.key_execute.tooltip")))
+                            .build());
+            y += sp;
+            
+            addRightWidget(
+                    Button.builder(getModeOnlyComponent(config.getKeyQuickLootMode()), btn -> {
+                        EquipmentDisplayConfig.QuickLootMode next = config.getKeyQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT 
+                                ? EquipmentDisplayConfig.QuickLootMode.DROP 
+                                : EquipmentDisplayConfig.QuickLootMode.LOOT;
+                        config.setKeyQuickLootMode(next);
+                        btn.setMessage(getModeOnlyComponent(next));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.key_execute_mode.tooltip")))
                             .build());
             y += sp;
         }
@@ -365,7 +421,11 @@ public class ConfigScreen extends Screen {
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         config.setUsePercentage(false);
         config.setEnableShadow(true);
+        config.setQuickLootEnabled(true);
         config.setAutoQuickLootEnabled(false);
+        config.setAutoQuickLootMode(EquipmentDisplayConfig.QuickLootMode.LOOT);
+        config.setKeyQuickLootEnabled(true);
+        config.setKeyQuickLootMode(EquipmentDisplayConfig.QuickLootMode.DROP);
         config.setDisableMnsHpBar(true);
         config.setCancelDungeonRealmScoreboard(true);
         config.save();
