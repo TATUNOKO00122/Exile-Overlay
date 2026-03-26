@@ -7,6 +7,7 @@ import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
 import com.example.exile_overlay.client.render.DayCounterConfig;
+import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import net.minecraft.client.Minecraft;
@@ -248,6 +249,20 @@ public class ConfigScreen extends Screen {
             y += sp;
         }
         
+        // Inventory Sorterセクション（LOOTR + Inventory Sorterが両方ロードされている場合のみ表示）
+        if (LootrHelper.isLoaded() && InventorySorterHelper.isLoaded()) {
+            y = addSection(y, "section.exile_overlay.inventory_sorter", tx);
+            
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.auto_sort_lootr_chest", config.isAutoSortLootrChest()), btn -> {
+                        config.setAutoSortLootrChest(!config.isAutoSortLootrChest());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.auto_sort_lootr_chest", config.isAutoSortLootrChest()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_sort_lootr_chest.tooltip")))
+                            .build());
+            y += sp;
+        }
+        
         y = addSection(y, "section.exile_overlay.day_counter", tx);
         
         HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
@@ -428,6 +443,7 @@ public class ConfigScreen extends Screen {
         config.setKeyQuickLootMode(EquipmentDisplayConfig.QuickLootMode.DROP);
         config.setDisableMnsHpBar(true);
         config.setCancelDungeonRealmScoreboard(true);
+        config.setAutoSortLootrChest(true);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);

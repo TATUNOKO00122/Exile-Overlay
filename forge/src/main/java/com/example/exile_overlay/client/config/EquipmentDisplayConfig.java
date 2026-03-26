@@ -41,6 +41,7 @@ public class EquipmentDisplayConfig {
     private QuickLootMode keyQuickLootMode = QuickLootMode.DROP;
     private boolean disableMnsHpBar = false;
     private boolean cancelDungeonRealmScoreboard = true;
+    private boolean autoSortLootrChest = true;
 
     private EquipmentDisplayConfig() {
     }
@@ -105,8 +106,11 @@ public class EquipmentDisplayConfig {
             if (obj.has("cancelDungeonRealmScoreboard")) {
                 cancelDungeonRealmScoreboard = obj.get("cancelDungeonRealmScoreboard").getAsBoolean();
             }
+            if (obj.has("autoSortLootrChest")) {
+                autoSortLootrChest = obj.get("autoSortLootrChest").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelDungeonRealmScoreboard);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelDungeonRealmScoreboard, autoSortLootrChest);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -131,6 +135,7 @@ public class EquipmentDisplayConfig {
         obj.addProperty("keyQuickLootMode", keyQuickLootMode.name());
         obj.addProperty("disableMnsHpBar", disableMnsHpBar);
         obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
+        obj.addProperty("autoSortLootrChest", autoSortLootrChest);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -212,5 +217,13 @@ public class EquipmentDisplayConfig {
 
     public void setCancelDungeonRealmScoreboard(boolean cancel) {
         this.cancelDungeonRealmScoreboard = cancel;
+    }
+
+    public boolean isAutoSortLootrChest() {
+        return autoSortLootrChest;
+    }
+
+    public void setAutoSortLootrChest(boolean enabled) {
+        this.autoSortLootrChest = enabled;
     }
 }
