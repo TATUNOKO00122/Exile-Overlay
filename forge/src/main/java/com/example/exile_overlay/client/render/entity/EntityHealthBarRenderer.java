@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -104,8 +103,6 @@ public final class EntityHealthBarRenderer {
             float partialTicks, double x, double y, double z,
             EntityHealthBarConfig config) {
 
-        final int light = 0xF000F0;
-
         var vec3 = entityRenderer.getRenderOffset(living, partialTicks);
         double d0 = x + vec3.x();
         double d1 = y + vec3.y();
@@ -129,17 +126,22 @@ public final class EntityHealthBarRenderer {
         VertexConsumer builder = buffers.getBuffer(HealthBarRenderType.BAR_TYPE);
 
         var pose = poseStack.last().pose();
+        int packedLight = 15728880; // Full bright (0xF000F0)
 
-        builder.vertex(pose, -halfWidth, 0, -0.01F).color(COLOR_BACKGROUND).uv(0.0F, 0.0F).uv2(light).endVertex();
-        builder.vertex(pose, -halfWidth, barHeight, -0.01F).color(COLOR_BACKGROUND).uv(0.0F, 1.0F).uv2(light).endVertex();
-        builder.vertex(pose, halfWidth, barHeight, -0.01F).color(COLOR_BACKGROUND).uv(1.0F, 1.0F).uv2(light).endVertex();
-        builder.vertex(pose, halfWidth, 0, -0.01F).color(COLOR_BACKGROUND).uv(1.0F, 0.0F).uv2(light).endVertex();
+        // 背景は、前景が描画されない部分（右側）のみ描画する
+        if (filledWidth < barWidth) {
+            float bgStart = -halfWidth + filledWidth;
+            builder.vertex(pose, bgStart, 0, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
+            builder.vertex(pose, bgStart, barHeight, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, barHeight, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, 0, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
+        }
 
         if (filledWidth > 0) {
-            builder.vertex(pose, -halfWidth, 0, -0.02F).color(COLOR_HEALTH).uv(0.0F, 0.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth, barHeight, -0.02F).color(COLOR_HEALTH).uv(0.0F, 1.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, barHeight, -0.02F).color(COLOR_HEALTH).uv(1.0F, 1.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, 0, -0.02F).color(COLOR_HEALTH).uv(1.0F, 0.0F).uv2(light).endVertex();
+            builder.vertex(pose, -halfWidth, 0, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
         }
 
         poseStack.popPose();

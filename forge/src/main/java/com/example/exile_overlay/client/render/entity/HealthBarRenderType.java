@@ -5,13 +5,11 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
 
 import static com.mojang.blaze3d.vertex.DefaultVertexFormat.*;
 
 public final class HealthBarRenderType extends RenderStateShard {
 
-    public static final ResourceLocation WHITE_TEXTURE = new ResourceLocation("minecraft", "textures/misc/white.png");
     public static final RenderType BAR_TYPE = createBarType();
 
     private HealthBarRenderType(String name, Runnable setup, Runnable clear) {
@@ -20,8 +18,8 @@ public final class HealthBarRenderType extends RenderStateShard {
 
     private static RenderType createBarType() {
         RenderType.CompositeState state = RenderType.CompositeState.builder()
-            .setShaderState(POSITION_COLOR_TEX_LIGHTMAP_SHADER)
-            .setTextureState(new TextureStateShard(WHITE_TEXTURE, false, false))
+            .setShaderState(POSITION_COLOR_LIGHTMAP_SHADER)
+            .setTextureState(NO_TEXTURE)
             .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
             .setDepthTestState(NO_DEPTH_TEST)
             .setLightmapState(LIGHTMAP)
@@ -29,7 +27,7 @@ public final class HealthBarRenderType extends RenderStateShard {
 
         return AccessorRenderType.exileOverlay$create(
             "exile_overlay_health_bar",
-            POSITION_COLOR_TEX_LIGHTMAP,
+            POSITION_COLOR_LIGHTMAP,
             VertexFormat.Mode.QUADS,
             256,
             false,
