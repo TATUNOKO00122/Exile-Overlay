@@ -16,15 +16,12 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT)
 public class LootrAutoSortHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/LootrAutoSort");
     private static final int SORT_DELAY_TICKS = 5;
-    private static final long COOLDOWN_MS = 2000;
     
     private static final Set<String> LOOTR_BLOCKS = Set.of(
         "lootr:lootr_chest",
@@ -36,7 +33,6 @@ public class LootrAutoSortHandler {
     private static BlockPos cachedTargetPos = null;
     private static int tickCounter = 0;
     private static boolean waitingToSort = false;
-    private static final Map<BlockPos, Long> cooldownTracker = new ConcurrentHashMap<>();
     
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
@@ -51,7 +47,6 @@ public class LootrAutoSortHandler {
         if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
         
         BlockPos pos = blockHit.getBlockPos();
-        if (isOnCooldown(pos)) return;
         
         BlockState state = mc.level.getBlockState(pos);
         String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
@@ -82,27 +77,12 @@ public class LootrAutoSortHandler {
             Minecraft mc = Minecraft.getInstance();
             if (mc.player != null && mc.screen != null) {
                 InventorySorterHelper.sortCurrentContainer();
-                
-                if (cachedTargetPos != null) {
-                    cooldownTracker.put(cachedTargetPos, System.currentTimeMillis());
-                    LOGGER.info("Auto-sorted Lootr container");
-                }
+                LOGGER.info("Auto-sorted Lootr container");
             }
             
             waitingToSort = false;
             cachedTargetPos = null;
             tickCounter = 0;
         }
-    }
-    
-    private static boolean isOnCooldown(BlockPos pos) {
-        Long lastTrigger = cooldownTracker.get(pos);
-        if (lastTrigger == null) return false;
-        
-        if (System.currentTimeMillis() - lastTrigger >= COOLDOWN_MS) {
-            cooldownTracker.remove(pos);
-            return false;
-        }
-        return true;
     }
 }
