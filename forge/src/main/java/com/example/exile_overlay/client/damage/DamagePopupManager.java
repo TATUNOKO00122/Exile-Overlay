@@ -10,22 +10,24 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DamagePopupManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamagePopupManager");
     private static final DamagePopupManager INSTANCE = new DamagePopupManager();
 
-    private final List<DamageNumber> damageNumbers = new ArrayList<>();
+    private final List<DamageNumber> damageNumbers = new CopyOnWriteArrayList<>();
     private final Map<Integer, Float> lastHealthMap = new ConcurrentHashMap<>();
     
     private final Map<Integer, PlacementInfo> lastPlacementMap = new ConcurrentHashMap<>();
     private static final long PLACEMENT_TIMEOUT_MS = 500;
     private static final float OFFSET_INCREMENT = 0.4f;
+    
+    private final StringBuilder textBuilder = new StringBuilder(16);
 
     private DamagePopupManager() {
     }
@@ -138,17 +140,24 @@ public class DamagePopupManager {
             return;
         }
 
-        Iterator<DamageNumber> it = damageNumbers.iterator();
-        while (it.hasNext()) {
-            DamageNumber dn = it.next();
+        for (DamageNumber dn : damageNumbers) {
             dn.tick();
-
             if (dn.isExpired()) {
-                it.remove();
+                damageNumbers.remove(dn);
             }
         }
         
         cleanupOldPlacements();
+        cleanupInvalidEntities(mc);
+    }
+    
+    private void cleanupInvalidEntities(Minecraft mc) {
+        if (mc.level == null) return;
+        
+        lastHealthMap.keySet().removeIf(entityId -> {
+            var entity = mc.level.getEntity(entityId);
+            return entity == null || !entity.isAlive();
+        });
     }
     
     private void cleanupOldPlacements() {
@@ -217,16 +226,7 @@ public class DamagePopupManager {
             int colorWithAlpha = (alpha << 24) | (dn.getDisplayColor() & 0xFFFFFF);
 
             float dmgValue = dn.getDamage();
-            String text;
-            if (dmgValue == Math.floor(dmgValue)) {
-                text = String.format("%.0f", dmgValue);
-            } else {
-                text = String.format("%.1f", dmgValue);
-            }
-
-            if (dn.getType() == DamageType.HEALING) {
-                text = "+" + text;
-            }
+            String text = formatDamageText(dmgValue, dn.getType() == DamageType.HEALING);
 
             float textWidth = mc.font.width(text);
             float x = -textWidth / 2.0f;
@@ -251,6 +251,30 @@ public class DamagePopupManager {
         damageNumbers.clear();
         lastHealthMap.clear();
         lastPlacementMap.clear();
+    }
+    
+    private String formatDamageText(float value, boolean isHealing) {
+        textBuilder.setLength(0);
+        
+        if (isHealing) {
+            textBuilder.append('+');
+        }
+        
+        if (value == Math.floor(value) && value < 100000) {
+            textBuilder.append((int) value);
+        } else if (value < 1000) {
+            appendOneDecimal(textBuilder, value);
+        } else {
+            textBuilder.append((int) Math.round(value));
+        }
+        
+        return textBuilder.toString();
+    }
+    
+    private void appendOneDecimal(StringBuilder sb, float value) {
+        int intPart = (int) value;
+        int decPart = Math.abs((int) ((value - intPart) * 10));
+        sb.append(intPart).append('.').append(decPart);
     }
     
     private static class PlacementInfo {

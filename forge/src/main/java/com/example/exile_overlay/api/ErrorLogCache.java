@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -43,31 +44,25 @@ public class ErrorLogCache {
             return t;
         });
         
-        private final List<Runnable> cleanupTasks = new ArrayList<>();
+        private final List<Runnable> cleanupTasks = new CopyOnWriteArrayList<>();
         
         void register(Runnable cleanupTask) {
-            synchronized (cleanupTasks) {
-                cleanupTasks.add(cleanupTask);
-                if (cleanupTasks.size() == 1) {
-                    executor.scheduleAtFixedRate(this::runAll, 1, 1, TimeUnit.MINUTES);
-                }
+            cleanupTasks.add(cleanupTask);
+            if (cleanupTasks.size() == 1) {
+                executor.scheduleAtFixedRate(this::runAll, 1, 1, TimeUnit.MINUTES);
             }
         }
         
         void unregister(Runnable cleanupTask) {
-            synchronized (cleanupTasks) {
-                cleanupTasks.remove(cleanupTask);
-            }
+            cleanupTasks.remove(cleanupTask);
         }
         
         private void runAll() {
-            synchronized (cleanupTasks) {
-                for (Runnable task : cleanupTasks) {
-                    try {
-                        task.run();
-                    } catch (Exception e) {
-                        LOGGER.debug("Error during cleanup task: {}", e.getMessage());
-                    }
+            for (Runnable task : cleanupTasks) {
+                try {
+                    task.run();
+                } catch (Exception e) {
+                    LOGGER.debug("Error during cleanup task: {}", e.getMessage());
                 }
             }
         }

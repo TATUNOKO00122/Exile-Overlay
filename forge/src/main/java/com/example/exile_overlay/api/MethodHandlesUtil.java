@@ -157,19 +157,6 @@ public class MethodHandlesUtil {
     }
     
     /**
-     * staticメソッドをLookup
-     */
-    private static MethodHandle lookupStaticMethod(Class<?> clazz, String name, Class<?>... paramTypes) {
-        try {
-            return PUBLIC_LOOKUP.findStatic(clazz, name, MethodType.methodType(float.class, paramTypes));
-        } catch (Exception e) {
-            LOGGER.error("Failed to lookup static method {}.{}: {} (type: {})", 
-                clazz.getSimpleName(), name, e.getMessage(), e.getClass().getSimpleName());
-            return null;
-        }
-    }
-    
-    /**
      * フィールドのGetter MethodHandleをLookup
      */
     private static MethodHandle lookupFieldGetter(Class<?> clazz, String fieldName) {

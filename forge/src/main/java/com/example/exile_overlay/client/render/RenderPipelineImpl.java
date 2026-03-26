@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * レンダリングパイプラインの実装クラス（改良版）
@@ -47,14 +48,14 @@ public class RenderPipelineImpl implements IRenderPipeline {
     private final Map<RenderLayer, List<PrioritizedCommand>> commandsByLayer = new EnumMap<>(RenderLayer.class);
     private final Map<String, IRenderCommand> commandsById = new ConcurrentHashMap<>();
     private volatile boolean needsSorting = true;
-    private final Object commandLock = new Object();
+    private final Object sortLock = new Object();
     private final ErrorLogCache errorLog = new ErrorLogCache();
     private final Map<String, CircuitBreaker> circuitBreakers = new ConcurrentHashMap<>();
     private final Set<String> blockedCommandsLogged = ConcurrentHashMap.newKeySet();
     
     public RenderPipelineImpl() {
         for (RenderLayer layer : RenderLayer.values()) {
-            commandsByLayer.put(layer, new ArrayList<>());
+            commandsByLayer.put(layer, new CopyOnWriteArrayList<>());
         }
     }
     
@@ -64,23 +65,22 @@ public class RenderPipelineImpl implements IRenderPipeline {
         
         String id = command.getId();
         
-        synchronized (commandLock) {
-            if (commandsById.containsKey(id)) {
-                LOGGER.warn("Command with id '{}' is already registered, replacing", id);
-                unregister(id);
-            }
-            
-            RenderLayer layer = command.getLayer();
-            List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
-            
-            PrioritizedCommand pc = new PrioritizedCommand(command, priority);
-            layerCommands.add(pc);
-            commandsById.put(id, command);
-            
+        if (commandsById.containsKey(id)) {
+            LOGGER.warn("Command with id '{}' is already registered, replacing", id);
+            unregister(id);
+        }
+        
+        RenderLayer layer = command.getLayer();
+        List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+        
+        PrioritizedCommand pc = new PrioritizedCommand(command, priority);
+        layerCommands.add(pc);
+        commandsById.put(id, command);
+        
+        synchronized (sortLock) {
             needsSorting = true;
         }
         
-        // サーキットブレイカーを初期化
         circuitBreakers.computeIfAbsent(id, k -> 
             new CircuitBreaker(CIRCUIT_BREAKER_THRESHOLD, CIRCUIT_BREAKER_TIMEOUT_MS));
         
@@ -96,25 +96,20 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public boolean unregister(String commandId) {
-        IRenderCommand command;
-        
-        synchronized (commandLock) {
-            command = commandsById.remove(commandId);
-            if (command == null) {
-                return false;
-            }
-            
-            RenderLayer layer = command.getLayer();
-            List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
-            
-            boolean removed = layerCommands.removeIf(pc -> pc.command.getId().equals(commandId));
-            
-            if (removed) {
-                LOGGER.debug("Unregistered render command: {}", commandId);
-            }
+        IRenderCommand command = commandsById.remove(commandId);
+        if (command == null) {
+            return false;
         }
         
-        // 関連リソースをクリーンアップ
+        RenderLayer layer = command.getLayer();
+        List<PrioritizedCommand> layerCommands = commandsByLayer.get(layer);
+        
+        boolean removed = layerCommands.removeIf(pc -> pc.command.getId().equals(commandId));
+        
+        if (removed) {
+            LOGGER.debug("Unregistered render command: {}", commandId);
+        }
+        
         circuitBreakers.remove(commandId);
         errorLog.clear(commandId);
         blockedCommandsLogged.remove(commandId);
@@ -124,13 +119,13 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public void clear() {
-        synchronized (commandLock) {
-            commandsByLayer.values().forEach(List::clear);
-            commandsById.clear();
+        commandsByLayer.values().forEach(List::clear);
+        commandsById.clear();
+        
+        synchronized (sortLock) {
             needsSorting = true;
         }
         
-        // 全リソースをクリーンアップ
         circuitBreakers.clear();
         errorLog.clearAll();
         blockedCommandsLogged.clear();
@@ -160,23 +155,15 @@ public class RenderPipelineImpl implements IRenderPipeline {
     }
     
     private void renderLayerInternal(RenderLayer layer, GuiGraphics graphics, RenderContext ctx) {
-        // 【最適化】synchronizedブロック内でコマンドリストのスナップショットのみ取得
-        // 実際のレンダリングはロック外で実行し、FPS低下を防止
-        
-        List<PrioritizedCommand> commandsSnapshot;
-        synchronized (commandLock) {
-            List<PrioritizedCommand> commands = commandsByLayer.get(layer);
-            if (commands.isEmpty()) {
-                return;
-            }
-            // 新しいリストを作成してコピー（ロック内でのみ実行）
-            commandsSnapshot = new ArrayList<>(commands);
+        List<PrioritizedCommand> commands = commandsByLayer.get(layer);
+        if (commands.isEmpty()) {
+            return;
         }
         
         layer.setupRenderState();
         
         try {
-            for (PrioritizedCommand pc : commandsSnapshot) {
+            for (PrioritizedCommand pc : commands) {
                 IRenderCommand command = pc.command;
                 String commandId = command.getId();
                 
@@ -243,18 +230,14 @@ public class RenderPipelineImpl implements IRenderPipeline {
     
     @Override
     public List<IRenderCommand> getCommands() {
-        synchronized (commandLock) {
-            return List.copyOf(commandsById.values());
-        }
+        return List.copyOf(commandsById.values());
     }
     
     @Override
     public List<IRenderCommand> getCommands(RenderLayer layer) {
-        synchronized (commandLock) {
-            return commandsByLayer.get(layer).stream()
-                .map(pc -> pc.command)
-                .toList();
-        }
+        return commandsByLayer.get(layer).stream()
+            .map(pc -> pc.command)
+            .toList();
     }
     
     @Override
@@ -272,11 +255,8 @@ public class RenderPipelineImpl implements IRenderPipeline {
         return commandsById.get(commandId);
     }
     
-    /**
-     * コマンドを優先度順にソート（in-place、アロケーションなし）
-     */
     private void sortCommands() {
-        synchronized (commandLock) {
+        synchronized (sortLock) {
             if (!needsSorting) return;
             
             for (List<PrioritizedCommand> commands : commandsByLayer.values()) {

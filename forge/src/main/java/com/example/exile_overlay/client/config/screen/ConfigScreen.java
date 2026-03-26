@@ -724,13 +724,7 @@ public class ConfigScreen extends Screen {
                 EntityHealthBarConfig.ColorPreset[] presets = EntityHealthBarConfig.ColorPreset.values();
                 int nextIndex = (current.ordinal() + 1) % presets.length;
                 config.setHealthBarColor(presets[nextIndex].getHex());
-                btn.setMessage(getColorMessage(config));
             }).tooltip(Tooltip.create(Component.translatable("exile_overlay.config.hp_color.tooltip")));
-        }
-
-        private static Component getColorMessage(EntityHealthBarConfig config) {
-            EntityHealthBarConfig.ColorPreset preset = EntityHealthBarConfig.ColorPreset.fromHex(config.getHealthBarColor());
-            return Component.translatable("exile_overlay.config.hp_color", Component.translatable(preset.getTranslationKey()));
         }
 
         @Override
@@ -741,7 +735,7 @@ public class ConfigScreen extends Screen {
             int color = preset.getColorValue();
 
             int boxSize = 12;
-            int boxX = this.getX() + this.getWidth() - boxSize - 6;
+            int boxX = this.getX() + (this.getWidth() - boxSize) / 2;
             int boxY = this.getY() + (this.getHeight() - boxSize) / 2;
 
             guiGraphics.fill(boxX, boxY, boxX + boxSize, boxY + boxSize, 0xFF000000);
