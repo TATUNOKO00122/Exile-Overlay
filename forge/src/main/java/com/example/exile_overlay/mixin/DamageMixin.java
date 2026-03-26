@@ -1,6 +1,7 @@
 package com.example.exile_overlay.mixin;
 
 import com.example.exile_overlay.client.damage.DamagePopupManager;
+import com.example.exile_overlay.client.render.entity.EntityHealthBarTimer;
 import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,9 @@ public abstract class DamageMixin {
             float diff = exileOverlay$lastHealth - health;
             if (Math.abs(diff) > 0.1f) {
                 DamagePopupManager.getInstance().onHealthChanged(entity, health);
+                if (diff > 0) {
+                    EntityHealthBarTimer.getInstance().onDamage(entity);
+                }
             }
 
             exileOverlay$lastHealth = health;

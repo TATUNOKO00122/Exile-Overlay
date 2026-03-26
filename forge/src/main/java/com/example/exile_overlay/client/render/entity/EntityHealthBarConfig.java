@@ -26,6 +26,7 @@ public final class EntityHealthBarConfig {
     private int barWidth = 30;
     private int barHeight = 2;
     private float scale = 1.0f;
+    private int displayDuration = 5;
     private List<String> blacklist = new ArrayList<>(DEFAULT_BLACKLIST);
 
     public static final List<String> DEFAULT_BLACKLIST = List.of(
@@ -70,6 +71,7 @@ public final class EntityHealthBarConfig {
             if (obj.has("barWidth")) barWidth = obj.get("barWidth").getAsInt();
             if (obj.has("barHeight")) barHeight = obj.get("barHeight").getAsInt();
             if (obj.has("scale")) scale = obj.get("scale").getAsFloat();
+            if (obj.has("displayDuration")) displayDuration = obj.get("displayDuration").getAsInt();
 
             if (obj.has("blacklist")) {
                 blacklist.clear();
@@ -100,6 +102,7 @@ public final class EntityHealthBarConfig {
         obj.addProperty("barWidth", barWidth);
         obj.addProperty("barHeight", barHeight);
         obj.addProperty("scale", scale);
+        obj.addProperty("displayDuration", displayDuration);
 
         var blacklistArray = new com.google.gson.JsonArray();
         for (String entry : blacklist) {
@@ -132,6 +135,9 @@ public final class EntityHealthBarConfig {
 
     public float getScale() { return scale; }
     public void setScale(float scale) { this.scale = scale; }
+
+    public int getDisplayDuration() { return displayDuration; }
+    public void setDisplayDuration(int displayDuration) { this.displayDuration = displayDuration; }
 
     public List<String> getBlacklist() { return blacklist; }
     public void setBlacklist(List<String> blacklist) { this.blacklist = new ArrayList<>(blacklist); }

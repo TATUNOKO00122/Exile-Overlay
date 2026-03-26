@@ -20,7 +20,7 @@ public final class EntityHealthBarRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/EntityHealthBarRenderer");
 
     private static final float BASE_SCALE = 0.0267F;
-    private static final int COLOR_HEALTH = 0xFFFF4040;
+    private static final int COLOR_HEALTH = 0xFFB22222;
     private static final int COLOR_BACKGROUND = 0x7F401010;
 
     private EntityHealthBarRenderer() {}
@@ -62,10 +62,7 @@ public final class EntityHealthBarRenderer {
             return false;
         }
 
-        float health = living.getHealth();
-        float maxHealth = living.getMaxHealth();
-
-        if (health >= maxHealth) {
+        if (!EntityHealthBarTimer.getInstance().shouldShow(living, config.getDisplayDuration())) {
             return false;
         }
 
