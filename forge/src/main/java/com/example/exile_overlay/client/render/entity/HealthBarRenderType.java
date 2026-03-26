@@ -11,7 +11,7 @@ import static com.mojang.blaze3d.vertex.DefaultVertexFormat.*;
 
 public final class HealthBarRenderType extends RenderStateShard {
 
-    public static final ResourceLocation HEALTH_BAR_TEXTURE = ResourceLocation.tryParse("exile_overlay:textures/shaders_workaround.png");
+    public static final ResourceLocation HEALTH_BAR_TEXTURE = ResourceLocation.tryParse("exile_overlay:textures/health_bar.png");
     public static final RenderType BAR_TYPE = createBarType();
 
     private HealthBarRenderType(String name, Runnable setup, Runnable clear) {
