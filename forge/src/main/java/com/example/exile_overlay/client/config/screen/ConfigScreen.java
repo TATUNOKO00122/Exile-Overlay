@@ -450,6 +450,15 @@ public class ConfigScreen extends Screen {
 
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.bar_scale",
                 config.getScale(), 0.5f, 3.0f, val -> config.setScale(val)));
+        y += sp;
+
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.display_duration",
+                config.getDisplayDuration(), 1, 30, val -> config.setDisplayDuration(val)));
+        y += sp;
+
+        y = addSection(y, "section.exile_overlay.color_settings", tx);
+
+        addRightWidget(new ColorPresetButton(x, y, w, h, config));
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
@@ -698,6 +707,45 @@ public class ConfigScreen extends Screen {
         protected void applyValue() {
             int newValue = min + (int) Math.round((max - min) * this.value);
             setter.accept(newValue);
+        }
+    }
+
+    private class ColorPresetButton extends Button {
+        private final EntityHealthBarConfig config;
+
+        ColorPresetButton(int x, int y, int width, int height, EntityHealthBarConfig config) {
+            super(createBuilder(config).bounds(x, y, width, height));
+            this.config = config;
+        }
+
+        private static Button.Builder createBuilder(EntityHealthBarConfig config) {
+            return Button.builder(Component.empty(), btn -> {
+                EntityHealthBarConfig.ColorPreset current = EntityHealthBarConfig.ColorPreset.fromHex(config.getHealthBarColor());
+                EntityHealthBarConfig.ColorPreset[] presets = EntityHealthBarConfig.ColorPreset.values();
+                int nextIndex = (current.ordinal() + 1) % presets.length;
+                config.setHealthBarColor(presets[nextIndex].getHex());
+                btn.setMessage(getColorMessage(config));
+            }).tooltip(Tooltip.create(Component.translatable("exile_overlay.config.hp_color.tooltip")));
+        }
+
+        private static Component getColorMessage(EntityHealthBarConfig config) {
+            EntityHealthBarConfig.ColorPreset preset = EntityHealthBarConfig.ColorPreset.fromHex(config.getHealthBarColor());
+            return Component.translatable("exile_overlay.config.hp_color", Component.translatable(preset.getTranslationKey()));
+        }
+
+        @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+
+            EntityHealthBarConfig.ColorPreset preset = EntityHealthBarConfig.ColorPreset.fromHex(config.getHealthBarColor());
+            int color = preset.getColorValue();
+
+            int boxSize = 12;
+            int boxX = this.getX() + this.getWidth() - boxSize - 6;
+            int boxY = this.getY() + (this.getHeight() - boxSize) / 2;
+
+            guiGraphics.fill(boxX, boxY, boxX + boxSize, boxY + boxSize, 0xFF000000);
+            guiGraphics.fill(boxX + 1, boxY + 1, boxX + boxSize - 1, boxY + boxSize - 1, color);
         }
     }
 }

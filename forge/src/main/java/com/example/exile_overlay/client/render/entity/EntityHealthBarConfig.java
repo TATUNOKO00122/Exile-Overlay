@@ -27,6 +27,7 @@ public final class EntityHealthBarConfig {
     private int barHeight = 2;
     private float scale = 1.0f;
     private int displayDuration = 5;
+    private String healthBarColor = "8B0000";
     private List<String> blacklist = new ArrayList<>(DEFAULT_BLACKLIST);
 
     public static final List<String> DEFAULT_BLACKLIST = List.of(
@@ -38,6 +39,35 @@ public final class EntityHealthBarConfig {
         "minecraft:end_crystal",
         "minecraft:experience_orb"
     );
+
+    public enum ColorPreset {
+        DARK_RED("8B0000", "exile_overlay.config.hp_color.dark_red"),
+        BRICK_RED("B22222", "exile_overlay.config.hp_color.brick_red"),
+        PINK_RED("FF4040", "exile_overlay.config.hp_color.pink_red"),
+        CRIMSON("DC143C", "exile_overlay.config.hp_color.crimson"),
+        PURE_RED("FF0000", "exile_overlay.config.hp_color.pure_red");
+
+        private final String hex;
+        private final String translationKey;
+
+        ColorPreset(String hex, String translationKey) {
+            this.hex = hex;
+            this.translationKey = translationKey;
+        }
+
+        public String getHex() { return hex; }
+        public String getTranslationKey() { return translationKey; }
+        public int getColorValue() { return 0xFF000000 | Integer.parseInt(hex, 16); }
+
+        public static ColorPreset fromHex(String hex) {
+            for (ColorPreset preset : values()) {
+                if (preset.hex.equalsIgnoreCase(hex)) {
+                    return preset;
+                }
+            }
+            return DARK_RED;
+        }
+    }
 
     private EntityHealthBarConfig() {}
 
@@ -72,6 +102,7 @@ public final class EntityHealthBarConfig {
             if (obj.has("barHeight")) barHeight = obj.get("barHeight").getAsInt();
             if (obj.has("scale")) scale = obj.get("scale").getAsFloat();
             if (obj.has("displayDuration")) displayDuration = obj.get("displayDuration").getAsInt();
+            if (obj.has("healthBarColor")) healthBarColor = obj.get("healthBarColor").getAsString();
 
             if (obj.has("blacklist")) {
                 blacklist.clear();
@@ -103,6 +134,7 @@ public final class EntityHealthBarConfig {
         obj.addProperty("barHeight", barHeight);
         obj.addProperty("scale", scale);
         obj.addProperty("displayDuration", displayDuration);
+        obj.addProperty("healthBarColor", healthBarColor);
 
         var blacklistArray = new com.google.gson.JsonArray();
         for (String entry : blacklist) {
@@ -138,6 +170,17 @@ public final class EntityHealthBarConfig {
 
     public int getDisplayDuration() { return displayDuration; }
     public void setDisplayDuration(int displayDuration) { this.displayDuration = displayDuration; }
+
+    public String getHealthBarColor() { return healthBarColor; }
+    public void setHealthBarColor(String healthBarColor) { this.healthBarColor = healthBarColor; }
+
+    public int getHealthBarColorHex() {
+        try {
+            return 0xFF000000 | Integer.parseInt(healthBarColor, 16);
+        } catch (NumberFormatException e) {
+            return 0xFF8B0000;
+        }
+    }
 
     public List<String> getBlacklist() { return blacklist; }
     public void setBlacklist(List<String> blacklist) { this.blacklist = new ArrayList<>(blacklist); }

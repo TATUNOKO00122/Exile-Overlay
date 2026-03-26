@@ -104,5 +104,14 @@
   "exile_overlay.config.bar_height": "Bar Height: %s",
   "exile_overlay.config.bar_height.tooltip": "Height of the health bar",
   "exile_overlay.config.bar_scale": "Scale: %.2f",
-  "exile_overlay.config.bar_scale.tooltip": "Overall scale of the health bar"
+  "exile_overlay.config.bar_scale.tooltip": "Overall scale of the health bar",
+  "section.exile_overlay.color_settings": "Color Settings",
+  "exile_overlay.config.hp_color": "HP Bar Color: %s",
+  "exile_overlay.config.hp_color.tooltip": "Click to cycle through colors",
+  "exile_overlay.config.hp_color.dark_red": "Dark Red",
+  "exile_overlay.config.hp_color.brick_red": "Brick Red",
+  "exile_overlay.config.hp_color.pink_red": "Pink Red",
+  "exile_overlay.config.hp_color.crimson": "Crimson",
+  "exile_overlay.config.hp_color.pure_red": "Pure Red",
+  "exile_overlay.config.display_duration.tooltip": "Duration to show HP bar after damage (seconds)"
 }

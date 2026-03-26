@@ -20,7 +20,6 @@ public final class EntityHealthBarRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/EntityHealthBarRenderer");
 
     private static final float BASE_SCALE = 0.0267F;
-    private static final int COLOR_HEALTH = 0xFFB22222;
     private static final int COLOR_BACKGROUND = 0x7F401010;
 
     private EntityHealthBarRenderer() {}
@@ -108,6 +107,7 @@ public final class EntityHealthBarRenderer {
         int barWidth = config.getBarWidth();
         int barHeight = config.getBarHeight();
         float scale = BASE_SCALE * config.getScale();
+        int colorHealth = config.getHealthBarColorHex();
 
         poseStack.pushPose();
         poseStack.translate(d0, d1, d2);
@@ -134,10 +134,10 @@ public final class EntityHealthBarRenderer {
         }
 
         if (filledWidth > 0) {
-            builder.vertex(pose, -halfWidth, 0, 0.0F).color(COLOR_HEALTH).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(COLOR_HEALTH).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, 0, 0.0F).color(colorHealth).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(colorHealth).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(colorHealth).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(colorHealth).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
         }
 
         poseStack.popPose();

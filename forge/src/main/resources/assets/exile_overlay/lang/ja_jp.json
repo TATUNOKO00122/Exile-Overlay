@@ -104,5 +104,14 @@
   "exile_overlay.config.bar_height": "バー高さ: %s",
   "exile_overlay.config.bar_height.tooltip": "HPバーの高さ",
   "exile_overlay.config.bar_scale": "スケール: %.2f",
-  "exile_overlay.config.bar_scale.tooltip": "HPバーの全体スケール"
+  "exile_overlay.config.bar_scale.tooltip": "HPバーの全体スケール",
+  "section.exile_overlay.color_settings": "色設定",
+  "exile_overlay.config.hp_color": "HPバーの色: %s",
+  "exile_overlay.config.hp_color.tooltip": "クリックで色を切り替え",
+  "exile_overlay.config.hp_color.dark_red": "暗い赤",
+  "exile_overlay.config.hp_color.brick_red": "煉瓦赤",
+  "exile_overlay.config.hp_color.pink_red": "ピンク赤",
+  "exile_overlay.config.hp_color.crimson": "クリムゾン",
+  "exile_overlay.config.hp_color.pure_red": "純赤",
+  "exile_overlay.config.display_duration.tooltip": "ダメージ後にHPバーを表示する時間（秒）"
 }
