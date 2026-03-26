@@ -452,7 +452,7 @@ public class ConfigScreen extends Screen {
                 config.getScale(), 0.5f, 3.0f, val -> config.setScale(val)));
         y += sp;
 
-        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.display_duration",
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.hp_bar_display_duration",
                 config.getDisplayDuration(), 1, 30, val -> config.setDisplayDuration(val)));
         y += sp;
 

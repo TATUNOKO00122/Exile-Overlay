@@ -30,10 +30,10 @@
   "exile_overlay.config.quick_loot_enabled.tooltip": "クイックルート機能全体の有効/無効",
   "exile_overlay.config.auto_execute": "自動実行: %s",
   "exile_overlay.config.auto_execute.tooltip": "Lootrチェストを開いて0.5秒後に自動実行",
-  "exile_overlay.config.auto_execute_mode.tooltip": "LOOT: MNSアイテムをバックパックへ\nDROP: 全アイテムを地面にドロップ",
+  "exile_overlay.config.auto_execute_mode.tooltip": "LOOT: Mine and Slashアイテムをバックパックへ\nDROP: 全アイテムを地面にドロップ",
   "exile_overlay.config.key_execute": "キー実行: %s",
   "exile_overlay.config.key_execute.tooltip": "チェスト画面を開いた状態でCtrlを押すと実行",
-  "exile_overlay.config.key_execute_mode.tooltip": "LOOT: MNSアイテムをバックパックへ\nDROP: 全アイテムを地面にドロップ",
+  "exile_overlay.config.key_execute_mode.tooltip": "LOOT: Mine and Slashアイテムをバックパックへ\nDROP: 全アイテムを地面にドロップ",
   "exile_overlay.config.mode.loot": "LOOT",
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "HPバーを無効化: %s",
@@ -73,7 +73,7 @@
   "exile_overlay.config.max_texts": "最大表示数: %s",
   "exile_overlay.config.max_texts.tooltip": "画面上のダメージ数値の最大数",
   "exile_overlay.config.popup_height": "表示高さ: %.2f",
-  "exile_overlay.config.popup_height.tooltip": "高さ位置の比率（0.0=足元、1.0=頭上）",
+  "exile_overlay.config.popup_height.tooltip": "高さ位置の比率（0.0=下部、1.0=上部）",
   "exile_overlay.config.open_hud_editor": "HUD位置エディタを開く",
   "exile_overlay.config.open_hud_editor.tooltip": "ドラッグ＆ドロップでHUD位置を編集",
   "key.exile_overlay.hud_config": "HUD設定を開く",
@@ -113,5 +113,6 @@
   "exile_overlay.config.hp_color.pink_red": "ピンク赤",
   "exile_overlay.config.hp_color.crimson": "クリムゾン",
   "exile_overlay.config.hp_color.pure_red": "純赤",
-  "exile_overlay.config.display_duration.tooltip": "ダメージ後にHPバーを表示する時間（秒）"
+  "exile_overlay.config.hp_bar_display_duration.tooltip": "ダメージ後にHPバーを表示する時間（秒）",
+  "exile_overlay.config.hp_bar_display_duration": "表示時間: %s秒"
 }
