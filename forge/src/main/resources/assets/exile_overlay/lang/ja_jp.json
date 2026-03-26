@@ -90,5 +90,18 @@
   "hud.exile_overlay.element.position": "位置: (%d, %d)",
   "hud.exile_overlay.element.anchor": "アンカー: %s",
   "hud.exile_overlay.element.offset": "オフセット: (%d, %d)",
-  "hud.exile_overlay.element.scale": "スケール: %.1fx"
+  "hud.exile_overlay.element.scale": "スケール: %.1fx",
+  "exile_overlay.config.tab.entity_hp_bar": "エンティティHPバー",
+  "exile_overlay.config.entity_hp_bar_enabled": "有効: %s",
+  "exile_overlay.config.entity_hp_bar_enabled.tooltip": "エンティティの頭上にHPバーを表示",
+  "exile_overlay.config.max_distance": "最大距離: %s",
+  "exile_overlay.config.max_distance.tooltip": "HPバーを表示する最大距離",
+  "exile_overlay.config.height_above": "高さオフセット: %.2f",
+  "exile_overlay.config.height_above.tooltip": "エンティティからの垂直オフセット",
+  "exile_overlay.config.bar_width": "バー幅: %s",
+  "exile_overlay.config.bar_width.tooltip": "HPバーの幅",
+  "exile_overlay.config.bar_height": "バー高さ: %s",
+  "exile_overlay.config.bar_height.tooltip": "HPバーの高さ",
+  "exile_overlay.config.bar_scale": "スケール: %.2f",
+  "exile_overlay.config.bar_scale.tooltip": "HPバーの全体スケール"
 }

@@ -7,6 +7,7 @@ import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
 import com.example.exile_overlay.client.render.DayCounterConfig;
+import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
@@ -60,7 +61,7 @@ public class ConfigScreen extends Screen {
         int rightPanelH = this.height - 40;
 
         int tabY = leftPanelY + 10;
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
             final int index = i;
             Button btn = Button.builder(getTabComponent(i), b -> switchTab(index))
                     .bounds(leftPanelX + 10, tabY, leftPanelW - 20, 20)
@@ -101,6 +102,7 @@ public class ConfigScreen extends Screen {
             case 0 -> Component.translatable("exile_overlay.config.tab.general");
             case 1 -> Component.translatable("exile_overlay.config.tab.damage_popup");
             case 2 -> Component.translatable("exile_overlay.config.tab.hud");
+            case 3 -> Component.translatable("exile_overlay.config.tab.entity_hp_bar");
             default -> Component.empty();
         };
     }
@@ -115,6 +117,7 @@ public class ConfigScreen extends Screen {
             case 0 -> buildGeneralTab(colX, y, colW, btnH, spacing, titleX);
             case 1 -> buildDamagePopupTab(colX, y, colW, btnH, spacing, titleX);
             case 2 -> buildHudTab(colX, y, colW, btnH, spacing, titleX);
+            case 3 -> buildEntityHealthBarTab(colX, y, colW, btnH, spacing, titleX);
         }
     }
 
@@ -404,6 +407,44 @@ public class ConfigScreen extends Screen {
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
+    private void buildEntityHealthBarTab(int x, int y, int w, int h, int sp, int tx) {
+        EntityHealthBarConfig config = EntityHealthBarConfig.getInstance();
+
+        y = addSection(y, "section.exile_overlay.display_settings", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.entity_hp_bar_enabled", config.isEnabled()), btn -> {
+                    config.setEnabled(!config.isEnabled());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.entity_hp_bar_enabled", config.isEnabled()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.entity_hp_bar_enabled.tooltip")))
+                        .build());
+        y += sp;
+
+        y = addSection(y, "section.exile_overlay.numeric_settings", tx);
+
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.max_distance",
+                config.getMaxDistance(), 8, 64, val -> config.setMaxDistance(val)));
+        y += sp;
+
+        addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.height_above",
+                (float) config.getHeightAbove(), -1.0f, 3.0f, val -> config.setHeightAbove(val)));
+        y += sp;
+
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.bar_width",
+                config.getBarWidth(), 10, 60, val -> config.setBarWidth(val)));
+        y += sp;
+
+        addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.bar_height",
+                config.getBarHeight(), 1, 8, val -> config.setBarHeight(val)));
+        y += sp;
+
+        addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.bar_scale",
+                config.getScale(), 0.5f, 3.0f, val -> config.setScale(val)));
+
+        contentHeight = y - (30 - (int) scrollOffset) + sp;
+    }
+
     private Component getFontPresetComponent(FontPreset preset) {
         return Component.translatable("exile_overlay.config.font_preset", preset.getDisplayName());
     }
@@ -428,6 +469,7 @@ public class ConfigScreen extends Screen {
     private void saveConfig() {
         EquipmentDisplayConfig.getInstance().save();
         DamagePopupConfig.getInstance().save();
+        EntityHealthBarConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
         DamageFontRenderer.reloadCustomFont();
     }
@@ -468,7 +510,16 @@ public class ConfigScreen extends Screen {
         HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, 
             dayCounterPos.withScale(1.0f).withVisible(true));
         HudPositionManager.getInstance().saveToFile();
-        
+
+        EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
+        hpBarConfig.setEnabled(true);
+        hpBarConfig.setMaxDistance(24);
+        hpBarConfig.setHeightAbove(0.5);
+        hpBarConfig.setBarWidth(30);
+        hpBarConfig.setBarHeight(2);
+        hpBarConfig.setScale(1.0f);
+        hpBarConfig.save();
+
         DamageFontRenderer.reloadCustomFont();
         this.init();
     }

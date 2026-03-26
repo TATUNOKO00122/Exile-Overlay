@@ -90,5 +90,18 @@
   "hud.exile_overlay.element.position": "Position: (%d, %d)",
   "hud.exile_overlay.element.anchor": "Anchor: %s",
   "hud.exile_overlay.element.offset": "Offset: (%d, %d)",
-  "hud.exile_overlay.element.scale": "Scale: %.1fx"
+  "hud.exile_overlay.element.scale": "Scale: %.1fx",
+  "exile_overlay.config.tab.entity_hp_bar": "Entity HP Bar",
+  "exile_overlay.config.entity_hp_bar_enabled": "Enabled: %s",
+  "exile_overlay.config.entity_hp_bar_enabled.tooltip": "Show health bars above entities",
+  "exile_overlay.config.max_distance": "Max Distance: %s",
+  "exile_overlay.config.max_distance.tooltip": "Maximum distance to show health bars",
+  "exile_overlay.config.height_above": "Height Offset: %.2f",
+  "exile_overlay.config.height_above.tooltip": "Vertical offset above entity",
+  "exile_overlay.config.bar_width": "Bar Width: %s",
+  "exile_overlay.config.bar_width.tooltip": "Width of the health bar",
+  "exile_overlay.config.bar_height": "Bar Height: %s",
+  "exile_overlay.config.bar_height.tooltip": "Height of the health bar",
+  "exile_overlay.config.bar_scale": "Scale: %.2f",
+  "exile_overlay.config.bar_scale.tooltip": "Overall scale of the health bar"
 }
