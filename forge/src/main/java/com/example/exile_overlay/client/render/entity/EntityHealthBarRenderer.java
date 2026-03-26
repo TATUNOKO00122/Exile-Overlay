@@ -126,22 +126,21 @@ public final class EntityHealthBarRenderer {
         VertexConsumer builder = buffers.getBuffer(HealthBarRenderType.BAR_TYPE);
 
         var pose = poseStack.last().pose();
-        int packedLight = 15728880; // Full bright (0xF000F0)
+        int packedLight = 15728880;
 
-        // 背景は、前景が描画されない部分（右側）のみ描画する
         if (filledWidth < barWidth) {
             float bgStart = -halfWidth + filledWidth;
-            builder.vertex(pose, bgStart, 0, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
-            builder.vertex(pose, bgStart, barHeight, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
-            builder.vertex(pose, halfWidth, barHeight, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
-            builder.vertex(pose, halfWidth, 0, 0.0F).color(COLOR_BACKGROUND).uv2(packedLight).endVertex();
+            builder.vertex(pose, bgStart, 0, 0.0F).color(COLOR_BACKGROUND).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, bgStart, barHeight, 0.0F).color(COLOR_BACKGROUND).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, barHeight, 0.0F).color(COLOR_BACKGROUND).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, 0, 0.0F).color(COLOR_BACKGROUND).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
         }
 
         if (filledWidth > 0) {
-            builder.vertex(pose, -halfWidth, 0, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(COLOR_HEALTH).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, 0, 0.0F).color(COLOR_HEALTH).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(COLOR_HEALTH).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(COLOR_HEALTH).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
         }
 
         poseStack.popPose();
