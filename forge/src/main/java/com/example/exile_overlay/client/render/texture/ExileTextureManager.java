@@ -49,8 +49,7 @@ public class ExileTextureManager {
             }
         }
         
-        // シェーダーを初期化
-        OrbShaderRenderer.initializeShader();
+        // シェーダーはイベントハンドラーで初期化されるため、ここでは確認のみ
         boolean shaderAvailable = OrbShaderRenderer.isShaderAvailable();
         
         if (allTexturesAvailable) {
