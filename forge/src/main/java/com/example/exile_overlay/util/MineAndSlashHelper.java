@@ -386,15 +386,15 @@ public class MineAndSlashHelper {
                     Object nameComponent = locNameMethod.invoke(effect);
                     String name = nameComponent != null ? nameComponent.toString() : effectId;
 
-                    Method getTypeMethod = effect.getClass().getMethod("getEffectType");
-                    Object effectType = getTypeMethod.invoke(effect);
+                    Field typeField = effect.getClass().getField("type");
+                    Object effectType = typeField.get(effect);
 
-                    boolean isBeneficial = false;
+                    boolean isBeneficial = true;
                     boolean isNegative = false;
                     if (effectType != null) {
                         String typeName = effectType.toString();
-                        isBeneficial = typeName.contains("beneficial") || typeName.contains("buff");
-                        isNegative = typeName.contains("negative") || typeName.contains("harmful");
+                        isNegative = typeName.contains("negative");
+                        isBeneficial = !isNegative;
                     }
 
                     result.add(new ExileEffectInfo(effectId, name, texture, ticksLeft, stacks,
@@ -411,31 +411,18 @@ public class MineAndSlashHelper {
     }
 
     /**
-     * Get only beneficial ExileEffects (buffs)
+     * Get all ExileEffects (unified - buffs, debuffs, neutral)
+     * Returns all effects regardless of type since display is not split by beneficial/negative.
      */
     public static List<ExileEffectInfo> getExileBuffs(Player player) {
-        List<ExileEffectInfo> all = getExileEffects(player);
-        List<ExileEffectInfo> buffs = new ArrayList<>();
-        for (ExileEffectInfo info : all) {
-            if (info.isBeneficial) {
-                buffs.add(info);
-            }
-        }
-        return buffs;
+        return getExileEffects(player);
     }
 
     /**
-     * Get only negative ExileEffects (debuffs)
+     * Returns empty list - M&S effects are all returned via getExileBuffs() to avoid duplicates.
      */
     public static List<ExileEffectInfo> getExileDebuffs(Player player) {
-        List<ExileEffectInfo> all = getExileEffects(player);
-        List<ExileEffectInfo> debuffs = new ArrayList<>();
-        for (ExileEffectInfo info : all) {
-            if (info.isNegative) {
-                debuffs.add(info);
-            }
-        }
-        return debuffs;
+        return new ArrayList<>();
     }
 
     private static String formatDuration(int seconds) {

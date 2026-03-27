@@ -197,7 +197,7 @@ public class EffectRenderHelper {
         public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
             if (info.texture != null) {
                 RenderSystem.setShaderTexture(0, info.texture);
-                graphics.blit(info.texture, x, y, 0, 0, size, size, size, size);
+                graphics.blit(info.texture, x, y, size, size, 0, 0, 16, 16, 16, 16);
             }
         }
     }

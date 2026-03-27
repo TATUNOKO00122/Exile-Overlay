@@ -230,10 +230,13 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         RenderSystem.setShaderTexture(0, EFFECT_FRAME_BACKGROUND);
         graphics.blit(EFFECT_FRAME_BACKGROUND, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-        int iconOffset = (FRAME_WIDTH - ICON_SIZE) / 2;
+        int iconOffset = 3;
         int iconX = x + iconOffset;
         int iconY = y + iconOffset;
-        effect.renderIcon(graphics, iconX, iconY, ICON_SIZE);
+        graphics.pose().pushPose();
+        graphics.pose().translate(0, -0.5f, 0);
+        effect.renderIcon(graphics, iconX, iconY, ICON_SIZE + 4);
+        graphics.pose().popPose();
 
         int barMaxWidth = 20;
         int barHeight = 8;
