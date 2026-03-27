@@ -25,13 +25,8 @@ public class OrbShaderRenderer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OrbShaderRenderer.class);
 
-    // シェーダーインスタンス
     private static ShaderInstance orbLiquidShader;
-
-    // アニメーション時間
-    private static float animationTime = 0.0f;
     
-    // シェーダー未初期化警告の抑制用
     private static boolean shaderUnavailableWarned = false;
 
     /**
@@ -69,14 +64,6 @@ public class OrbShaderRenderer {
         return orbLiquidShader != null;
     }
 
-    /**
-     * アニメーション時間を更新
-     */
-    public static void updateAnimationTime(float deltaTime) {
-        animationTime += deltaTime;
-    }
-
-    // 描画調整定数
     private static final float PADDING = 2.0f;
     private static final float OFFSET_X = -1.0f;
     private static final float OFFSET_Y = -1.0f;
@@ -96,12 +83,8 @@ public class OrbShaderRenderer {
             return;
         }
 
-        // ユニフォーム変数の設定
         if (orbLiquidShader.getUniform("FillLevel") != null) {
             orbLiquidShader.getUniform("FillLevel").set(fillPercent);
-        }
-        if (orbLiquidShader.getUniform("Time") != null) {
-            orbLiquidShader.getUniform("Time").set(animationTime);
         }
 
         RenderSystem.setShader(() -> orbLiquidShader);

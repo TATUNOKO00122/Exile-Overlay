@@ -154,8 +154,6 @@ public class RefactoredHotbarRenderer implements IHudRenderer {
         final int bgX = pos[0] - (int) ((BG_WIDTH * totalScale) / 2);
         final int bgY = pos[1] - (int) (BG_HEIGHT * totalScale);
 
-        OrbShaderRenderer.updateAnimationTime(0.016f);
-
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 

@@ -168,8 +168,6 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         int bgX = pos[0] - width / 2;
         int bgY = pos[1] - height + screenOffsetY;
 
-        OrbShaderRenderer.updateAnimationTime(0.016f);
-
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 

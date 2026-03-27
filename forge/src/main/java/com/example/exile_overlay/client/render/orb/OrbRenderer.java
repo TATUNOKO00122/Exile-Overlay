@@ -3,17 +3,10 @@ package com.example.exile_overlay.client.render.orb;
 import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import org.joml.Matrix4f;
 
 /**
  * オーブ描画を担当するクラス
@@ -43,35 +36,8 @@ public class OrbRenderer {
             "textures/gui/orb_reflection.png");
 
     // ES（エナジーシールド）の色設定（HJUD Mod方式）
-    private static final float ES_R = 0.0f;
-    private static final float ES_G = 0.9f;
-    private static final float ES_B = 1.0f;
-    private static final float ES_A = 0.7f;
-    
-    // 【最適化】ESオーバーレイのスライス数（パフォーマンスと画質のバランス）
-    private static final int ES_SLICES = 16;
-    
-    // 【最適化】sqrt結果キャッシュ（半径1.0基準）
-    // -1.0〜1.0を256段階でキャッシュ
-    private static final int SQRT_CACHE_SIZE = 256;
-    private static final float[] SQRT_CACHE = new float[SQRT_CACHE_SIZE];
-    
-    static {
-        // sqrt(1 - y^2)を事前計算（yは-1〜1の範囲）
-        for (int i = 0; i < SQRT_CACHE_SIZE; i++) {
-            float y = (i / (float)(SQRT_CACHE_SIZE - 1)) * 2.0f - 1.0f; // -1 to 1
-            float ySq = y * y;
-            SQRT_CACHE[i] = (float) Math.sqrt(Math.max(0, 1.0f - ySq));
-        }
-    }
-    
-    // 【最適化】キャッシュからsqrt値を取得
-    private static float getSqrtFromCache(float normalizedY) {
-        // normalizedY: -1.0 〜 1.0
-        int index = (int) ((normalizedY + 1.0f) * 0.5f * (SQRT_CACHE_SIZE - 1));
-        index = Math.max(0, Math.min(SQRT_CACHE_SIZE - 1, index));
-        return SQRT_CACHE[index];
-    }
+    // ARGB形式: 0xB3 = 0.7 * 255 (70% alpha)
+    private static final int ES_COLOR = 0xB300E6FF;
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
         return !config.isVisible(player) || config.isOverlay();
@@ -240,10 +206,7 @@ public class OrbRenderer {
     /**
      * エナジーシールド（ES）オーバーレイを描画（HJUD Mod方式）
      * HPオーブ上にシアン色の半透明レイヤーを下から上に描画
-     *
-     * 【パフォーマンス最適化】
-     * - スライス数を16に削減（32→16）
-     * - Math.sqrt呼び出しを最小限に
+     * OrbShaderRendererを使用して位置ズレを防止
      *
      * @param graphics GUIグラフィックス
      * @param x        オーブ左上X座標
@@ -252,11 +215,9 @@ public class OrbRenderer {
      * @param player   プレイヤー
      */
     private static void renderEsOverlay(GuiGraphics graphics, int x, int y, int size, Player player) {
-        // Mine and SlashからMagic Shield値を取得
         float currentEs = MineAndSlashHelper.getCurrentMagicShield(player);
         float maxEs = MineAndSlashHelper.getMaxMagicShield(player);
 
-        // ESが存在しない場合は描画しない
         if (maxEs <= 0 || currentEs <= 0) {
             return;
         }
@@ -266,60 +227,7 @@ public class OrbRenderer {
             return;
         }
 
-        float radius = size / 2.0f;
-        float centerX = x + radius;
-        float centerY = y + radius;
-        float radiusSq = radius * radius; // 【最適化】事前計算
-
-        // ESは下から上に溜まる
-        float orbBottomY = centerY + radius;
-        float esTopY = orbBottomY - (esPercent * size);
-        float esHeight = orbBottomY - esTopY;
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.disableCull();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        buffer.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        // 【最適化】スライス数を削減（32→16）
-        for (int i = 0; i < ES_SLICES; i++) {
-            float t1 = (float) i / ES_SLICES;
-            float t2 = (float) (i + 1) / ES_SLICES;
-            
-            float y1 = esTopY + esHeight * t1;
-            float y2 = esTopY + esHeight * t2;
-
-            float dy1 = y1 - centerY;
-            float dy2 = y2 - centerY;
-
-            // 【最適化】sqrtをキャッシュから取得
-            float halfWidth1 = getSqrtFromCache(dy1 / radius) * radius;
-            float halfWidth2 = getSqrtFromCache(dy2 / radius) * radius;
-
-            float left1 = centerX - halfWidth1;
-            float right1 = centerX + halfWidth1;
-            float left2 = centerX - halfWidth2;
-            float right2 = centerX + halfWidth2;
-
-            buffer.vertex(matrix, left1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, right1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, left2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-
-            buffer.vertex(matrix, right1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, right2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, left2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-        }
-
-        BufferUploader.drawWithShader(buffer.end());
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
+        OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, ES_COLOR);
     }
 
     /**

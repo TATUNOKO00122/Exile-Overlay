@@ -114,8 +114,6 @@ public class HotbarRenderer {
         int bgX = (int) (screenWidth / 2 - (BG_WIDTH * RENDER_SCALE) / 2);
         int bgY = screenHeight - (int) (BG_HEIGHT * RENDER_SCALE);
 
-        OrbShaderRenderer.updateAnimationTime(0.016f);
-
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
