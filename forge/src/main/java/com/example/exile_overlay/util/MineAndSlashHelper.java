@@ -6,8 +6,12 @@ import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mine and Slash (M&S) モッドとの連携を担当するヘルパークラス。
@@ -326,6 +330,7 @@ public class MineAndSlashHelper {
 
     /**
      * Get all active ExileEffects (Mine and Slash buffs/debuffs) on the player.
+     * Uses exileMap directly to access ticks_left, stacks, and is_infinite fields.
      */
     public static List<ExileEffectInfo> getExileEffects(Player player) {
         List<ExileEffectInfo> result = new ArrayList<>();
@@ -339,60 +344,64 @@ public class MineAndSlashHelper {
             Object statusData = getStatusEffectsData.invoke(data);
             if (statusData == null) return result;
 
-            var getEffects = statusData.getClass().getMethod("getEffects");
-            List<?> effects = (List<?>) getEffects.invoke(statusData);
-            if (effects == null || effects.isEmpty()) return result;
+            Field exileMapField = statusData.getClass().getField("exileMap");
+            ConcurrentHashMap<String, Object> exileMap = (ConcurrentHashMap<String, Object>) exileMapField.get(statusData);
+            if (exileMap == null || exileMap.isEmpty()) return result;
 
-            for (Object effect : effects) {
-                if (effect == null) continue;
+            Class<?> exileDBClass = Class.forName("com.robertx22.mine_and_slash.database.registry.ExileDB");
+            Method getExileEffectsMethod = exileDBClass.getMethod("ExileEffects");
+            Object registry = getExileEffectsMethod.invoke(null);
+            Method getMethod = registry.getClass().getMethod("get", String.class);
 
-                var getId = effect.getClass().getMethod("GUID");
-                String id = (String) getId.invoke(effect);
+            for (Map.Entry<String, Object> entry : exileMap.entrySet()) {
+                String effectId = entry.getKey();
+                Object instanceData = entry.getValue();
 
-                var getTexture = effect.getClass().getMethod("getTexture");
-                ResourceLocation texture = (ResourceLocation) getTexture.invoke(effect);
+                if (instanceData == null) continue;
 
-                var getType = effect.getClass().getMethod("getEffectType");
-                Object effectType = getType.invoke(effect);
+                try {
+                    Method shouldRemoveMethod = instanceData.getClass().getMethod("shouldRemove");
+                    boolean shouldRemove = (boolean) shouldRemoveMethod.invoke(instanceData);
+                    if (shouldRemove) continue;
 
-                boolean isBeneficial = false;
-                boolean isNegative = false;
-                if (effectType != null) {
-                    String typeName = effectType.toString();
-                    isBeneficial = typeName.contains("beneficial");
-                    isNegative = typeName.contains("negative");
-                }
+                    Field ticksLeftField = instanceData.getClass().getField("ticks_left");
+                    int ticksLeft = ticksLeftField.getInt(instanceData);
 
-                var getLocName = effect.getClass().getMethod("locName");
-                Object nameComponent = getLocName.invoke(effect);
-                String name = nameComponent != null ? nameComponent.toString() : id;
+                    Field stacksField = instanceData.getClass().getField("stacks");
+                    int stacks = stacksField.getInt(instanceData);
 
-                // Get instance data for duration and stacks
-                var getInstanceData = statusData.getClass().getMethod("get", effect.getClass());
-                Object instanceData = getInstanceData.invoke(statusData, effect);
+                    Field isInfiniteField = instanceData.getClass().getField("is_infinite");
+                    boolean isInfinite = isInfiniteField.getBoolean(instanceData);
 
-                int duration = 0;
-                int stacks = 1;
-                boolean isInfinite = false;
+                    Method getDurationStringMethod = instanceData.getClass().getMethod("getDurationString");
+                    String durationText = (String) getDurationStringMethod.invoke(instanceData);
 
-                if (instanceData != null) {
-                    try {
-                        var getDuration = instanceData.getClass().getMethod("getRemainingDurationInSeconds");
-                        duration = ((Number) getDuration.invoke(instanceData)).intValue() * 20;
-                        
-                        var getStacks = instanceData.getClass().getMethod("getStacks");
-                        stacks = ((Number) getStacks.invoke(instanceData)).intValue();
-                        
-                        isInfinite = duration <= 0 || duration > 1000000;
-                    } catch (Exception e) {
-                        // Duration method might not exist or return differently
+                    Object effect = getMethod.invoke(registry, effectId);
+                    if (effect == null) continue;
+
+                    Method getTextureMethod = effect.getClass().getMethod("getTexture");
+                    ResourceLocation texture = (ResourceLocation) getTextureMethod.invoke(effect);
+
+                    Method locNameMethod = effect.getClass().getMethod("locName");
+                    Object nameComponent = locNameMethod.invoke(effect);
+                    String name = nameComponent != null ? nameComponent.toString() : effectId;
+
+                    Method getTypeMethod = effect.getClass().getMethod("getEffectType");
+                    Object effectType = getTypeMethod.invoke(effect);
+
+                    boolean isBeneficial = false;
+                    boolean isNegative = false;
+                    if (effectType != null) {
+                        String typeName = effectType.toString();
+                        isBeneficial = typeName.contains("beneficial") || typeName.contains("buff");
+                        isNegative = typeName.contains("negative") || typeName.contains("harmful");
                     }
+
+                    result.add(new ExileEffectInfo(effectId, name, texture, ticksLeft, stacks,
+                        isBeneficial, isNegative, isInfinite, durationText));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process effect {}: {}", effectId, inner.getMessage());
                 }
-
-                String durationText = formatDuration(duration / 20);
-
-                result.add(new ExileEffectInfo(id, name, texture, duration, stacks, 
-                    isBeneficial, isNegative, isInfinite, durationText));
             }
         } catch (Exception e) {
             LOGGER.error("Failed to get ExileEffects", e);
