@@ -68,6 +68,15 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     private static final int OFFHAND_SLOT_DISPLAY_SIZE = 26;
     private static final int OFFHAND_SLOT_GAP = 2;
 
+    // ポーションスロット定数
+    private static final int POTION_SLOT_DISPLAY_SIZE_X = 16;
+    private static final int POTION_SLOT_DISPLAY_SIZE_Y = 26;
+    private static final int POTION_SLOT_GAP = 2;
+    private static final int POTION_SLOT_INNER_GAP = 1;
+    private static final int POTION_SLOT_COUNT = 2;
+    private static final ResourceLocation POTION_SLOT_TEXTURE = 
+        new ResourceLocation("exile_overlay", "textures/gui/potion_slot.png");
+
     // 経験値バー定数
     private static final int EXP_BAR_X = 65;
     private static final int EXP_BAR_WIDTH = 509;
@@ -271,6 +280,9 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         // オフハンドスロット（左側、下部合わせ）
         renderOffhandSlot(graphics, mc);
 
+        // ポーションスロット（右側、下部合わせ）
+        renderPotionSlot(graphics);
+
         int selectedSlot = mc.player.getInventory().selected;
         
         for (int i = 0; i < 9; i++) {
@@ -310,6 +322,21 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
             graphics.renderItem(offhandStack, 0, 0);
             graphics.renderItemDecorations(mc.font, offhandStack, 0, 0);
             graphics.pose().popPose();
+        }
+    }
+
+    private void renderPotionSlot(GuiGraphics graphics) {
+        int lastSlotX = SLOT_START_X + (8 * SLOT_PITCH);
+        int potionY = SLOT_START_Y + SLOT_DISPLAY_SIZE - POTION_SLOT_DISPLAY_SIZE_Y;
+
+        for (int i = 0; i < POTION_SLOT_COUNT; i++) {
+            int potionX = lastSlotX + SLOT_DISPLAY_SIZE + POTION_SLOT_GAP 
+                + (i * (POTION_SLOT_DISPLAY_SIZE_X + POTION_SLOT_INNER_GAP));
+            
+            graphics.blit(POTION_SLOT_TEXTURE, potionX, potionY,
+                    POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y,
+                    0, 0, POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y,
+                    POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y);
         }
     }
     
