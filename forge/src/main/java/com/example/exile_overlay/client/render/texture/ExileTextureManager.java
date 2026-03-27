@@ -60,7 +60,7 @@ public class ExileTextureManager {
         }
         
         if (shaderAvailable) {
-            LOGGER.info("Custom shader (orb_liquid) loaded successfully");
+            LOGGER.info("Custom shader (orb_fill) loaded successfully");
         } else {
             LOGGER.info("Custom shader not available. Using texture-based fallback.");
         }

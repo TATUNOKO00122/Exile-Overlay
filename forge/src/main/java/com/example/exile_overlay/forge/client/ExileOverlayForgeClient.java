@@ -43,8 +43,8 @@ public class ExileOverlayForgeClient {
     public static void onRegisterShaders(RegisterShadersEvent event) {
         try {
             event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                    new ResourceLocation("exile_overlay", "orb_liquid"), DefaultVertexFormat.POSITION_TEX_COLOR),
-                    shader -> OrbShaderRenderer.setOrbLiquidShader(shader));
+                    new ResourceLocation("exile_overlay", "orb_fill"), DefaultVertexFormat.POSITION_TEX_COLOR),
+                    shader -> OrbShaderRenderer.setOrbFillShader(shader));
         } catch (IOException e) {
             throw new RuntimeException("Failed to register exile_overlay shaders", e);
         }
