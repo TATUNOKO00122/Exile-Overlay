@@ -21,7 +21,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
     public static final int SLOT_COUNT = 8;
     public static final int SLOT_SIZE = 22;
     public static final int SLOT_SPACING = 1;
-    public static final int ICON_SIZE = 15;
+    public static final int ICON_SIZE = 16;
     public static final int ICON_OFFSET = 3;
 
     private static final ResourceLocation SLOT_FRAME_TEXTURE = ResourceLocation.tryParse(

@@ -69,10 +69,10 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     private static final int OFFHAND_SLOT_GAP = 2;
 
     // ポーションスロット定数
-    private static final int POTION_SLOT_DISPLAY_SIZE_X = 16;
+    private static final int POTION_SLOT_DISPLAY_SIZE_X = 14;
     private static final int POTION_SLOT_DISPLAY_SIZE_Y = 26;
     private static final int POTION_SLOT_GAP = 2;
-    private static final int POTION_SLOT_INNER_GAP = 1;
+    private static final int POTION_SLOT_INNER_GAP = 2;
     private static final int POTION_SLOT_COUNT = 2;
     private static final ResourceLocation POTION_SLOT_TEXTURE = 
         new ResourceLocation("exile_overlay", "textures/gui/potion_slot.png");
