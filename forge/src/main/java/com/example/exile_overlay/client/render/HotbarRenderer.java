@@ -86,19 +86,19 @@ public class HotbarRenderer {
     private static final int SLOT_DISPLAY_SIZE = 29;
     private static final int SLOT_GAP = 1;
     private static final int SLOT_START_X = 185;
-    private static final int SLOT_START_Y = 219;
+    private static final int SLOT_START_Y = 218;
     private static final int SLOT_PITCH = SLOT_DISPLAY_SIZE + SLOT_GAP;
 
     // 経験値バー定数
-    private static final int EXP_BAR_X = 95;
-    private static final int EXP_BAR_WIDTH = 449;
+    private static final int EXP_BAR_X = 65;
+    private static final int EXP_BAR_WIDTH = 509;
     private static final int MOD_EXP_BAR_Y = 252;
     private static final int VANILLA_EXP_BAR_Y = 249;
     private static final int EXP_BAR_HEIGHT = 2;
 
     // テキスト定数（中心座標、HJUDと同じ値）
-    private static final float LEVEL_CENTER_X = 319.5f;
-    private static final float LEVEL_CENTER_Y = 204.5f;
+    private static final float LEVEL_CENTER_X = 320.0f;
+    private static final float LEVEL_CENTER_Y = 202.5f;
 
     public static void render(GuiGraphics graphics, int screenWidth, int screenHeight) {
         Minecraft mc = Minecraft.getInstance();

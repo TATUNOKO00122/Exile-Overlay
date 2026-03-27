@@ -50,7 +50,7 @@ public final class OrbType {
     // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_1 = create("orb_1",
             OrbConfig.builder("orb_1")
-                    .position(129, 199)
+                    .position(99, 197)
                     .size(85)
                     .color(0xFFFF0000) // 赤（デフォルト: HP）
                     .withOverlay(0xB000FFFF) // シアン（シールドの色）
@@ -62,7 +62,7 @@ public final class OrbType {
     // シールドデータがある場合のみ表示
     public static final OrbType ORB_1_OVERLAY = create("orb_1_overlay",
             OrbConfig.builder("orb_1_overlay")
-                    .position(129, 199)
+                    .position(99, 197)
                     .size(85)
                     .color(0xB000FFFF) // シアン（シールド）
                     .showReflection(false)
@@ -75,7 +75,7 @@ public final class OrbType {
     // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_2 = create("orb_2",
             OrbConfig.builder("orb_2")
-                    .position(511, 199)
+                    .position(541, 197)
                     .size(85)
                     .color(0xFF0000FF) // 青（マナの色）
                     .dataProvider(OrbDataProviders.ORB_2)
@@ -86,7 +86,7 @@ public final class OrbType {
     // 常に表示（データがなくても背景として表示する）
     public static final OrbType ORB_3 = create("orb_3",
             OrbConfig.builder("orb_3")
-                    .position(197, 188)
+                    .position(167, 186)
                     .size(36)
                     .color(0xFFFFFF00) // 黄（エネルギーの色）
                     .dataProvider(OrbDataProviders.ORB_3)

@@ -19,7 +19,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillHotbarRenderer.class);
 
     public static final int SLOT_COUNT = 8;
-    public static final int SLOT_SIZE = 21;
+    public static final int SLOT_SIZE = 22;
     public static final int SLOT_SPACING = 1;
     public static final int ICON_SIZE = 15;
     public static final int ICON_OFFSET = 3;
