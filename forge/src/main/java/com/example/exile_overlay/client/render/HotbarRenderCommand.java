@@ -57,12 +57,16 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     private static final float RENDER_SCALE = 0.5f;
 
     // スロット定数
-    private static final int SLOT_TEX_SIZE = 29;
-    private static final int SLOT_DISPLAY_SIZE = 29;
+    private static final int SLOT_TEX_SIZE = 30;
+    private static final int SLOT_DISPLAY_SIZE = 30;
     private static final int SLOT_GAP = 1;
-    private static final int SLOT_START_X = 185;
+    private static final int SLOT_START_X = 181;
     private static final int SLOT_START_Y = 218;
     private static final int SLOT_PITCH = SLOT_DISPLAY_SIZE + SLOT_GAP;
+
+    // オフハンドスロット定数（アイテムスロットより4px小さい）
+    private static final int OFFHAND_SLOT_DISPLAY_SIZE = 26;
+    private static final int OFFHAND_SLOT_GAP = 2;
 
     // 経験値バー定数
     private static final int EXP_BAR_X = 65;
@@ -264,6 +268,9 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     }
     
     private void renderHotbarSlots(GuiGraphics graphics, Minecraft mc) {
+        // オフハンドスロット（左側、下部合わせ）
+        renderOffhandSlot(graphics, mc);
+
         int selectedSlot = mc.player.getInventory().selected;
         
         for (int i = 0; i < 9; i++) {
@@ -282,6 +289,27 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
             if (!stack.isEmpty()) {
                 renderHotbarItem(graphics, mc, stack, slotX, SLOT_START_Y);
             }
+        }
+    }
+
+    private void renderOffhandSlot(GuiGraphics graphics, Minecraft mc) {
+        int offhandX = SLOT_START_X - OFFHAND_SLOT_GAP - OFFHAND_SLOT_DISPLAY_SIZE;
+        int offhandY = SLOT_START_Y + (SLOT_DISPLAY_SIZE - OFFHAND_SLOT_DISPLAY_SIZE);
+
+        graphics.blit(SLOT_TEXTURE, offhandX, offhandY,
+                OFFHAND_SLOT_DISPLAY_SIZE, OFFHAND_SLOT_DISPLAY_SIZE,
+                0, 0, SLOT_TEX_SIZE, SLOT_TEX_SIZE,
+                SLOT_TEX_SIZE, SLOT_TEX_SIZE);
+
+        ItemStack offhandStack = mc.player.getOffhandItem();
+        if (!offhandStack.isEmpty()) {
+            graphics.pose().pushPose();
+            graphics.pose().translate(offhandX + 2.0f, offhandY + 2.0f, 0);
+            float itemScale = (OFFHAND_SLOT_DISPLAY_SIZE - 4) / 16.0f;
+            graphics.pose().scale(itemScale, itemScale, 1.0f);
+            graphics.renderItem(offhandStack, 0, 0);
+            graphics.renderItemDecorations(mc.font, offhandStack, 0, 0);
+            graphics.pose().popPose();
         }
     }
     
