@@ -63,6 +63,11 @@ public class OrbShaderRenderer {
             return;
         }
 
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(
+                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
+                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+
         if (orbFillShader.getUniform("FillPercent") != null) {
             orbFillShader.getUniform("FillPercent").set(fillPercent);
         }
@@ -93,5 +98,54 @@ public class OrbShaderRenderer {
         tesselator.end();
 
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.defaultBlendFunc();
+    }
+
+    public static void drawCircularFillAdditive(GuiGraphics graphics, int x, int y, int size,
+            float fillPercent, int color) {
+        if (fillPercent <= 0) {
+            return;
+        }
+        
+        if (orbFillShader == null) {
+            return;
+        }
+
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(
+                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
+                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
+
+        if (orbFillShader.getUniform("FillPercent") != null) {
+            orbFillShader.getUniform("FillPercent").set(fillPercent);
+        }
+
+        RenderSystem.setShader(() -> orbFillShader);
+
+        float a = ((color >> 24) & 0xFF) / 255f;
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+        RenderSystem.setShaderColor(r, g, b, a);
+
+        Matrix4f matrix = graphics.pose().last().pose();
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+
+        float adX = x - PADDING + OFFSET_X;
+        float adY = y - PADDING + OFFSET_Y;
+        float adSize = size + (PADDING * 2.0f);
+
+        buffer.vertex(matrix, adX, adY + adSize, 0).uv(0, 1).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, adX + adSize, adY + adSize, 0).uv(1, 1).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, adX + adSize, adY, 0).uv(1, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, adX, adY, 0).uv(0, 0).color(r, g, b, a).endVertex();
+
+        tesselator.end();
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.defaultBlendFunc();
     }
 }

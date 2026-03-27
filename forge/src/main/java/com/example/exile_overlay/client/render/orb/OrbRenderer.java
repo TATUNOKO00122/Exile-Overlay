@@ -36,8 +36,8 @@ public class OrbRenderer {
             "textures/gui/orb_reflection.png");
 
     // ES（エナジーシールド）の色設定（HJUD Mod方式）
-    // ARGB形式: 0xB3 = 0.7 * 255 (70% alpha)
-    private static final int ES_COLOR = 0xB300E6FF;
+    // ARGB形式: 0x66 = 0.4 * 255 (40% alpha) - PoE等ハクスラ標準の半透明度
+    private static final int ES_COLOR = 0x6600E6FF;
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
         return !config.isVisible(player) || config.isOverlay();
@@ -227,7 +227,7 @@ public class OrbRenderer {
             return;
         }
 
-        OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, ES_COLOR);
+        OrbShaderRenderer.drawCircularFillAdditive(graphics, x, y, size, esPercent, ES_COLOR);
     }
 
     /**
