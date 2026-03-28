@@ -732,11 +732,11 @@ public class MineAndSlashHelper {
         return -1;
     }
 
-    /**
+/**
      * Mine and SlashのNeat HPバーの有効/無効を設定
      * 
      * @param enabled true: HPバーを表示, false: HPバーを非表示
-     * @return 設定が成功した場合true
+     * @return 定定が成功した場合true
      */
     public static boolean setNeatHpBarEnabled(boolean enabled) {
         try {
@@ -752,5 +752,119 @@ public class MineAndSlashHelper {
             LOGGER.error("Failed to set Mine and Slash Neat HP Bar: {}", e.getMessage());
             return false;
         }
+    }
+
+    // ========== Potion Detection API ==========
+
+    private static Class<?> slashPotionItemClass = null;
+    private static Class<?> potionTypeEnumClass = null;
+    private static Method getPotionTypeMethod = null;
+    private static Method getRarityMethod = null;
+    private static Object potionTypeHp = null;
+    private static Object potionTypeMana = null;
+    private static Boolean potionClassesInitialized = null;
+
+    private static void initializePotionClasses() {
+        if (potionClassesInitialized != null) return;
+        potionClassesInitialized = false;
+        
+        if (!isMnsLoaded()) return;
+
+        try {
+            slashPotionItemClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.items.SlashPotionItem");
+            potionTypeEnumClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.items.SlashPotionItem$Type");
+            
+            getPotionTypeMethod = slashPotionItemClass.getMethod("getType");
+            getRarityMethod = slashPotionItemClass.getMethod("getRarity");
+            
+            potionTypeHp = potionTypeEnumClass.getField("HP").get(null);
+            potionTypeMana = potionTypeEnumClass.getField("MANA").get(null);
+            
+            potionClassesInitialized = true;
+            LOGGER.debug("Potion classes initialized successfully");
+        } catch (Exception e) {
+            LOGGER.debug("Failed to initialize potion classes: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * ItemStackがSlashPotionItemかどうか判定
+     */
+    public static boolean isSlashPotionItem(net.minecraft.world.item.ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        initializePotionClasses();
+        if (!potionClassesInitialized) return false;
+        return slashPotionItemClass.isInstance(stack.getItem());
+    }
+
+    /**
+     * ポーションタイプ取得（HP=true, MANA=false）
+     * @return HPポーションならtrue、MANAポーションならfalse、判定不可ならfalse
+     */
+    public static boolean isHpPotion(net.minecraft.world.item.ItemStack stack) {
+        if (!isSlashPotionItem(stack)) return false;
+        try {
+            Object type = getPotionTypeMethod.invoke(stack.getItem());
+            return type == potionTypeHp;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ポーションのレアリティ優先度取得（高い数値=高レアリティ）
+     * @return レアリティ優先度（0-5）、取得失敗時は0
+     */
+    public static float getPotionRarityPriority(net.minecraft.world.item.ItemStack stack) {
+        if (!isSlashPotionItem(stack)) return 0;
+        try {
+            Object rarity = getRarityMethod.invoke(stack.getItem());
+            if (rarity != null) {
+                Field statPercentsField = rarity.getClass().getField("stat_percents");
+                Object statPercents = statPercentsField.get(rarity);
+                if (statPercents != null) {
+                    Field maxField = statPercents.getClass().getField("max");
+                    return ((Number) maxField.get(statPercents)).floatValue();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get potion rarity: {}", e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * インベントリ内の最高レアリティポーション検索
+     * @param player プレイヤー
+     * @param isHp HPポーション検索=true、MANA=false
+     * @return 最高レアリティのItemStack、見つからない場合はempty
+     */
+    public static net.minecraft.world.item.ItemStack findBestPotion(Player player, boolean isHp) {
+        if (!isMnsLoaded() || player == null) return net.minecraft.world.item.ItemStack.EMPTY;
+        
+        net.minecraft.world.item.ItemStack bestStack = net.minecraft.world.item.ItemStack.EMPTY;
+        float bestPriority = -1;
+        
+        for (net.minecraft.world.inventory.Slot slot : player.inventoryMenu.slots) {
+            net.minecraft.world.item.ItemStack stack = slot.getItem();
+            if (isSlashPotionItem(stack) && isHpPotion(stack) == isHp) {
+                float priority = getPotionRarityPriority(stack);
+                if (priority > bestPriority) {
+                    bestPriority = priority;
+                    bestStack = stack.copy();
+                }
+            }
+        }
+        
+        return bestStack;
+    }
+
+/**
+     * ポーションがクールダウン中かどうか判定
+     * バニラのCooldownTrackerを使用
+     */
+    public static boolean isPotionOnCooldown(Player player, net.minecraft.world.item.ItemStack stack) {
+        if (player == null || stack.isEmpty()) return false;
+        return player.getCooldowns().isOnCooldown(stack.getItem());
     }
 }

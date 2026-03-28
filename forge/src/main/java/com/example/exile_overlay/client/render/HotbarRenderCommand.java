@@ -12,6 +12,7 @@ import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.orb.OrbRenderer;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
 import com.example.exile_overlay.client.render.orb.OrbType;
+import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -68,11 +69,11 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     private static final int OFFHAND_SLOT_DISPLAY_SIZE = 26;
     private static final int OFFHAND_SLOT_GAP = 2;
 
-    // ポーションスロット定数
-    private static final int POTION_SLOT_DISPLAY_SIZE_X = 14;
+    // ポーションスロット定数（テクスチャサイズ16x26、アイテムは16x16原寸描画）
+    private static final int POTION_SLOT_DISPLAY_SIZE_X = 16;
     private static final int POTION_SLOT_DISPLAY_SIZE_Y = 26;
     private static final int POTION_SLOT_GAP = 2;
-    private static final int POTION_SLOT_INNER_GAP = 2;
+    private static final int POTION_SLOT_INNER_GAP = 1;
     private static final int POTION_SLOT_COUNT = 2;
     private static final ResourceLocation POTION_SLOT_TEXTURE = 
         new ResourceLocation("exile_overlay", "textures/gui/potion_slot.png");
@@ -281,7 +282,7 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         renderOffhandSlot(graphics, mc);
 
         // ポーションスロット（右側、下部合わせ）
-        renderPotionSlot(graphics);
+        renderPotionSlot(graphics, mc);
 
         int selectedSlot = mc.player.getInventory().selected;
         
@@ -325,14 +326,39 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         }
     }
 
-    private void renderPotionSlot(GuiGraphics graphics) {
+    private void renderPotionSlot(GuiGraphics graphics, Minecraft mc) {
         int lastSlotX = SLOT_START_X + (8 * SLOT_PITCH);
         int potionY = SLOT_START_Y + SLOT_DISPLAY_SIZE - POTION_SLOT_DISPLAY_SIZE_Y;
+
+        ItemStack hpPotion = MineAndSlashHelper.findBestPotion(mc.player, true);
+        ItemStack manaPotion = MineAndSlashHelper.findBestPotion(mc.player, false);
+        boolean hpCooldown = MineAndSlashHelper.isPotionOnCooldown(mc.player, hpPotion);
+        boolean manaCooldown = MineAndSlashHelper.isPotionOnCooldown(mc.player, manaPotion);
 
         for (int i = 0; i < POTION_SLOT_COUNT; i++) {
             int potionX = lastSlotX + SLOT_DISPLAY_SIZE + POTION_SLOT_GAP 
                 + (i * (POTION_SLOT_DISPLAY_SIZE_X + POTION_SLOT_INNER_GAP));
-            
+
+            ItemStack stack = (i == 0) ? hpPotion : manaPotion;
+            boolean cooldown = (i == 0) ? hpCooldown : manaCooldown;
+
+            if (!stack.isEmpty()) {
+                graphics.pose().pushPose();
+                graphics.pose().translate(potionX, potionY + 5.0f, -10.0f);
+
+                if (cooldown) {
+                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.5f);
+                }
+
+                graphics.renderItem(stack, 0, 0);
+
+                if (cooldown) {
+                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                }
+
+                graphics.pose().popPose();
+            }
+
             graphics.blit(POTION_SLOT_TEXTURE, potionX, potionY,
                     POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y,
                     0, 0, POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y,
