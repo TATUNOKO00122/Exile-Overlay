@@ -173,8 +173,8 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             float scaledSlotSize = SLOT_SIZE / textScale;
 
             int textWidth = mc.font.width(keyText);
-            float keyX = scaledX + scaledSlotSize - textWidth - 7;
-            float keyY = scaledY + scaledSlotSize - 14;
+            float keyX = scaledX + scaledSlotSize - textWidth - 7.8f;
+            float keyY = scaledY + scaledSlotSize - 15.45f;
 
             graphics.drawString(mc.font, keyText, (int) keyX, (int) keyY, 0xFFFFFFFF, false);
 
