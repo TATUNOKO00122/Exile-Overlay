@@ -26,6 +26,8 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
 
     private static final ResourceLocation SLOT_FRAME_TEXTURE = ResourceLocation.tryParse(
             "exile_overlay:textures/gui/skill_slot_frame.png");
+    private static final ResourceLocation MODIFIER_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_frame_mod.png");
 
     private static final int COOLDOWN_OVERLAY_COLOR = 0xAA000000;
 
@@ -133,7 +135,9 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             }
 
             RenderSystem.enableBlend();
-            graphics.blit(SLOT_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+            String rawKeyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
+            ResourceLocation frame = hasModifier(rawKeyText) ? MODIFIER_FRAME_TEXTURE : SLOT_FRAME_TEXTURE;
+            graphics.blit(frame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
             int manaCost = MineAndSlashHelper.getSpellManaCost(player, slot);
             if (manaCost > 0) {
@@ -153,7 +157,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 graphics.pose().popPose();
             }
 
-            String keyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
+            String keyText = rawKeyText;
             keyText = keyText.replace("LEFT SHIFT", "S").replace("RIGHT SHIFT", "S").replace("SHIFT", "S");
             keyText = keyText.replace("LEFT CONTROL", "C").replace("RIGHT CONTROL", "C").replace("CONTROL", "C");
             keyText = keyText.replace("LEFT ALT", "A").replace("RIGHT ALT", "A").replace("ALT", "A");
@@ -178,6 +182,10 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         }
 
         graphics.pose().popPose();
+    }
+
+    private boolean hasModifier(String upperKeyText) {
+        return upperKeyText.contains("SHIFT") || upperKeyText.contains("CONTROL") || upperKeyText.contains("ALT");
     }
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {
