@@ -94,7 +94,9 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         long now = System.currentTimeMillis();
 
         if (target != null) {
-            lastTargetRef = new WeakReference<>(target);
+            if (target != lastTargetRef.get()) {
+                lastTargetRef = new WeakReference<>(target);
+            }
             lastTargetTime = now;
         } else {
             target = lastTargetRef.get();

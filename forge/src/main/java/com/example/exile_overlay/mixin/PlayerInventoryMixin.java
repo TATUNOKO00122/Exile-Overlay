@@ -19,27 +19,35 @@ public abstract class PlayerInventoryMixin {
 
     @Inject(method = "removeItem", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$onRemoveItem(int slotIndex, int count, CallbackInfoReturnable<ItemStack> cir) {
-        FavoriteItemManager manager = FavoriteItemManager.getInstance();
-        if (manager == null) {
-            return;
-        }
+        try {
+            FavoriteItemManager manager = FavoriteItemManager.getInstance();
+            if (manager == null) {
+                return;
+            }
 
-        if (slotIndex >= 0 && slotIndex <= 40 && manager.isFavorite(slotIndex)) {
-            cir.setReturnValue(ItemStack.EMPTY);
-            LOGGER.debug("Blocked removal from favorite slot {}", slotIndex);
+            if (slotIndex >= 0 && slotIndex <= 40 && manager.isFavorite(slotIndex)) {
+                cir.setReturnValue(ItemStack.EMPTY);
+                LOGGER.debug("Blocked removal from favorite slot {}", slotIndex);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to handle removeItem", e);
         }
     }
 
     @Inject(method = "removeItemNoUpdate", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$onRemoveItemNoUpdate(int slotIndex, CallbackInfoReturnable<ItemStack> cir) {
-        FavoriteItemManager manager = FavoriteItemManager.getInstance();
-        if (manager == null) {
-            return;
-        }
+        try {
+            FavoriteItemManager manager = FavoriteItemManager.getInstance();
+            if (manager == null) {
+                return;
+            }
 
-        if (slotIndex >= 0 && slotIndex <= 40 && manager.isFavorite(slotIndex)) {
-            cir.setReturnValue(ItemStack.EMPTY);
-            LOGGER.debug("Blocked removal (no update) from favorite slot {}", slotIndex);
+            if (slotIndex >= 0 && slotIndex <= 40 && manager.isFavorite(slotIndex)) {
+                cir.setReturnValue(ItemStack.EMPTY);
+                LOGGER.debug("Blocked removal (no update) from favorite slot {}", slotIndex);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to handle removeItemNoUpdate", e);
         }
     }
 }

@@ -103,21 +103,21 @@ public class DamagePopupManager {
         long now = System.currentTimeMillis();
         PlacementInfo last = lastPlacementMap.get(entityId);
         
-        if (last != null && (now - last.timestamp) < PLACEMENT_TIMEOUT_MS) {
-            last.offsetIndex++;
-            double angle = last.offsetIndex * 45.0;
+        if (last != null && (now - last.timestamp()) < PLACEMENT_TIMEOUT_MS) {
+            int newIndex = last.offsetIndex() + 1;
+            double angle = newIndex * 45.0;
             double rad = Math.toRadians(angle);
-            float offset = OFFSET_INCREMENT * ((last.offsetIndex / 8) + 1);
+            float offset = OFFSET_INCREMENT * ((newIndex / 8) + 1);
             
             double xOffset = Math.cos(rad) * offset;
             double zOffset = Math.sin(rad) * offset;
-            double yOffset = (last.offsetIndex % 4) * 0.15;
+            double yOffset = (newIndex % 4) * 0.15;
             
-            last.timestamp = now;
+            lastPlacementMap.put(entityId, new PlacementInfo(newIndex, now));
             return basePosition.add(xOffset, yOffset, zOffset);
         }
         
-        PlacementInfo newPlacement = new PlacementInfo(now);
+        PlacementInfo newPlacement = new PlacementInfo(0, now);
         lastPlacementMap.put(entityId, newPlacement);
         return basePosition;
     }
@@ -163,7 +163,7 @@ public class DamagePopupManager {
     private void cleanupOldPlacements() {
         long now = System.currentTimeMillis();
         lastPlacementMap.entrySet().removeIf(entry -> 
-            (now - entry.getValue().timestamp) > PLACEMENT_TIMEOUT_MS * 2);
+            (now - entry.getValue().timestamp()) > PLACEMENT_TIMEOUT_MS * 2);
     }
 
     public void onRenderWorld(PoseStack poseStack) {
@@ -277,12 +277,5 @@ public class DamagePopupManager {
         sb.append(intPart).append('.').append(decPart);
     }
     
-    private static class PlacementInfo {
-        int offsetIndex = 0;
-        long timestamp;
-        
-        PlacementInfo(long timestamp) {
-            this.timestamp = timestamp;
-        }
-    }
+    private record PlacementInfo(int offsetIndex, long timestamp) {}
 }

@@ -45,7 +45,8 @@ public class HudPositionManager {
     private final Map<String, HudPosition> positions;
     private final Map<String, HudPosition> defaults;
     private final Map<String, PositionListener> listeners;
-    private boolean initialized = false;
+    private volatile boolean initialized = false;
+    private final Object initLock = new Object();
     
     private HudPositionManager() {
         this.positions = new ConcurrentHashMap<>();
@@ -68,14 +69,18 @@ public class HudPositionManager {
         if (initialized) {
             return;
         }
-        
-        LOGGER.info("Initializing HudPositionManager...");
-        
-        registerDefaults();
-        loadFromFile();
-        
-        initialized = true;
-        LOGGER.info("HudPositionManager initialized with {} positions", positions.size());
+        synchronized (initLock) {
+            if (initialized) {
+                return;
+            }
+            LOGGER.info("Initializing HudPositionManager...");
+            
+            registerDefaults();
+            loadFromFile();
+            
+            initialized = true;
+            LOGGER.info("HudPositionManager initialized with {} positions", positions.size());
+        }
     }
     
     /**

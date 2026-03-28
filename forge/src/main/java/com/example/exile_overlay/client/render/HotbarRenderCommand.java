@@ -186,26 +186,28 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         RenderSystem.defaultBlendFunc();
 
         graphics.pose().pushPose();
-        graphics.pose().translate(bgX, bgY, 0);
-        graphics.pose().scale(totalScale, totalScale, 1.0f);
-        
-        // Layer 1: Background Layer (背面)
-        renderExpBars(graphics, mc);
-        
-        // Layer 2: Fill Layer (中間)
-        visibleOrbs.forEach(orbType -> OrbRenderer.renderFillLayer(graphics, orbType.getConfig(), player));
-        
-        // Layer 3: Frame Layer (前面)
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        ResourceLocation bgTex = selectBackgroundTexture(visibleOrbs, player);
-        graphics.blit(bgTex, 0, 0, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
-        
-        // Layer 4: Overlay Layer (最前面)
-        visibleOrbs.forEach(orbType -> OrbRenderer.renderOverlayLayer(graphics, orbType.getConfig(), player, mc));
-        renderLevelDisplay(graphics, mc);
-        renderHotbarSlots(graphics, mc);
-        
-        graphics.pose().popPose();
+        try {
+            graphics.pose().translate(bgX, bgY, 0);
+            graphics.pose().scale(totalScale, totalScale, 1.0f);
+            
+            // Layer 1: Background Layer (背面)
+            renderExpBars(graphics, mc);
+            
+            // Layer 2: Fill Layer (中間)
+            visibleOrbs.forEach(orbType -> OrbRenderer.renderFillLayer(graphics, orbType.getConfig(), player));
+            
+            // Layer 3: Frame Layer (前面)
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            ResourceLocation bgTex = selectBackgroundTexture(visibleOrbs, player);
+            graphics.blit(bgTex, 0, 0, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
+            
+            // Layer 4: Overlay Layer (最前面)
+            visibleOrbs.forEach(orbType -> OrbRenderer.renderOverlayLayer(graphics, orbType.getConfig(), player, mc));
+            renderLevelDisplay(graphics, mc);
+            renderHotbarSlots(graphics, mc);
+        } finally {
+            graphics.pose().popPose();
+        }
     }
     
     private void renderExpBars(GuiGraphics graphics, Minecraft mc) {

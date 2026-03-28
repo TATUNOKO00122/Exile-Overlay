@@ -72,7 +72,7 @@ public class DamageNumber {
         float baseScale = isCrit ? config.getCriticalScale() : config.getBaseScale();
 
         int fadeIn = config.getFadeInDuration();
-        if (life < fadeIn) {
+        if (fadeIn > 0 && life < fadeIn) {
             float progress = life / (float) fadeIn;
             float bounce = 1.0f + (float) Math.sin(progress * Math.PI) * 0.3f;
             return baseScale * progress * bounce;
@@ -80,7 +80,7 @@ public class DamageNumber {
 
         int fadeOut = config.getFadeOutDuration();
         int fadeOutStart = config.getDisplayDuration() - fadeOut;
-        if (life > fadeOutStart) {
+        if (fadeOut > 0 && life > fadeOutStart) {
             float fadeProgress = (config.getDisplayDuration() - life) / (float) fadeOut;
             return baseScale * Math.max(0.0f, fadeProgress);
         }
@@ -92,13 +92,13 @@ public class DamageNumber {
         DamagePopupConfig config = DamagePopupConfig.getInstance();
 
         int fadeIn = config.getFadeInDuration();
-        if (life < fadeIn) {
+        if (fadeIn > 0 && life < fadeIn) {
             return life / (float) fadeIn;
         }
 
         int fadeOut = config.getFadeOutDuration();
         int fadeOutStart = config.getDisplayDuration() - fadeOut;
-        if (life > fadeOutStart) {
+        if (fadeOut > 0 && life > fadeOutStart) {
             float fadeProgress = (config.getDisplayDuration() - life) / (float) fadeOut;
             return Math.max(0.0f, fadeProgress);
         }

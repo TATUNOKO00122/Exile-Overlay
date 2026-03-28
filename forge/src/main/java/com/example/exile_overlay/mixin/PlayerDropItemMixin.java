@@ -19,17 +19,21 @@ public abstract class PlayerDropItemMixin {
 
     @Inject(method = "drop", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$onDrop(boolean dropAll, CallbackInfoReturnable<ItemEntity> cir) {
-        FavoriteItemManager manager = FavoriteItemManager.getInstance();
-        if (manager == null) {
-            return;
-        }
+        try {
+            FavoriteItemManager manager = FavoriteItemManager.getInstance();
+            if (manager == null) {
+                return;
+            }
 
-        LocalPlayer self = (LocalPlayer) (Object) this;
-        int selectedSlot = self.getInventory().selected;
+            LocalPlayer self = (LocalPlayer) (Object) this;
+            int selectedSlot = self.getInventory().selected;
 
-        if (manager.isFavorite(selectedSlot)) {
-            cir.setReturnValue(null);
-            LOGGER.debug("Blocked drop of favorite item in slot {}", selectedSlot);
+            if (manager.isFavorite(selectedSlot)) {
+                cir.setReturnValue(null);
+                LOGGER.debug("Blocked drop of favorite item in slot {}", selectedSlot);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to handle drop", e);
         }
     }
 }

@@ -22,35 +22,39 @@ public abstract class FavoriteItemMixin {
 
     @Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$onSlotClicked(Slot slot, int slotId, int mouseButton, ClickType type, CallbackInfo ci) {
-        if (slot == null) {
-            return;
-        }
+        try {
+            if (slot == null) {
+                return;
+            }
 
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            return;
-        }
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null) {
+                return;
+            }
 
-        FavoriteItemManager manager = FavoriteItemManager.getInstance();
-        if (manager == null) {
-            return;
-        }
+            FavoriteItemManager manager = FavoriteItemManager.getInstance();
+            if (manager == null) {
+                return;
+            }
 
-        Inventory playerInventory = mc.player.getInventory();
-        int playerSlotId = manager.toPlayerSlotId(slot, playerInventory);
-        if (playerSlotId < 0) {
-            return;
-        }
+            Inventory playerInventory = mc.player.getInventory();
+            int playerSlotId = manager.toPlayerSlotId(slot, playerInventory);
+            if (playerSlotId < 0) {
+                return;
+            }
 
-        if (manager.isToggleKeyPressed()) {
-            manager.toggleFavorite(playerSlotId);
-            ci.cancel();
-            return;
-        }
+            if (manager.isToggleKeyPressed()) {
+                manager.toggleFavorite(playerSlotId);
+                ci.cancel();
+                return;
+            }
 
-        if (manager.isFavorite(playerSlotId)) {
-            ci.cancel();
-            LOGGER.debug("Blocked click on favorite slot {}", playerSlotId);
+            if (manager.isFavorite(playerSlotId)) {
+                ci.cancel();
+                LOGGER.debug("Blocked click on favorite slot {}", playerSlotId);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to handle slotClicked", e);
         }
     }
 }

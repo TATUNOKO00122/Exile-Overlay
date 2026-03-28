@@ -137,27 +137,30 @@ public interface IHudRenderer {
      */
     default boolean isHit(int mouseX, int mouseY, int screenWidth, int screenHeight) {
         int[] pos = resolvePosition(screenWidth, screenHeight);
+        if (pos == null || pos.length < 2) return false;
+        
         int x = pos[0];
         int y = pos[1];
         int width = getWidth();
         int height = getHeight();
 
         HudRenderMetadata metadata = getRenderMetadata();
+        if (metadata == null) return false;
+        
         Insets offset = metadata.getOffset();
         Insets expansion = metadata.getExpansion();
+        if (offset == null) offset = new Insets(0, 0, 0, 0);
+        if (expansion == null) expansion = new Insets(0, 0, 0, 0);
 
         int left;
         int top;
         if (metadata.isTopLeftBased()) {
-            // 左上基準
             left = x + offset.left;
             top = y + offset.top;
         } else if (metadata.isBottomCenterBased()) {
-            // 底辺中心基準: Xは中心、Yは底辺（ホットバー等の下部配置要素用）
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height - expansion.top + offset.top;
         } else {
-            // 中心基準: XとYの両方が中心
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height / 2 - expansion.top + offset.top;
         }

@@ -1,20 +1,10 @@
 package com.example.exile_overlay.api;
 
 import net.minecraft.world.entity.player.Player;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 
-/**
- * HUDスロットに表示されるデータの種類を定義するenum
- * 
- * このenumはHUD上の「どの位置に」データを表示するかを定義します。
- * 具体的な「何を」表示するかは、各IModDataProvider実装が決定します。
- * 
- * スロット配置:
- * - ORB_1: 画面左下のメインスロット（デフォルト: HP）
- * - ORB_1_OVERLAY: ORB_1に重なる属性（デフォルト: Shield）
- * - ORB_2: 画面右下のメインスロット（デフォルト: Mana/Blood）
- * - ORB_3: 画面左上のサブスロット（デフォルト: Stamina/Energy）
- */
 public enum DataType {
     // ========== ORB 1: 左下メインスロット ==========
     /**
@@ -117,6 +107,14 @@ public enum DataType {
     DUNGEON_ID("dungeon.id", "", String.class, UpdateFrequency.STATIC),
     DUNGEON_IS_INSIDE("dungeon.is_inside", false, Boolean.class, UpdateFrequency.NORMAL);
     
+    private static final Map<String, DataType> KEY_MAP = new HashMap<>();
+    
+    static {
+        for (DataType type : values()) {
+            KEY_MAP.put(type.key, type);
+        }
+    }
+    
     private final String key;
     private final Object defaultValue;
     private final Class<?> type;
@@ -154,12 +152,7 @@ public enum DataType {
      * キー文字列からDataTypeを検索
      */
     public static DataType fromKey(String key) {
-        for (DataType type : values()) {
-            if (type.key.equals(key)) {
-                return type;
-            }
-        }
-        return null;
+        return KEY_MAP.get(key);
     }
     
     /**

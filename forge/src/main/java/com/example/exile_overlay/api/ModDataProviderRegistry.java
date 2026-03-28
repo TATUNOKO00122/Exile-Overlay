@@ -26,8 +26,9 @@ public class ModDataProviderRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final List<IModDataProvider> providers = new CopyOnWriteArrayList<>();
-    private static IModDataProvider activeProvider = null;
-    private static boolean initialized = false;
+    private static volatile IModDataProvider activeProvider = null;
+    private static volatile boolean initialized = false;
+    private static final Object INIT_LOCK = new Object();
 
     /**
      * データプロバイダーを登録する
@@ -63,7 +64,11 @@ public class ModDataProviderRegistry {
      */
     public static IModDataProvider getActiveProvider() {
         if (!initialized) {
-            initializeDefaults();
+            synchronized (INIT_LOCK) {
+                if (!initialized) {
+                    initializeDefaults();
+                }
+            }
         }
         return activeProvider;
     }
@@ -116,19 +121,15 @@ public class ModDataProviderRegistry {
      * デフォルトのプロバイダーを初期化する
      */
     private static void initializeDefaults() {
-        if (initialized)
-            return;
+        synchronized (INIT_LOCK) {
+            if (initialized) return;
 
-        // バニラプロバイダーを最低優先度で登録
-        register(new VanillaDataProvider());
+            register(new VanillaDataProvider());
+            register(new MineAndSlashDataProvider());
+            register(new DungeonRealmDataProvider());
 
-        // Mine and Slashプロバイダーを登録（利用可能な場合のみ有効）
-        register(new MineAndSlashDataProvider());
-
-        // Dungeon Realmプロバイダーを登録（ダンジョン情報用）
-        register(new DungeonRealmDataProvider());
-
-        initialized = true;
+            initialized = true;
+        }
     }
 
     /**

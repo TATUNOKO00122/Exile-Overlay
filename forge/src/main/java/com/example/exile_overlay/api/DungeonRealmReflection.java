@@ -25,10 +25,14 @@ public final class DungeonRealmReflection {
     private static Class<?> dungeonMapCapabilityClass;
     private static Class<?> dungeonMapDataClass;
     private static Class<?> dungeonItemMapDataClass;
+    private static Class<?> dungeonWorldDataClass;
+    private static Class<?> dungeonPlayerDataClass;
 
     // MethodHandleのキャッシュ
     private static MethodHandle mhGetData;
     private static MethodHandle mhGetMapData;
+    private static MethodHandle mhDataField;
+    private static MethodHandle mhPlayerDataField;
     private static MethodHandle mhGetFinishRarity;
     private static MethodHandle mhGetRarityTier;
     private static MethodHandle mhGetCurrentMobKillRarity;
@@ -69,23 +73,17 @@ public final class DungeonRealmReflection {
         dungeonMapCapabilityClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonMapCapability");
         dungeonMapDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonMapData");
         dungeonItemMapDataClass = Class.forName("com.robertx22.dungeon_realm.item.DungeonItemMapData");
+        dungeonWorldDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonWorldData");
+        dungeonPlayerDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonPlayerData");
     }
 
     private static void initMethodHandles() throws Exception {
-        // DungeonMapCapability.get(Level) -> DungeonMapCapability
         mhGetData = LOOKUP.findStatic(dungeonMapCapabilityClass, "get",
                 MethodType.methodType(dungeonMapCapabilityClass, Level.class));
 
-        // DungeonMapCapability.data -> DungeonWorldData
-        var worldDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonWorldData");
-        var dataField = LOOKUP.findGetter(dungeonMapCapabilityClass, "data", worldDataClass);
+        mhDataField = LOOKUP.findGetter(dungeonMapCapabilityClass, "data", dungeonWorldDataClass);
+        mhPlayerDataField = LOOKUP.findGetter(dungeonWorldDataClass, "data", dungeonPlayerDataClass);
 
-        // DungeonWorldData.data -> DungeonPlayerData
-        var playerDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonPlayerData");
-        var playerDataField = LOOKUP.findGetter(worldDataClass, "data", playerDataClass);
-
-        // DungeonPlayerData.getData(Player) -> Object (ジェネリック型消去)
-        // 親クラスからメソッドを取得
         var mapPlayerDataSaverClass = Class.forName("com.robertx22.library_of_exile.dimension.worlddata.MapPlayerDataSaver");
         java.lang.reflect.Method getDataMethod = mapPlayerDataSaverClass.getMethod("getData", Player.class);
         mhGetMapData = LOOKUP.unreflect(getDataMethod);
@@ -132,12 +130,10 @@ public final class DungeonRealmReflection {
             Object capability = mhGetData.invoke(level);
             if (capability == null) return false;
 
-            Object worldData = LOOKUP.findGetter(dungeonMapCapabilityClass, "data",
-                    Class.forName("com.robertx22.dungeon_realm.structure.DungeonWorldData")).invoke(capability);
+            Object worldData = mhDataField.invoke(capability);
             if (worldData == null) return false;
 
-            Object playerData = LOOKUP.findGetter(worldData.getClass(), "data",
-                    Class.forName("com.robertx22.dungeon_realm.structure.DungeonPlayerData")).invoke(worldData);
+            Object playerData = mhPlayerDataField.invoke(worldData);
             if (playerData == null) return false;
 
             Object mapData = mhGetMapData.invoke(playerData, player);
@@ -161,14 +157,10 @@ public final class DungeonRealmReflection {
             Object capability = mhGetData.invoke(level);
             if (capability == null) return null;
 
-            var worldDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonWorldData");
-            var dataField = LOOKUP.findGetter(dungeonMapCapabilityClass, "data", worldDataClass);
-            Object worldData = dataField.invoke(capability);
+            Object worldData = mhDataField.invoke(capability);
             if (worldData == null) return null;
 
-            var playerDataClass = Class.forName("com.robertx22.dungeon_realm.structure.DungeonPlayerData");
-            var playerDataField = LOOKUP.findGetter(worldDataClass, "data", playerDataClass);
-            Object playerData = playerDataField.invoke(worldData);
+            Object playerData = mhPlayerDataField.invoke(worldData);
             if (playerData == null) return null;
 
             return mhGetMapData.invoke(playerData, player);

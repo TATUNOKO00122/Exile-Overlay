@@ -32,12 +32,11 @@ public class EffectRenderHelper {
     // Global state maps to track visual position across frames
     private static final Map<String, VisualState> displayStates = new HashMap<>();
     
-    // 【最適化】オブジェクトプール - 毎フレームのアロケーションを回避
-    // バフとデバフで別々のキャッシュを使用（同じ参照を返す問題を回避）
     private static final List<DisplayableEffect> cachedBuffs = new ArrayList<>(32);
     private static final List<DisplayableEffect> cachedDebuffs = new ArrayList<>(32);
     private static final Map<String, VanillaEffectWrapper> vanillaWrapperCache = new HashMap<>();
     private static final Map<String, MnSEffectWrapper> mnsWrapperCache = new HashMap<>();
+    private static final Set<String> currentIdsCache = new HashSet<>(32);
 
     public static class VisualState {
         public float currentX;
@@ -282,11 +281,11 @@ public class EffectRenderHelper {
     }
 
     public static void updateVisualStates(List<DisplayableEffect> currentEffects) {
-        Set<String> currentIds = new HashSet<>();
+        currentIdsCache.clear();
         for (DisplayableEffect effect : currentEffects) {
-            currentIds.add(effect.getId());
+            currentIdsCache.add(effect.getId());
         }
-        displayStates.keySet().removeIf(id -> !currentIds.contains(id));
+        displayStates.keySet().removeIf(id -> !currentIdsCache.contains(id));
     }
 
     public static void clearCache() {

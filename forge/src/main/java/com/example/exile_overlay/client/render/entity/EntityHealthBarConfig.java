@@ -3,12 +3,12 @@ package com.example.exile_overlay.client.render.entity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +18,8 @@ public final class EntityHealthBarConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE_NAME = "exile_overlay_entity_healthbar.json";
 
-    private static EntityHealthBarConfig instance;
+    private static volatile EntityHealthBarConfig instance;
+    private static final Object LOCK = new Object();
 
     private boolean enabled = true;
     private int maxDistance = 24;
@@ -73,15 +74,19 @@ public final class EntityHealthBarConfig {
 
     public static EntityHealthBarConfig getInstance() {
         if (instance == null) {
-            instance = new EntityHealthBarConfig();
-            instance.load();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new EntityHealthBarConfig();
+                    instance.load();
+                }
+            }
         }
         return instance;
     }
 
     private Path getConfigPath() {
-        String gameDir = System.getProperty("user.dir");
-        return Paths.get(gameDir, "config", CONFIG_FILE_NAME);
+        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+        return gameDir.resolve("config").resolve(CONFIG_FILE_NAME);
     }
 
     public void load() {

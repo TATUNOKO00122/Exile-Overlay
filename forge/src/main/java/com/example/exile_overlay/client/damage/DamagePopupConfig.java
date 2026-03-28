@@ -3,19 +3,20 @@ package com.example.exile_overlay.client.damage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class DamagePopupConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamagePopupConfig");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE_NAME = "exile_overlay_damage_popup.json";
-    private static DamagePopupConfig instance;
+    private static volatile DamagePopupConfig instance;
+    private static final Object LOCK = new Object();
 
     private float baseScale = 0.03f;
     private float criticalScale = 0.04f;
@@ -49,15 +50,19 @@ public class DamagePopupConfig {
 
     public static DamagePopupConfig getInstance() {
         if (instance == null) {
-            instance = new DamagePopupConfig();
-            instance.load();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new DamagePopupConfig();
+                    instance.load();
+                }
+            }
         }
         return instance;
     }
 
     private Path getConfigPath() {
-        String gameDir = System.getProperty("user.dir");
-        return Paths.get(gameDir, "config", CONFIG_FILE_NAME);
+        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+        return gameDir.resolve("config").resolve(CONFIG_FILE_NAME);
     }
 
     public void load() {
