@@ -192,15 +192,8 @@ public class OrbRenderer {
         if (overlayPercent <= 0)
             return;
 
-        RenderSystem.enableBlend();
-        RenderSystem.blendFunc(
-                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
-
         OrbShaderRenderer.drawCircularFill(graphics, config.getCenterX(), config.getCenterY(), config.getSize(),
                 overlayPercent, config.getOverlayColor());
-
-        RenderSystem.defaultBlendFunc();
     }
 
     /**
@@ -227,7 +220,7 @@ public class OrbRenderer {
             return;
         }
 
-        OrbShaderRenderer.drawCircularFillAdditive(graphics, x, y, size, esPercent, ES_COLOR);
+        OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, ES_COLOR);
     }
 
     /**
