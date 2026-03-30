@@ -19,15 +19,17 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillHotbarRenderer.class);
 
     public static final int SLOT_COUNT = 8;
-    public static final int SLOT_SIZE = 22;
+    public static final int SLOT_SIZE = 32;
     public static final int SLOT_SPACING = 1;
-    public static final int ICON_SIZE = 16;
-    public static final int ICON_OFFSET = 3;
+    public static final int ICON_SIZE = 30;
+    public static final int ICON_OFFSET = 1;
 
-    private static final ResourceLocation SLOT_FRAME_TEXTURE = ResourceLocation.tryParse(
-            "exile_overlay:textures/gui/skill_slot_frame.png");
-    private static final ResourceLocation MODIFIER_FRAME_TEXTURE = ResourceLocation.tryParse(
-            "exile_overlay:textures/gui/skill_slot_frame_mod.png");
+    private static final ResourceLocation BASE_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_base.png");
+    private static final ResourceLocation KEYBIND_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_keybind.png");
+    private static final ResourceLocation KEYBIND_MOD_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_keybind_mod.png");
 
     private static final int COOLDOWN_OVERLAY_COLOR = 0xAA000000;
 
@@ -134,10 +136,14 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 }
             }
 
-            RenderSystem.enableBlend();
             String rawKeyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
-            ResourceLocation frame = hasModifier(rawKeyText) ? MODIFIER_FRAME_TEXTURE : SLOT_FRAME_TEXTURE;
-            graphics.blit(frame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+            RenderSystem.enableBlend();
+            graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+            RenderSystem.enableBlend();
+            ResourceLocation keybindFrame = hasModifier(rawKeyText) ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
+            graphics.blit(keybindFrame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
             int manaCost = MineAndSlashHelper.getSpellManaCost(player, slot);
             if (manaCost > 0) {
@@ -165,7 +171,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             keyText = keyText.replace(" ", "");
 
             graphics.pose().pushPose();
-            float textScale = 0.4f;
+            float textScale = 0.8f;
             graphics.pose().scale(textScale, textScale, 1.0f);
 
             float scaledX = slotX / textScale;
@@ -173,8 +179,8 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             float scaledSlotSize = SLOT_SIZE / textScale;
 
             int textWidth = mc.font.width(keyText);
-            float keyX = scaledX + scaledSlotSize - textWidth - 7.8f;
-            float keyY = scaledY + scaledSlotSize - 15.45f;
+            float keyX = scaledX + scaledSlotSize - textWidth - 7.8f + 1.0f / textScale;
+            float keyY = scaledY + scaledSlotSize - 15.45f + 2.0f / textScale;
 
             graphics.drawString(mc.font, keyText, (int) keyX, (int) keyY, 0xFFFFFFFF, false);
 
