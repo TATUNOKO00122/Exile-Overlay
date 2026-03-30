@@ -30,8 +30,11 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             "exile_overlay:textures/gui/skill_slot_keybind.png");
     private static final ResourceLocation KEYBIND_MOD_FRAME_TEXTURE = ResourceLocation.tryParse(
             "exile_overlay:textures/gui/skill_slot_keybind_mod.png");
+    private static final ResourceLocation SUMMON_BADGE_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_summon_badge.png");
 
     private static final int COOLDOWN_OVERLAY_COLOR = 0xAA000000;
+    private static final int SUMMON_TEXT_COLOR = 0xFFFF5555;
 
     @Override
     public String getId() {
@@ -185,7 +188,37 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             graphics.drawString(mc.font, keyText, (int) keyX, (int) keyY, 0xFFFFFFFF, false);
 
             graphics.pose().popPose();
+
+            int summonCount = MineAndSlashHelper.getSummonCount(player, slot);
+            if (summonCount > 0) {
+                drawSummonBadge(graphics, mc, slotX, slotY, summonCount);
+            }
         }
+
+        graphics.pose().popPose();
+    }
+
+    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count) {
+        RenderSystem.enableBlend();
+        graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+        String text = String.valueOf(count);
+        graphics.pose().pushPose();
+        float s = 0.8f;
+        graphics.pose().scale(s, s, 1.0f);
+
+        int textWidth = mc.font.width(text);
+        int textHeight = mc.font.lineHeight;
+
+        float areaX = (slotX + 2) / s;
+        float areaY = (slotY + 2.5f) / s;
+        float areaW = 8.0f / s;
+        float areaH = 8.0f / s;
+
+        float textX = areaX + (areaW - textWidth) / 2.0f;
+        float textY = areaY + (areaH - textHeight) / 2.0f;
+
+        graphics.drawString(mc.font, text, (int) textX, (int) textY, SUMMON_TEXT_COLOR, false);
 
         graphics.pose().popPose();
     }

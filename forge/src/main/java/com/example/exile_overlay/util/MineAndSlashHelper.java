@@ -698,6 +698,39 @@ public class MineAndSlashHelper {
         return isMnsLoaded();
     }
 
+    // ========== Summon Count API ==========
+
+    /**
+     * スキルスロットの召喚数を取得
+     * SummonedData.getSummonedAmount(spellGUID) を呼び出し
+     */
+    public static int getSummonCount(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+
+            var getGUID = spell.getClass().getMethod("GUID");
+            String guid = (String) getGUID.invoke(spell);
+            if (guid == null || guid.isEmpty()) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var getSummonedData = playerData.getClass().getMethod("getSummonedData");
+            Object summonedData = getSummonedData.invoke(playerData);
+            if (summonedData == null) return 0;
+
+            var getSummonedAmount = summonedData.getClass().getMethod("getSummonedAmount", String.class);
+            return (int) getSummonedAmount.invoke(summonedData, guid);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get summon count at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
     // ========== Entity Level API (Mob/Player) ==========
 
     private static Boolean entityDataHasGetLevel = null;
