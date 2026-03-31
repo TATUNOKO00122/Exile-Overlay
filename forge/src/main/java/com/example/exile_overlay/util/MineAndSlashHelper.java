@@ -731,6 +731,111 @@ public class MineAndSlashHelper {
         return 0;
     }
 
+    // ========== Spell Charge API ==========
+
+    public static boolean getSpellUsesCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return false;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return false;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return false;
+            var chargesField = config.getClass().getField("charges");
+            return chargesField.getInt(config) > 0;
+        } catch (Exception e) {
+            LOGGER.debug("Failed to check spell uses charges at slot {}: {}", slot, e.getMessage());
+        }
+        return false;
+    }
+
+    public static int getSpellCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargeNameField = config.getClass().getField("charge_name");
+            String chargeName = (String) chargeNameField.get(config);
+            if (chargeName == null || chargeName.isEmpty()) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var spellCastingDataField = playerData.getClass().getField("spellCastingData");
+            Object spellCastingData = spellCastingDataField.get(playerData);
+            if (spellCastingData == null) return 0;
+
+            var chargesField = spellCastingData.getClass().getField("charges");
+            Object chargeData = chargesField.get(spellCastingData);
+            if (chargeData == null) return 0;
+
+            var getCharges = chargeData.getClass().getMethod("getCharges", String.class);
+            return (int) getCharges.invoke(chargeData, chargeName);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell charges at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    public static int getSpellMaxCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargesField = config.getClass().getField("charges");
+            return chargesField.getInt(config);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell max charges at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    public static float getSpellChargeRegenPercent(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargeNameField = config.getClass().getField("charge_name");
+            String chargeName = (String) chargeNameField.get(config);
+            var chargeRegenField = config.getClass().getField("charge_regen");
+            int chargeRegen = chargeRegenField.getInt(config);
+            if (chargeName == null || chargeName.isEmpty() || chargeRegen <= 0) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var spellCastingDataField = playerData.getClass().getField("spellCastingData");
+            Object spellCastingData = spellCastingDataField.get(playerData);
+            if (spellCastingData == null) return 0;
+
+            var chargesField = spellCastingData.getClass().getField("charges");
+            Object chargeData = chargesField.get(spellCastingData);
+            if (chargeData == null) return 0;
+
+            var getCurrentTicksChargingOf = chargeData.getClass().getMethod("getCurrentTicksChargingOf", String.class);
+            int currentTicks = (int) getCurrentTicksChargingOf.invoke(chargeData, chargeName);
+
+            float remaining = chargeRegen - currentTicks;
+            return Math.max(0, Math.min(remaining / chargeRegen, 1.0f));
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell charge regen percent at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
     // ========== Entity Level API (Mob/Player) ==========
 
     private static Boolean entityDataHasGetLevel = null;
