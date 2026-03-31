@@ -30,6 +30,8 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             "textures/gui/effect_frame.png");
     private static final ResourceLocation EFFECT_FRAME_BACKGROUND = new ResourceLocation("exile_overlay",
             "textures/gui/effect_frame_background.png");
+    private static final ResourceLocation EFFECT_STACK_BADGE = new ResourceLocation("exile_overlay",
+            "textures/gui/effect_stack_badge.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -238,9 +240,9 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         effect.renderIcon(graphics, iconX, iconY, ICON_SIZE + 4);
         graphics.pose().popPose();
 
-        int barMaxWidth = 20;
-        int barHeight = 8;
-        int barX = x + 5;
+        int barMaxWidth = 22;
+        int barHeight = 7;
+        int barX = x + 4;
         int barY = y + 28;
         int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
 
@@ -267,6 +269,27 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
 
         RenderSystem.setShaderTexture(0, EFFECT_FRAME);
         graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+        int stacks = effect.getStacks();
+        if (stacks > 1) {
+            RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
+            graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+            String stackText = toRoman(stacks);
+            float stackScale = 0.7f;
+            int stackTextWidth = mc.font.width(stackText);
+            float stackX = (float) (x + FRAME_WIDTH - stackTextWidth * stackScale - 4) / stackScale;
+            float stackY = (float) (y + 4) / stackScale;
+
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().scale(stackScale, stackScale, 1.0f);
+                graphics.pose().translate(0, 0, 201.0f);
+                graphics.drawString(mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
+            } finally {
+                graphics.pose().popPose();
+            }
+        }
 
         String durationText = effect.getDurationText();
         if (durationText != null && !durationText.isEmpty()) {
@@ -414,6 +437,15 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
     @Override
     public int getConfigHeight() {
         return FRAME_HEIGHT;
+    }
+
+    private static String toRoman(int num) {
+        if (num <= 0) return String.valueOf(num);
+        String[] thousands = {"", "M", "MM", "MMM"};
+        String[] hundreds = {"", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"};
+        String[] tens = {"", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"};
+        String[] ones = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"};
+        return thousands[num / 1000] + hundreds[(num % 1000) / 100] + tens[(num % 100) / 10] + ones[num % 10];
     }
 
     @Override

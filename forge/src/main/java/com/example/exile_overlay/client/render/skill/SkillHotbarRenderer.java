@@ -183,21 +183,34 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             }
 
             String keyText = rawKeyText;
-            keyText = keyText.replace("LEFT SHIFT", "S").replace("RIGHT SHIFT", "S").replace("SHIFT", "S");
-            keyText = keyText.replace("LEFT CONTROL", "C").replace("RIGHT CONTROL", "C").replace("CONTROL", "C");
-            keyText = keyText.replace("LEFT ALT", "A").replace("RIGHT ALT", "A").replace("ALT", "A");
+            keyText = keyText.replace("LEFT SHIFT", "s").replace("RIGHT SHIFT", "s").replace("SHIFT", "s");
+            keyText = keyText.replace("LEFT CONTROL", "c").replace("RIGHT CONTROL", "c").replace("CONTROL", "c");
+            keyText = keyText.replace("LEFT ALT", "a").replace("RIGHT ALT", "a").replace("ALT", "a");
             keyText = keyText.replace(" + ", "+");
             keyText = keyText.replace(" ", "");
 
-            int textWidth = mc.font.width(keyText);
+            int fullTextWidth = mc.font.width(keyText);
             float textScale = 0.8f;
-            float keyX = slotX + SLOT_SIZE - textWidth * textScale - 5.0f;
+            float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
             float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
 
             graphics.pose().pushPose();
             graphics.pose().translate(keyX, keyY, 0);
             graphics.pose().scale(textScale, textScale, 1.0f);
-            graphics.drawString(mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+
+            int plusIndex = keyText.lastIndexOf('+');
+            if (plusIndex >= 0) {
+                String modKeyPart = keyText.substring(0, plusIndex);
+                String mainKeyPart = keyText.substring(plusIndex + 1);
+                int modKeyWidth = mc.font.width(modKeyPart);
+                int plusWidth = mc.font.width("+");
+                graphics.drawString(mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
+                graphics.drawString(mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
+                graphics.drawString(mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
+            } else {
+                graphics.drawString(mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+            }
+
             graphics.pose().popPose();
 
             int summonCount = MineAndSlashHelper.getSummonCount(player, slot);
@@ -262,8 +275,9 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().popPose();
     }
 
-    private boolean hasModifier(String upperKeyText) {
-        return upperKeyText.contains("SHIFT") || upperKeyText.contains("CONTROL") || upperKeyText.contains("ALT");
+    private boolean hasModifier(String keyText) {
+        String upper = keyText.toUpperCase();
+        return upper.contains("SHIFT") || upper.contains("CONTROL") || upper.contains("ALT");
     }
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {
