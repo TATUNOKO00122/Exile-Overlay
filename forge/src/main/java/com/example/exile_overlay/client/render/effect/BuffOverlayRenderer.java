@@ -36,7 +36,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
     private static final int FRAME_HEIGHT = 39;
-    private static final int ICON_SIZE = 20;
+    private static final int ICON_SIZE = 22;
 
     // 配置設定
     private static final boolean HORIZONTAL = true;
@@ -211,7 +211,8 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
                     renderY = i * spacing;
                 }
 
-                if (state.alpha < 0.01f) continue;
+                if (state.alpha < 0.01f)
+                    continue;
 
                 RenderSystem.setShaderColor(1f, 1f, 1f, state.alpha);
                 try {
@@ -236,7 +237,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         int iconX = x + iconOffset;
         int iconY = y + iconOffset;
         graphics.pose().pushPose();
-        graphics.pose().translate(0, -0.5f, 0);
+        graphics.pose().translate(-1.0f, -1.0f, 0);
         effect.renderIcon(graphics, iconX, iconY, ICON_SIZE + 4);
         graphics.pose().popPose();
 
@@ -278,8 +279,11 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             String stackText = toRoman(stacks);
             float stackScale = 0.7f;
             int stackTextWidth = mc.font.width(stackText);
-            float stackX = (float) (x + FRAME_WIDTH - stackTextWidth * stackScale - 4) / stackScale;
-            float stackY = (float) (y + 4) / stackScale;
+
+            float badgeCenterX = x + FRAME_WIDTH - 5;
+            float badgeCenterY = y + 7;
+            float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
+            float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
 
             graphics.pose().pushPose();
             try {
@@ -357,7 +361,8 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             }
             // ユーザー設定のスケールを適用
             float userScale = getScale();
-            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE * userScale, ctx.getPartialTick());
+            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE * userScale,
+                    ctx.getPartialTick());
         }
     }
 
@@ -440,11 +445,12 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
     }
 
     private static String toRoman(int num) {
-        if (num <= 0) return String.valueOf(num);
-        String[] thousands = {"", "M", "MM", "MMM"};
-        String[] hundreds = {"", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"};
-        String[] tens = {"", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"};
-        String[] ones = {"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"};
+        if (num <= 0)
+            return String.valueOf(num);
+        String[] thousands = { "", "M", "MM", "MMM" };
+        String[] hundreds = { "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM" };
+        String[] tens = { "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC" };
+        String[] ones = { "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" };
         return thousands[num / 1000] + hundreds[(num % 1000) / 100] + tens[(num % 100) / 10] + ones[num % 10];
     }
 

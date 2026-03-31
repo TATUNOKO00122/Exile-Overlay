@@ -147,10 +147,18 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                     int seconds = MineAndSlashHelper.getSpellCooldownSeconds(player, slot);
                     if (seconds > 0) {
                         String text = String.valueOf(seconds);
-                        int textX = iconX + ICON_SIZE / 2 - mc.font.width(text) / 2 + 1;
-                        int textY = iconY + ICON_SIZE / 2 - 4;
-                        graphics.drawString(mc.font, text, textX + 1, textY + 1, 0xFF000000, false);
-                        graphics.drawString(mc.font, text, textX, textY, 0xFFFFFF00, false);
+                        float cdTextScale = 1.5f;
+                        int textWidth = mc.font.width(text);
+                        float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
+                        float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
+                        graphics.pose().pushPose();
+                        try {
+                            graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
+                            graphics.drawString(mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
+                            graphics.drawString(mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
+                        } finally {
+                            graphics.pose().popPose();
+                        }
                     }
                 }
             }
@@ -237,8 +245,8 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         int textHeight = mc.font.lineHeight;
 
         float s = 0.8f;
-        float textX = slotX + 2.0f + (8.0f - textWidth * s) / 2.0f + 0.5f;
-        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f;
+        float textX = slotX + 2.0f + (8.0f - textWidth * s) / 2.0f + 0.5f + 1;
+        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
 
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
@@ -256,8 +264,8 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         int textHeight = mc.font.lineHeight;
 
         float s = 0.8f;
-        float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f;
-        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f;
+        float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f - 1;
+        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
 
         int color;
         if (charges <= 0) {
