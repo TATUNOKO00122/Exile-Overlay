@@ -31,6 +31,8 @@ public class DamagePopupConfig {
     private boolean showPlayerDamage = false;
     private boolean showHealing = true;
     private boolean showPlayerHealing = true;
+    private boolean roundDamageNumbers = true;
+    private boolean compactNumbers = true;
 
     private FontPreset fontPreset = FontPreset.LINESEED;
     private int customFontSize = 64;
@@ -89,6 +91,8 @@ public class DamagePopupConfig {
             if (obj.has("showPlayerDamage")) showPlayerDamage = obj.get("showPlayerDamage").getAsBoolean();
             if (obj.has("showHealing")) showHealing = obj.get("showHealing").getAsBoolean();
             if (obj.has("showPlayerHealing")) showPlayerHealing = obj.get("showPlayerHealing").getAsBoolean();
+            if (obj.has("roundDamageNumbers")) roundDamageNumbers = obj.get("roundDamageNumbers").getAsBoolean();
+            if (obj.has("compactNumbers")) compactNumbers = obj.get("compactNumbers").getAsBoolean();
 
             if (obj.has("fontPreset")) {
                 fontPreset = FontPreset.fromName(obj.get("fontPreset").getAsString());
@@ -139,6 +143,8 @@ public class DamagePopupConfig {
         obj.addProperty("showPlayerDamage", showPlayerDamage);
         obj.addProperty("showHealing", showHealing);
         obj.addProperty("showPlayerHealing", showPlayerHealing);
+        obj.addProperty("roundDamageNumbers", roundDamageNumbers);
+        obj.addProperty("compactNumbers", compactNumbers);
 
         obj.addProperty("fontPreset", fontPreset.name());
         obj.addProperty("customFontSize", customFontSize);
@@ -176,6 +182,8 @@ public class DamagePopupConfig {
     public boolean isShowPlayerDamage() { return showPlayerDamage; }
     public boolean isShowHealing() { return showHealing; }
     public boolean isShowPlayerHealing() { return showPlayerHealing; }
+    public boolean isRoundDamageNumbers() { return roundDamageNumbers; }
+    public boolean isCompactNumbers() { return compactNumbers; }
 
     public FontPreset getFontPreset() { return fontPreset; }
     public boolean isUseCustomFont() { return fontPreset.isCustomFont(); }
@@ -209,6 +217,8 @@ public class DamagePopupConfig {
     public void setShowHealing(boolean show) { this.showHealing = show; }
     public void setShowPlayerDamage(boolean show) { this.showPlayerDamage = show; }
     public void setShowPlayerHealing(boolean show) { this.showPlayerHealing = show; }
+    public void setRoundDamageNumbers(boolean round) { this.roundDamageNumbers = round; }
+    public void setCompactNumbers(boolean compact) { this.compactNumbers = compact; }
     public void setEnableShadow(boolean enable) { this.enableShadow = enable; }
     public void setBaseScale(float scale) { this.baseScale = scale; }
     public void setCriticalScale(float scale) { this.criticalScale = scale; }

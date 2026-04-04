@@ -263,6 +263,24 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
         
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.round_damage_numbers", config.isRoundDamageNumbers()), btn -> {
+                    config.setRoundDamageNumbers(!config.isRoundDamageNumbers());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.round_damage_numbers", config.isRoundDamageNumbers()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.round_damage_numbers.tooltip")))
+                        .build());
+        y += sp;
+        
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.compact_numbers", config.isCompactNumbers()), btn -> {
+                    config.setCompactNumbers(!config.isCompactNumbers());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.compact_numbers", config.isCompactNumbers()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.compact_numbers.tooltip")))
+                        .build());
+        y += sp;
+        
         addRightWidget(Button.builder(getFontPresetComponent(config.getFontPreset()), btn -> {
             FontPreset[] presets = FontPreset.values();
             int currentIndex = config.getFontPreset().ordinal();

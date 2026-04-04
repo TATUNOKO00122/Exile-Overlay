@@ -255,20 +255,48 @@ public class DamagePopupManager {
     
     private String formatDamageText(float value, boolean isHealing) {
         textBuilder.setLength(0);
-        
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+
         if (isHealing) {
             textBuilder.append('+');
         }
-        
-        if (value == Math.floor(value) && value < 100000) {
-            textBuilder.append((int) value);
-        } else if (value < 1000) {
-            appendOneDecimal(textBuilder, value);
+
+        if (config.isCompactNumbers()) {
+            if (value >= 1_000_000f || value <= -1_000_000f) {
+                appendCompact(textBuilder, value, 1_000_000, 'm');
+            } else if (value >= 1_000f || value <= -1_000f) {
+                appendCompact(textBuilder, value, 1_000, 'k');
+            } else if (config.isRoundDamageNumbers()) {
+                textBuilder.append(Math.round(value));
+            } else if (value == Math.floor(value) && value < 100000) {
+                textBuilder.append((int) value);
+            } else {
+                appendOneDecimal(textBuilder, value);
+            }
+        } else if (config.isRoundDamageNumbers()) {
+            textBuilder.append(Math.round(value));
         } else {
-            textBuilder.append((int) Math.round(value));
+            if (value == Math.floor(value) && value < 100000) {
+                textBuilder.append((int) value);
+            } else if (value < 1000) {
+                appendOneDecimal(textBuilder, value);
+            } else {
+                textBuilder.append((int) Math.round(value));
+            }
         }
-        
+
         return textBuilder.toString();
+    }
+
+    private void appendCompact(StringBuilder sb, float value, int divisor, char suffix) {
+        int intPart = (int) (value / divisor);
+        int remainder = Math.abs((int) value) % divisor;
+        int dec = remainder / (divisor / 10);
+        if (dec > 0) {
+            sb.append(intPart).append('.').append(dec).append(suffix);
+        } else {
+            sb.append(intPart).append(suffix);
+        }
     }
     
     private void appendOneDecimal(StringBuilder sb, float value) {
