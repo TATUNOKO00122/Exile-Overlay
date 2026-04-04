@@ -27,9 +27,14 @@ public class HealNumberMixin {
     @Inject(method = "spawnOnClient", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$cancelHealParticleSpawn(Entity entity, CallbackInfo ci) {
         try {
+            DamagePopupConfig config = DamagePopupConfig.getInstance();
+
+            if (!config.isShowHealing()) {
+                return;
+            }
+
             Object self = (Object) this;
             
-            // number() getter メソッドを呼び出し
             Method numberMethod;
             try {
                 numberMethod = self.getClass().getDeclaredMethod("number");
@@ -46,26 +51,16 @@ public class HealNumberMixin {
             float healAmount = ((Number) result).floatValue();
             
             if (entity instanceof LivingEntity living && healAmount > 0) {
-                DamagePopupConfig config = DamagePopupConfig.getInstance();
-                
-                // 回復表示設定をチェック
-                if (!config.isShowHealing()) {
-                    ci.cancel();
-                    return;
-                }
-                
-                // Playerへの回復表示設定をチェック
                 if (living instanceof Player && !config.isShowPlayerHealing()) {
                     ci.cancel();
                     return;
                 }
                 
-                // エンティティの頭上に表示（positionは足元なので高さを加算）
                 var position = living.position().add(0, living.getBbHeight() * config.getPopupHeightRatio(), 0);
                 DamagePopupManager.getInstance().addDamageNumber(
                     position,
                     healAmount,
-                    0xFF00FF00, // 緑色
+                    0xFF00FF00,
                     false,
                     DamageType.HEALING,
                     living.getId()
@@ -73,7 +68,6 @@ public class HealNumberMixin {
                 LOGGER.debug("Showing heal popup: {} for entity {}", healAmount, living.getId());
             }
             
-            // Mine and Slashのデフォルト表示をキャンセル
             ci.cancel();
             
         } catch (Exception e) {

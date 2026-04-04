@@ -28,9 +28,14 @@ public class DamageInformationMixin {
     @Inject(method = "spawnOnClient", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$cancelDamageParticleSpawn(Entity entity, CallbackInfo ci) {
         try {
+            DamagePopupConfig config = DamagePopupConfig.getInstance();
+
+            if (!config.isShowDamage()) {
+                return;
+            }
+
             Object self = (Object) this;
             
-            // isCrit() getter メソッドを呼び出し
             Method isCritMethod;
             try {
                 isCritMethod = self.getClass().getDeclaredMethod("isCrit");
@@ -46,7 +51,6 @@ public class DamageInformationMixin {
             }
             boolean isCrit = (Boolean) critResult;
             
-            // getDmgMap() メソッドを呼び出し
             Method getDmgMapMethod;
             try {
                 getDmgMapMethod = self.getClass().getDeclaredMethod("getDmgMap");
@@ -57,9 +61,8 @@ public class DamageInformationMixin {
             getDmgMapMethod.setAccessible(true);
             Object dmgMapObj = getDmgMapMethod.invoke(self);
             
-            // ダメージ合計と属性ごとのダメージを取得
             float totalDamage = 0f;
-            String dominantElement = "Physical"; // デフォルト
+            String dominantElement = "Physical";
             float maxElementDamage = 0f;
             
             if (dmgMapObj instanceof Map) {
@@ -72,7 +75,6 @@ public class DamageInformationMixin {
                     }
                     totalDamage += damage;
                     
-                    // 最もダメージの高い属性を記録
                     if (damage > maxElementDamage) {
                         maxElementDamage = damage;
                         dominantElement = elementName;
@@ -80,25 +82,16 @@ public class DamageInformationMixin {
                 }
             }
             
-            // エンティティがLivingEntityの場合、ダメージポップアップを表示
             if (entity instanceof LivingEntity living && totalDamage > 0) {
-                // Playerへのダメージ表示設定をチェック
-                if (!DamagePopupConfig.getInstance().isShowPlayerDamage() && living instanceof Player) {
-                    ci.cancel(); // Mine and Slashのデフォルト表示もキャンセル
+                if (!config.isShowPlayerDamage() && living instanceof Player) {
+                    ci.cancel();
                     return;
                 }
-                // 属性に応じた色を取得
                 int color = getColorForElement(dominantElement);
-                
-                // 属性に応じたDamageTypeを取得
                 DamageType damageType = getDamageTypeForElement(dominantElement);
+                int finalColor = color;
                 
-                // クリティカル時は色を変更（オプション：クリティカルの色を優先する場合）
-                // int finalColor = isCrit ? 0xFFFF00 : color; // クリティカル優先の場合
-                int finalColor = color; // 属性色を優先
-                
-                // エンティティの頭上に表示（positionは足元なので高さを加算）
-                float heightRatio = DamagePopupConfig.getInstance().getPopupHeightRatio();
+                float heightRatio = config.getPopupHeightRatio();
                 var position = living.position().add(0, living.getBbHeight() * heightRatio, 0);
                 DamagePopupManager.getInstance().addDamageNumber(
                     position, 
@@ -112,12 +105,10 @@ public class DamageInformationMixin {
                     totalDamage, isCrit, dominantElement, living.getId());
             }
             
-            // Mine and Slashのデフォルト表示をキャンセル
             ci.cancel();
             
         } catch (Exception e) {
             LOGGER.error("Failed to process damage information: {}", e.getMessage(), e);
-            // エラー時は元の表示をキャンセルしない（安全のため）
         }
     }
     
