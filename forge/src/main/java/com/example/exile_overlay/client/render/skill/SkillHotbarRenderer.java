@@ -168,9 +168,11 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             RenderSystem.enableBlend();
             graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
-            RenderSystem.enableBlend();
-            ResourceLocation keybindFrame = hasModifier(rawKeyText) ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
-            graphics.blit(keybindFrame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+            if (!rawKeyText.isEmpty()) {
+                RenderSystem.enableBlend();
+                ResourceLocation keybindFrame = hasModifier(rawKeyText) ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
+                graphics.blit(keybindFrame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+            }
 
             int manaCost = MineAndSlashHelper.getSpellManaCost(player, slot);
             if (manaCost > 0) {
@@ -190,36 +192,38 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 graphics.pose().popPose();
             }
 
-            String keyText = rawKeyText;
-            keyText = keyText.replace("LEFT SHIFT", "s").replace("RIGHT SHIFT", "s").replace("SHIFT", "s");
-            keyText = keyText.replace("LEFT CONTROL", "c").replace("RIGHT CONTROL", "c").replace("CONTROL", "c");
-            keyText = keyText.replace("LEFT ALT", "a").replace("RIGHT ALT", "a").replace("ALT", "a");
-            keyText = keyText.replace(" + ", "+");
-            keyText = keyText.replace(" ", "");
+            if (!rawKeyText.isEmpty()) {
+                String keyText = rawKeyText;
+                keyText = keyText.replace("LEFT SHIFT", "s").replace("RIGHT SHIFT", "s").replace("SHIFT", "s");
+                keyText = keyText.replace("LEFT CONTROL", "c").replace("RIGHT CONTROL", "c").replace("CONTROL", "c");
+                keyText = keyText.replace("LEFT ALT", "a").replace("RIGHT ALT", "a").replace("ALT", "a");
+                keyText = keyText.replace(" + ", "+");
+                keyText = keyText.replace(" ", "");
 
-            int fullTextWidth = mc.font.width(keyText);
-            float textScale = 0.8f;
-            float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
-            float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
+                int fullTextWidth = mc.font.width(keyText);
+                float textScale = 0.8f;
+                float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
+                float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
 
-            graphics.pose().pushPose();
-            graphics.pose().translate(keyX, keyY, 0);
-            graphics.pose().scale(textScale, textScale, 1.0f);
+                graphics.pose().pushPose();
+                graphics.pose().translate(keyX, keyY, 0);
+                graphics.pose().scale(textScale, textScale, 1.0f);
 
-            int plusIndex = keyText.lastIndexOf('+');
-            if (plusIndex >= 0) {
-                String modKeyPart = keyText.substring(0, plusIndex);
-                String mainKeyPart = keyText.substring(plusIndex + 1);
-                int modKeyWidth = mc.font.width(modKeyPart);
-                int plusWidth = mc.font.width("+");
-                graphics.drawString(mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
-                graphics.drawString(mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
-                graphics.drawString(mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
-            } else {
-                graphics.drawString(mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+                int plusIndex = keyText.lastIndexOf('+');
+                if (plusIndex >= 0) {
+                    String modKeyPart = keyText.substring(0, plusIndex);
+                    String mainKeyPart = keyText.substring(plusIndex + 1);
+                    int modKeyWidth = mc.font.width(modKeyPart);
+                    int plusWidth = mc.font.width("+");
+                    graphics.drawString(mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
+                    graphics.drawString(mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
+                    graphics.drawString(mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
+                } else {
+                    graphics.drawString(mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+                }
+
+                graphics.pose().popPose();
             }
-
-            graphics.pose().popPose();
 
             int summonCount = MineAndSlashHelper.getSummonCount(player, slot);
             if (summonCount > 0) {

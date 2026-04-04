@@ -637,8 +637,58 @@ public class MineAndSlashHelper {
 
     private static net.minecraft.client.KeyMapping[] cachedSpellKeys = null;
 
+    private static boolean hotbarSwappingEnabled = false;
+    private static long hotbarSwapCheckTime = 0;
+    private static final long HOTBAR_SWAP_CHECK_INTERVAL_MS = 1000;
+    private static Field isOnSecondHotbarField = null;
+
+    public static boolean isHotbarSwappingEnabled() {
+        if (!isMnsLoaded()) return false;
+
+        long now = System.currentTimeMillis();
+        if (now - hotbarSwapCheckTime < HOTBAR_SWAP_CHECK_INTERVAL_MS) {
+            return hotbarSwappingEnabled;
+        }
+        hotbarSwapCheckTime = now;
+
+        try {
+            Class<?> clientConfigsClass = Class.forName("com.robertx22.mine_and_slash.config.forge.ClientConfigs");
+            java.lang.reflect.Method getConfig = clientConfigsClass.getMethod("getConfig");
+            Object config = getConfig.invoke(null);
+            Field swappingField = config.getClass().getField("HOTBAR_SWAPPING");
+            Object booleanValue = swappingField.get(config);
+            java.lang.reflect.Method getMethod = booleanValue.getClass().getMethod("get");
+            hotbarSwappingEnabled = (Boolean) getMethod.invoke(booleanValue);
+        } catch (Exception e) {
+            hotbarSwappingEnabled = false;
+        }
+        return hotbarSwappingEnabled;
+    }
+
+    public static boolean isOnSecondHotbar() {
+        if (!isMnsLoaded()) return false;
+        try {
+            if (isOnSecondHotbarField == null) {
+                Class<?> spellKeybindClass = Class.forName("com.robertx22.mine_and_slash.mmorpg.registers.client.SpellKeybind");
+                isOnSecondHotbarField = spellKeybindClass.getField("IS_ON_SECONd_HOTBAR");
+            }
+            return isOnSecondHotbarField.getBoolean(null);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isUnbound(net.minecraft.client.KeyMapping key) {
+        if (key == null) return true;
+        var boundKey = key.getKey();
+        return boundKey.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                && boundKey.getValue() == -1;
+    }
+
     /**
      * Get the key name for a spell slot (0-7)
+     * HOTBAR_SWAPPING有効時はアクティブなホットバーのキーのみ表示
+     * 未割り当てキーの場合は空文字を返す
      */
     public static String getSpellKeyText(int slot) {
         if (cachedSpellKeys == null) {
@@ -647,6 +697,28 @@ public class MineAndSlashHelper {
 
         if (cachedSpellKeys != null && slot >= 0 && slot < cachedSpellKeys.length) {
             net.minecraft.client.KeyMapping key = cachedSpellKeys[slot];
+
+            if (isHotbarSwappingEnabled()) {
+                boolean onSecond = isOnSecondHotbar();
+                boolean isFirstHalf = slot < 4;
+
+                if (onSecond && isFirstHalf) {
+                    return "";
+                }
+                if (!onSecond && !isFirstHalf) {
+                    return "";
+                }
+
+                int keySlot = onSecond ? slot - 4 : slot;
+                if (keySlot >= 0 && keySlot < cachedSpellKeys.length) {
+                    key = cachedSpellKeys[keySlot];
+                }
+            }
+
+            if (isUnbound(key)) {
+                return "";
+            }
+
             if (key != null) {
                 return key.getTranslatedKeyMessage().getString().toUpperCase();
             }
