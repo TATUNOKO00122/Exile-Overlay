@@ -6,7 +6,6 @@ import com.example.exile_overlay.api.DungeonRealmReflection;
 import com.example.exile_overlay.api.ModDataProviderRegistry;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.ModMenuApi;
-import com.example.exile_overlay.client.favorite.FavoriteKeyBindings;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.CustomDamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
@@ -83,9 +82,6 @@ public class ExileOverlayForgeClient {
                 "category.exile_overlay.general");
         event.register(hudConfigKey);
         LOGGER.info("Registered HUD config key binding for Forge");
-
-        FavoriteKeyBindings.register(event::register);
-        LOGGER.info("Registered Favorite key bindings for Forge");
     }
 
     @SubscribeEvent

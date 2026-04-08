@@ -6,11 +6,7 @@
   "client": [
     "AccessorRenderType",
     "DamageMixin",
-    "FavoriteItemMixin",
-    "FavoriteRendererMixin",
-    "LevelRendererMixin",
-    "PlayerDropItemMixin",
-    "PlayerInventoryMixin"
+    "LevelRendererMixin"
   ],
   "mixins": [],
   "injectors": {

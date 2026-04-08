@@ -42,7 +42,6 @@ public class EquipmentDisplayConfig {
     private boolean disableMnsHpBar = false;
     private boolean cancelDungeonRealmScoreboard = true;
     private boolean autoSortLootrChest = true;
-    private boolean favoriteLockEnabled = false;
 
     private EquipmentDisplayConfig() {
     }
@@ -110,11 +109,8 @@ public class EquipmentDisplayConfig {
             if (obj.has("autoSortLootrChest")) {
                 autoSortLootrChest = obj.get("autoSortLootrChest").getAsBoolean();
             }
-            if (obj.has("favoriteLockEnabled")) {
-                favoriteLockEnabled = obj.get("favoriteLockEnabled").getAsBoolean();
-            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}, favoriteLockEnabled={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelDungeonRealmScoreboard, autoSortLootrChest, favoriteLockEnabled);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelDungeonRealmScoreboard, autoSortLootrChest);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -140,7 +136,6 @@ public class EquipmentDisplayConfig {
         obj.addProperty("disableMnsHpBar", disableMnsHpBar);
         obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
         obj.addProperty("autoSortLootrChest", autoSortLootrChest);
-        obj.addProperty("favoriteLockEnabled", favoriteLockEnabled);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -230,13 +225,5 @@ public class EquipmentDisplayConfig {
 
     public void setAutoSortLootrChest(boolean enabled) {
         this.autoSortLootrChest = enabled;
-    }
-
-    public boolean isFavoriteLockEnabled() {
-        return favoriteLockEnabled;
-    }
-
-    public void setFavoriteLockEnabled(boolean enabled) {
-        this.favoriteLockEnabled = enabled;
     }
 }

@@ -6,7 +6,6 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
-import com.example.exile_overlay.client.favorite.FavoriteItemManager;
 import com.example.exile_overlay.client.render.DayCounterConfig;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.util.InventorySorterHelper;
@@ -210,17 +209,6 @@ public class ConfigScreen extends Screen {
                     dayCounterConfig.setSoundVolume(val);
                     dayCounterConfig.save();
                 }));
-        y += sp;
-
-        y = addSection(y, "section.exile_overlay.favorite_lock", tx);
-
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.favorite_lock_enabled", config.isFavoriteLockEnabled()), btn -> {
-                    config.setFavoriteLockEnabled(!config.isFavoriteLockEnabled());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.favorite_lock_enabled", config.isFavoriteLockEnabled()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.favorite_lock_enabled.tooltip")))
-                        .build());
         y += sp;
         
         contentHeight = y - (30 - (int) scrollOffset) + sp;
@@ -535,7 +523,6 @@ public class ConfigScreen extends Screen {
         config.setDisableMnsHpBar(true);
         config.setCancelDungeonRealmScoreboard(true);
         config.setAutoSortLootrChest(true);
-        config.setFavoriteLockEnabled(false);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);
