@@ -105,7 +105,8 @@ public class HudPositionManager {
 
         defaults.put("day_counter", new HudPosition(Anchor.BOTTOM_CENTER, 0, 0));
 
-        defaults.put("dungeon_hud", new HudPosition(Anchor.CENTER, 140, -40, 0.8f, true, false));
+        // TODO: Harvestマップ用HUD（現在使用しないためコメントアウト）
+        // defaults.put("dungeon_hud", new HudPosition(Anchor.CENTER, 140, -40, 0.8f, true, false));
 
         LOGGER.debug("Registered {} default positions", defaults.size());
     }
