@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.favorite;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraft.world.inventory.Slot;
@@ -136,5 +137,13 @@ public class FavoriteItemManager {
 
     public boolean hasFavorites() {
         return !getFavorites().isEmpty();
+    }
+
+    public boolean isEnabled() {
+        return EquipmentDisplayConfig.getInstance().isFavoriteLockEnabled();
+    }
+
+    public void clearCurrentWorld() {
+        currentWorld = "";
     }
 }

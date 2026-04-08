@@ -21,7 +21,7 @@ public abstract class PlayerInventoryMixin {
     private void exileOverlay$onRemoveItem(int slotIndex, int count, CallbackInfoReturnable<ItemStack> cir) {
         try {
             FavoriteItemManager manager = FavoriteItemManager.getInstance();
-            if (manager == null) {
+            if (manager == null || !manager.isEnabled()) {
                 return;
             }
 
@@ -38,7 +38,7 @@ public abstract class PlayerInventoryMixin {
     private void exileOverlay$onRemoveItemNoUpdate(int slotIndex, CallbackInfoReturnable<ItemStack> cir) {
         try {
             FavoriteItemManager manager = FavoriteItemManager.getInstance();
-            if (manager == null) {
+            if (manager == null || !manager.isEnabled()) {
                 return;
             }
 

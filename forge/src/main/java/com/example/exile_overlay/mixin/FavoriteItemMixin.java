@@ -33,7 +33,7 @@ public abstract class FavoriteItemMixin {
             }
 
             FavoriteItemManager manager = FavoriteItemManager.getInstance();
-            if (manager == null) {
+            if (manager == null || !manager.isEnabled()) {
                 return;
             }
 

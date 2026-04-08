@@ -21,7 +21,7 @@ public abstract class PlayerDropItemMixin {
     private void exileOverlay$onDrop(boolean dropAll, CallbackInfoReturnable<ItemEntity> cir) {
         try {
             FavoriteItemManager manager = FavoriteItemManager.getInstance();
-            if (manager == null) {
+            if (manager == null || !manager.isEnabled()) {
                 return;
             }
 

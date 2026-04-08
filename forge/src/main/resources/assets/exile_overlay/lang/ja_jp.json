@@ -118,5 +118,8 @@
   "exile_overlay.config.hp_color.crimson": "クリムゾン",
   "exile_overlay.config.hp_color.pure_red": "純赤",
   "exile_overlay.config.hp_bar_display_duration.tooltip": "ダメージ後にHPバーを表示する時間（秒）",
-  "exile_overlay.config.hp_bar_display_duration": "表示時間: %s秒"
+  "exile_overlay.config.hp_bar_display_duration": "表示時間: %s秒",
+  "section.exile_overlay.favorite_lock": "お気に入りロック",
+  "exile_overlay.config.favorite_lock_enabled": "有効: %s",
+  "exile_overlay.config.favorite_lock_enabled.tooltip": "お気に入りアイテムロック機能の有効/無効（ALT+クリックでスロットをロック）"
 }
