@@ -32,26 +32,11 @@ All source code lives in `forge/src/main/java/com/example/exile_overlay/` (the `
 ```
 forge/src/main/java/com/example/exile_overlay/
 ├── api/                    # Public interfaces & MOD compatibility layer
-│   ├── IModDataProvider.java       # Core provider interface for RPG MOD data
-│   ├── ModDataProviderRegistry.java # Static registry entry point
-│   ├── Result.java                 # Functional error handling (Success/Failure)
-│   ├── CircuitBreaker.java         # Cascade failure prevention
-│   ├── UnifiedCache.java           # Frame-based cache with DataType TTL
-│   ├── RenderContext.java          # Immutable render context (Builder pattern)
-│   ├── PooledRenderContext.java    # Mutable context for object pooling
-│   ├── RenderContextPool.java      # acquire()/release() object pool
-│   └── MethodHandlesUtil.java      # Cached MethodHandle reflection
 ├── client/
 │   ├── config/             # HUD position, anchor, config screens, ModMenu integration
 │   ├── damage/             # Damage popup system (singleton: DamagePopupManager)
 │   ├── favorite/           # Favorite item system
-│   └── render/             # HUD rendering pipeline
-│       ├── HudRenderManager.java   # Central coordinator (singleton)
-│       ├── RenderPipelineImpl.java # Pipeline: layer + priority sorting
-│       ├── orb/            # Energy orb rendering (OrbRegistry, OrbRenderer)
-│       ├── entity/         # Entity health bars
-│       ├── vanilla/        # Vanilla HUD overlays (air, food)
-│       └── effect/         # Buff overlays
+│   └── render/             # HUD rendering pipeline (HudRenderManager, orb, entity, vanilla, effect)
 ├── forge/
 │   ├── ExampleModForge.java       # Forge @Mod entry point
 │   ├── client/             # Forge client handlers (FMLClientSetupEvent, keybinds)
@@ -60,24 +45,6 @@ forge/src/main/java/com/example/exile_overlay/
 ├── mixin/                  # Common mixins (vanilla targets, remap=true)
 └── util/                   # Inventory sorting, Lootr/M&S helpers
 ```
-
-## Code Map
-
-| Symbol | Type | Location | Role |
-|--------|------|----------|------|
-| `HudRenderManager` | Class (singleton) | `client/render/` | Central HUD render coordinator |
-| `ModDataProviderRegistry` | Class (static) | `api/` | Entry point for MOD data access |
-| `DamagePopupManager` | Class (singleton) | `client/damage/` | Damage number popup controller |
-| `UnifiedCache` | Class (singleton) | `api/` | Frame-based cache with per-DataType TTL |
-| `IHudRenderer` | Interface | `api/` | HUD element contract (render, position, drag, scale) |
-| `IRenderCommand` | Interface | `api/` | Render command (execute, layer, priority) |
-| `IRenderPipeline` | Interface | `api/` | Command registration and layer-based execution |
-| `IModDataProvider` | Interface | `api/` | MOD data provider contract |
-| `IDataSource` | Interface | `api/` | Lightweight data source (getValue, isAvailable) |
-| `Result<T,E>` | Class | `api/` | Functional error handling (map, flatMap, match, tryCatch) |
-| `RenderLayer` | Enum | `api/` | BACKGROUND, FILL, FRAME, OVERLAY, TEXT, DEBUG |
-| `UpdateFrequency` | Enum | `api/` | CRITICAL(0), NORMAL(15f), SLOW(60f), STATIC(300f) ticks |
-| `ExampleModForge` | Class | `forge/` | Forge entry point |
 
 ## Code Style
 
@@ -104,17 +71,16 @@ forge/src/main/java/com/example/exile_overlay/
 ```java
 // 1. Project imports
 import com.example.exile_overlay.api.*;
-// 2. Minecraft
+// 2. Minecraft (net.minecraft.* + com.mojang.blaze3d.*)
 import net.minecraft.client.*;
 // 3. Forge
 import net.minecraftforge.*;
-// 4. Third-party (Architectury, SpongePowered Mixin)
+// 4. Logging (SLF4J)
+import org.slf4j.*;
+// 5. Third-party (Architectury, SpongePowered Mixin)
 import dev.architectury.*;
 import org.spongepowered.asm.*;
-// 5. Logging
-import org.slf4j.*;
-import com.mojang.logging.LogUtils;
-// 6. Java standard library
+// 6. Java standard library (separated by blank line)
 import java.util.*;
 ```
 
@@ -182,6 +148,7 @@ public class ExternalModMixin {
 - Render thread only: Never render from non-client threads
 - Layer order: BACKGROUND -> FILL -> FRAME -> OVERLAY -> TEXT -> DEBUG
 - Object pooling: `RenderContextPool.acquire()` / `release()` for zero-allocation hot paths
+- **OpenGL textures**: Use `ByteBuffer.allocateDirect()` (never `ByteBuffer.wrap()`), cache textures, unbind after use (`glBindTexture(0)`), never generate/delete per frame
 
 ## Error Handling
 
@@ -229,24 +196,9 @@ float value = result.getOrDefault(0f);
 
 ## Dependencies
 
-- Minecraft: 1.20.1
-- Java: 17
-- Forge: 1.20.1-47.4.10
-- Architectury: 9.2.14
+- Minecraft: 1.20.1 | Java: 17 | Forge: 1.20.1-47.4.10 | Architectury: 9.2.14
 - LWJGL: 3.3.2 (pinned via resolutionStrategy)
 - Mine and Slash (optional): 6.3.14 (compileOnly, local JAR)
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Mixin not applying | Check mixin config JSON, verify target class names, check `defaultRequire` |
-| Reflection fails | Verify signature with `javap`, use `unreflect` not `invokeExact` |
-| Texture not loading | Path: `assets/exile_overlay/textures/`, check `ResourceLocation` |
-| Build failures | `./gradlew clean`, verify Java 17 |
-| NPE in render | Add `mc.screen != null` / `mc.player == null` checks |
-| FPS drop | Profile allocations, check cache TTL, verify no per-frame object creation |
-| M&S integration fails | Check JAR path in `forge/build.gradle`, mixin `defaultRequire: 0` allows graceful degradation |
 
 ## References
 

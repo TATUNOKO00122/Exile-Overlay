@@ -40,6 +40,10 @@ public class EquipmentDisplayConfig {
     private boolean keyQuickLootEnabled = true;
     private QuickLootMode keyQuickLootMode = QuickLootMode.DROP;
     private boolean disableMnsHpBar = false;
+    private boolean cancelMnsRpgBars = true;
+    private boolean cancelMnsSpellHotbar = true;
+    private boolean cancelMnsCastBar = true;
+    private boolean cancelMnsStatusEffects = true;
     private boolean cancelDungeonRealmScoreboard = true;
     private boolean autoSortLootrChest = true;
 
@@ -103,6 +107,18 @@ public class EquipmentDisplayConfig {
             if (obj.has("disableMnsHpBar")) {
                 disableMnsHpBar = obj.get("disableMnsHpBar").getAsBoolean();
             }
+            if (obj.has("cancelMnsRpgBars")) {
+                cancelMnsRpgBars = obj.get("cancelMnsRpgBars").getAsBoolean();
+            }
+            if (obj.has("cancelMnsSpellHotbar")) {
+                cancelMnsSpellHotbar = obj.get("cancelMnsSpellHotbar").getAsBoolean();
+            }
+            if (obj.has("cancelMnsCastBar")) {
+                cancelMnsCastBar = obj.get("cancelMnsCastBar").getAsBoolean();
+            }
+            if (obj.has("cancelMnsStatusEffects")) {
+                cancelMnsStatusEffects = obj.get("cancelMnsStatusEffects").getAsBoolean();
+            }
             if (obj.has("cancelDungeonRealmScoreboard")) {
                 cancelDungeonRealmScoreboard = obj.get("cancelDungeonRealmScoreboard").getAsBoolean();
             }
@@ -110,7 +126,7 @@ public class EquipmentDisplayConfig {
                 autoSortLootrChest = obj.get("autoSortLootrChest").getAsBoolean();
             }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelDungeonRealmScoreboard, autoSortLootrChest);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelMnsRpgBars={}, cancelMnsSpellHotbar={}, cancelMnsCastBar={}, cancelMnsStatusEffects={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelMnsRpgBars, cancelMnsSpellHotbar, cancelMnsCastBar, cancelMnsStatusEffects, cancelDungeonRealmScoreboard, autoSortLootrChest);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -134,6 +150,10 @@ public class EquipmentDisplayConfig {
         obj.addProperty("keyQuickLootEnabled", keyQuickLootEnabled);
         obj.addProperty("keyQuickLootMode", keyQuickLootMode.name());
         obj.addProperty("disableMnsHpBar", disableMnsHpBar);
+        obj.addProperty("cancelMnsRpgBars", cancelMnsRpgBars);
+        obj.addProperty("cancelMnsSpellHotbar", cancelMnsSpellHotbar);
+        obj.addProperty("cancelMnsCastBar", cancelMnsCastBar);
+        obj.addProperty("cancelMnsStatusEffects", cancelMnsStatusEffects);
         obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
         obj.addProperty("autoSortLootrChest", autoSortLootrChest);
 
@@ -209,6 +229,38 @@ public class EquipmentDisplayConfig {
 
     public void setDisableMnsHpBar(boolean disable) {
         this.disableMnsHpBar = disable;
+    }
+
+    public boolean isCancelMnsRpgBars() {
+        return cancelMnsRpgBars;
+    }
+
+    public void setCancelMnsRpgBars(boolean cancel) {
+        this.cancelMnsRpgBars = cancel;
+    }
+
+    public boolean isCancelMnsSpellHotbar() {
+        return cancelMnsSpellHotbar;
+    }
+
+    public void setCancelMnsSpellHotbar(boolean cancel) {
+        this.cancelMnsSpellHotbar = cancel;
+    }
+
+    public boolean isCancelMnsCastBar() {
+        return cancelMnsCastBar;
+    }
+
+    public void setCancelMnsCastBar(boolean cancel) {
+        this.cancelMnsCastBar = cancel;
+    }
+
+    public boolean isCancelMnsStatusEffects() {
+        return cancelMnsStatusEffects;
+    }
+
+    public void setCancelMnsStatusEffects(boolean cancel) {
+        this.cancelMnsStatusEffects = cancel;
     }
 
     public boolean isCancelDungeonRealmScoreboard() {
