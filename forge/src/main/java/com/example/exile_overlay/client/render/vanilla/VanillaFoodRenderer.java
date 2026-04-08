@@ -100,12 +100,12 @@ public class VanillaFoodRenderer implements IHudRenderer, IRenderCommand {
 
     @Override
     public int getWidth() {
-        return MAX_FOOD * SPACING;
+        return MAX_FOOD * SPACING + 1;
     }
 
     @Override
     public int getHeight() {
-        return ICON_SIZE;
+        return ICON_SIZE + 1;
     }
 
     @Override

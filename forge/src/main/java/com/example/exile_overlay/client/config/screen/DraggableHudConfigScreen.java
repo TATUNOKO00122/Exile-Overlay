@@ -752,7 +752,7 @@ public class DraggableHudConfigScreen extends Screen {
             int right = left + scaledWidth + scaledExpansionH;
             int bottom = top + scaledHeight + scaledExpansionV;
 
-            return mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom;
+            return mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
         }
 
         IHudRenderer.HudRenderMetadata getRenderMetadata() {
