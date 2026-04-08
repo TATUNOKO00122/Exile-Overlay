@@ -1,5 +1,6 @@
 package com.example.exile_overlay.api;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -40,7 +41,15 @@ public class MethodHandlesUtil {
     private static Class<?> healthUtilsClass = null;
     private static Class<?> elementsClass = null;
     private static Class<?> damageEventClass = null;
-    
+    private static Class<?> mobRarityClass = null;
+    private static Class<?> mobDataClass = null;
+    private static Class<?> mobAffixClass = null;
+    private static Class<?> exileDBClass = null;
+    private static Class<?> exileEffectClass = null;
+    private static Class<?> exileEffectInstanceDataClass = null;
+    private static Class<?> entityStatusEffectsDataClass = null;
+    private static Class<?> chatFormattingClass = null;
+
     // === MethodHandles ===
     private static MethodHandle LOAD_UNIT = null;
     private static MethodHandle GET_RESOURCES = null;
@@ -59,7 +68,20 @@ public class MethodHandlesUtil {
     private static MethodHandle GET_LAST_DAMAGE_TAKEN = null;
     private static MethodHandle GET_DAMAGE_EVENT_ELEMENT = null;
     private static MethodHandle GET_ELEMENTS_FORMAT = null;
-    
+
+    // === Mob Info MethodHandles ===
+    private static MethodHandle GET_RARITY = null;
+    private static MethodHandle GET_MOB_RARITY = null;
+    private static MethodHandle GET_RARITY_TEXT_FORMAT = null;
+    private static MethodHandle GET_RARITY_IS_ELITE = null;
+    private static MethodHandle GET_RARITY_IS_SPECIAL = null;
+    private static MethodHandle GET_AFFIX_DATA = null;
+    private static MethodHandle GET_AFFIXES_LIST = null;
+    private static MethodHandle GET_AFFIX_LOC_NAME = null;
+    private static MethodHandle GET_AFFIX_ICON = null;
+    private static MethodHandle GET_STATUS_EFFECTS_DATA = null;
+    private static MethodHandle EXILE_EFFECTS_GET = null;
+
     // === ResourceType enum values ===
     private static Object MANA_TYPE = null;
     private static Object MAGIC_SHIELD_TYPE = null;
@@ -102,7 +124,6 @@ public class MethodHandlesUtil {
             GET_CURRENT_HEALTH = lookupMethod(healthUtilsClass, "getCurrentHealth", LivingEntity.class);
             GET_MAX_HEALTH = lookupMethod(healthUtilsClass, "getMaxHealth", LivingEntity.class);
             
-            // 属性（Element）関連のメソッドをLookup
             GET_LAST_DAMAGE_TAKEN = lookupFieldGetter(entityDataClass, "lastDamageTaken");
             GET_DAMAGE_EVENT_ELEMENT = lookupMethod(damageEventClass, "getElement");
             GET_ELEMENTS_FORMAT = lookupFieldGetter(elementsClass, "format");
@@ -140,6 +161,39 @@ public class MethodHandlesUtil {
         } catch (Exception e) {
             LOGGER.error("Failed to initialize MethodHandles: {}", e.getMessage(), e);
             available = false;
+        }
+
+        if (available) {
+            initializeMobInfoHandles();
+        }
+    }
+
+    private static void initializeMobInfoHandles() {
+        try {
+            mobRarityClass = Class.forName("com.robertx22.mine_and_slash.database.data.rarities.MobRarity");
+            mobDataClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.unit.MobData");
+            mobAffixClass = Class.forName("com.robertx22.mine_and_slash.database.data.mob_affixes.MobAffix");
+            exileDBClass = Class.forName("com.robertx22.mine_and_slash.database.registry.ExileDB");
+            chatFormattingClass = Class.forName("net.minecraft.ChatFormatting");
+
+            GET_RARITY = lookupFieldGetter(entityDataClass, "rarity");
+            GET_MOB_RARITY = lookupMethod(entityDataClass, "getMobRarity");
+            GET_RARITY_TEXT_FORMAT = lookupFieldGetter(mobRarityClass, "text_format");
+            GET_RARITY_IS_ELITE = lookupFieldGetter(mobRarityClass, "is_elite");
+            GET_RARITY_IS_SPECIAL = lookupFieldGetter(mobRarityClass, "is_special");
+
+            GET_AFFIX_DATA = lookupMethod(entityDataClass, "getAffixData");
+            GET_AFFIXES_LIST = lookupMethod(mobDataClass, "getAffixes");
+            GET_AFFIX_LOC_NAME = lookupMethod(mobAffixClass, "locName");
+            GET_AFFIX_ICON = lookupFieldGetter(mobAffixClass, "icon");
+
+            GET_STATUS_EFFECTS_DATA = lookupMethod(entityDataClass, "getStatusEffectsData");
+            EXILE_EFFECTS_GET = lookupMethod(exileDBClass, "ExileEffects");
+
+            LOGGER.debug("Mob info MethodHandles initialized: rarity={}, affix={}, status={}",
+                    GET_MOB_RARITY != null, GET_AFFIX_DATA != null, GET_STATUS_EFFECTS_DATA != null);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to initialize mob info handles (non-critical): {}", e.getMessage());
         }
     }
     
@@ -409,6 +463,221 @@ public class MethodHandlesUtil {
         } catch (Throwable t) {
             LOGGER.debug("Error getting last damage element color: {}", t.getMessage());
             return 0xFFFFFF;
+        }
+    }
+
+    // ========== Mob Info Accessors ==========
+
+    public static Object getEntityData(Entity entity) throws Throwable {
+        if (LOAD_UNIT == null || entity == null) return null;
+        return LOAD_UNIT.invoke(entity);
+    }
+
+    public static String getRarityString(Object entityData) throws Throwable {
+        if (GET_RARITY == null || entityData == null) return null;
+        Object result = GET_RARITY.invoke(entityData);
+        return result instanceof String ? (String) result : null;
+    }
+
+    public static Object getMobRarityObj(Object entityData) throws Throwable {
+        if (GET_MOB_RARITY == null || entityData == null) return null;
+        return GET_MOB_RARITY.invoke(entityData);
+    }
+
+    public static int getRarityColor(Object mobRarity) {
+        if (mobRarity == null) return 0xFFFFFF;
+        try {
+            Object format = GET_RARITY_TEXT_FORMAT.invoke(mobRarity);
+            return chatFormattingToColor(format);
+        } catch (Throwable t) {
+            return 0xFFFFFF;
+        }
+    }
+
+    public static boolean isRarityElite(Object mobRarity) {
+        if (mobRarity == null || GET_RARITY_IS_ELITE == null) return false;
+        try {
+            Object result = GET_RARITY_IS_ELITE.invoke(mobRarity);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static boolean isRaritySpecial(Object mobRarity) {
+        if (mobRarity == null || GET_RARITY_IS_SPECIAL == null) return false;
+        try {
+            Object result = GET_RARITY_IS_SPECIAL.invoke(mobRarity);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    public static java.util.List<String> getMobAffixIds(Object entityData) throws Throwable {
+        if (GET_AFFIX_DATA == null || GET_AFFIXES_LIST == null || entityData == null) {
+            return java.util.Collections.emptyList();
+        }
+        Object mobData = GET_AFFIX_DATA.invoke(entityData);
+        if (mobData == null) return java.util.Collections.emptyList();
+        Object affixes = GET_AFFIXES_LIST.invoke(mobData);
+        if (affixes instanceof java.util.List) {
+            java.util.List<?> list = (java.util.List<?>) affixes;
+            java.util.List<String> result = new java.util.ArrayList<>();
+            for (Object a : list) {
+                try {
+                    Object locName = GET_AFFIX_LOC_NAME.invoke(a);
+                    if (locName != null) {
+                        result.add(locName.toString());
+                    }
+                } catch (Throwable t) {
+                    LOGGER.debug("Failed to get affix name: {}", t.getMessage());
+                }
+            }
+            return result;
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    public static java.util.List<Object> getMobAffixObjects(Object entityData) throws Throwable {
+        if (GET_AFFIX_DATA == null || GET_AFFIXES_LIST == null || entityData == null) {
+            return java.util.Collections.emptyList();
+        }
+        Object mobData = GET_AFFIX_DATA.invoke(entityData);
+        if (mobData == null) return java.util.Collections.emptyList();
+        Object affixes = GET_AFFIXES_LIST.invoke(mobData);
+        if (affixes instanceof java.util.List) {
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> list = (java.util.List<Object>) affixes;
+            return list;
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    public static String getAffixLocName(Object affix) {
+        if (affix == null || GET_AFFIX_LOC_NAME == null) return "";
+        try {
+            Object locName = GET_AFFIX_LOC_NAME.invoke(affix);
+            return locName != null ? locName.toString() : "";
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    public static Object getStatusEffectsData(Object entityData) throws Throwable {
+        if (GET_STATUS_EFFECTS_DATA == null || entityData == null) return null;
+        return GET_STATUS_EFFECTS_DATA.invoke(entityData);
+    }
+
+    public static java.util.Map<String, Object> getExileEffectMap(Object statusEffectsData) throws Throwable {
+        if (statusEffectsData == null) return java.util.Collections.emptyMap();
+        try {
+            java.lang.reflect.Field exileMapField = statusEffectsData.getClass().getField("exileMap");
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> map = (java.util.Map<String, Object>) exileMapField.get(statusEffectsData);
+            return map != null ? map : java.util.Collections.emptyMap();
+        } catch (Exception e) {
+            return java.util.Collections.emptyMap();
+        }
+    }
+
+    public static int getEffectTicksLeft(Object instanceData) {
+        if (instanceData == null) return 0;
+        try {
+            java.lang.reflect.Field f = instanceData.getClass().getField("ticks_left");
+            return f.getInt(instanceData);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public static int getEffectStacks(Object instanceData) {
+        if (instanceData == null) return 0;
+        try {
+            java.lang.reflect.Field f = instanceData.getClass().getField("stacks");
+            return f.getInt(instanceData);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public static boolean isEffectInfinite(Object instanceData) {
+        if (instanceData == null) return false;
+        try {
+            java.lang.reflect.Field f = instanceData.getClass().getField("is_infinite");
+            return f.getBoolean(instanceData);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean shouldEffectRemove(Object instanceData) {
+        if (instanceData == null) return true;
+        try {
+            java.lang.reflect.Method m = instanceData.getClass().getMethod("shouldRemove");
+            return (boolean) m.invoke(instanceData);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public static Object getExileEffectFromDB(String effectId) {
+        if (exileDBClass == null || effectId == null) return null;
+        try {
+            if (EXILE_EFFECTS_GET == null) {
+                EXILE_EFFECTS_GET = lookupMethod(exileDBClass, "ExileEffects");
+            }
+            Object registry = EXILE_EFFECTS_GET.invoke(null);
+            if (registry == null) return null;
+            java.lang.reflect.Method getMethod = registry.getClass().getMethod("get", String.class);
+            return getMethod.invoke(registry, effectId);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    public static ResourceLocation getExileEffectTexture(Object exileEffect) {
+        if (exileEffect == null) return null;
+        try {
+            java.lang.reflect.Method m = exileEffect.getClass().getMethod("getTexture");
+            return (ResourceLocation) m.invoke(exileEffect);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String getExileEffectName(Object exileEffect) {
+        if (exileEffect == null) return "";
+        try {
+            java.lang.reflect.Method m = exileEffect.getClass().getMethod("locName");
+            Object name = m.invoke(exileEffect);
+            return name != null ? name.toString() : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static boolean isEffectNegative(Object exileEffect) {
+        if (exileEffect == null) return false;
+        try {
+            java.lang.reflect.Field f = exileEffect.getClass().getField("type");
+            Object type = f.get(exileEffect);
+            if (type != null) {
+                return type.toString().contains("negative");
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return false;
+    }
+
+    public static String getEffectDurationString(Object instanceData) {
+        if (instanceData == null) return "";
+        try {
+            java.lang.reflect.Method m = instanceData.getClass().getMethod("getDurationString");
+            return (String) m.invoke(instanceData);
+        } catch (Exception e) {
+            return "";
         }
     }
 }

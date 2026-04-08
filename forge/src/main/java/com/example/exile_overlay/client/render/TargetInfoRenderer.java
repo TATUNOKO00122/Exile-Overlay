@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 
 public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
@@ -41,6 +42,13 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     private static final int TEX_WIDTH = 224;
     private static final int TEX_HEIGHT = 32;
 
+    private static final int EFFECT_ROW_HEIGHT = 20;
+    private static final int EFFECT_ICON_SIZE = 16;
+    private static final int EFFECT_SPACING = 18;
+    private static final int EFFECT_PADDING_X = 5;
+    private static final int EFFECT_PADDING_Y = 2;
+    private static final int MAX_EFFECTS_PER_ROW = 12;
+
     private static final int BAR_X = 5;
     private static final int BAR_Y = 20;
     private static final int BAR_WIDTH = 213;
@@ -48,8 +56,10 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final int HP_BAR_COLOR = 0xFFCC2020;
     private static final int HP_BG_COLOR = 0x80000000;
+    private static final int ELITE_BAR_COLOR = 0xFFFF4400;
+    private static final int BOSS_BAR_COLOR = 0xFFDD0000;
 
-    private static final int NAME_Y = 22;
+    private static final int NAME_Y = 10;
 
     public TargetInfoRenderer() {
     }
@@ -105,32 +115,45 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             }
         }
 
-        String name = target.getDisplayName().getString();
-        if (name.isEmpty()) {
+        int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
+        float health = target.getHealth();
+        float maxHealth = target.getMaxHealth();
+
+        MineAndSlashHelper.MobRarityInfo rarity = MineAndSlashHelper.getMobRarity(target);
+        List<MineAndSlashHelper.MobAffixInfo> affixes = MineAndSlashHelper.getMobAffixes(target);
+        List<MineAndSlashHelper.MobEffectInfo> effects = MineAndSlashHelper.getMobStatusEffects(target);
+
+        String affixPrefix = buildAffixPrefix(affixes);
+        String vanillaName = target.getDisplayName().getString();
+        if (vanillaName.isEmpty()) {
             return;
         }
 
-        int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
         String displayName;
         if (mnsLevel > 0) {
-            displayName = "Lv." + mnsLevel + " " + name;
+            displayName = affixPrefix + vanillaName;
         } else {
-            displayName = name;
+            displayName = affixPrefix + vanillaName;
         }
 
-        float health = target.getHealth();
-        float maxHealth = target.getMaxHealth();
+        String levelText = mnsLevel > 0 ? "Lv." + mnsLevel : "";
+
+        int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
+        int barColor = resolveBarColor(rarity, health, maxHealth);
         float hpRatio = Mth.clamp(health / maxHealth, 0.0f, 1.0f);
 
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
+
+        int effectsRows = effects.isEmpty() ? 0 : 1;
+        int totalHeight = TEX_HEIGHT + effectsRows * EFFECT_ROW_HEIGHT;
 
         HudPosition position = getPosition();
         int[] pos = position.resolve(screenWidth, screenHeight);
         float scale = getScale();
 
         int scaledWidth = (int) (TEX_WIDTH * scale);
-        int scaledHeight = (int) (TEX_HEIGHT * scale);
+        int scaledHeight = (int) (totalHeight * scale);
 
         int x = pos[0] - scaledWidth / 2;
         int y = pos[1] - scaledHeight / 2;
@@ -140,24 +163,121 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1.0f);
             RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
 
-            graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
-
-            int filledWidth = (int) (BAR_WIDTH * hpRatio);
-            if (filledWidth > 0) {
-                graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, HP_BAR_COLOR);
-            }
-
+            renderBackground(graphics, effectsRows);
+            renderHpBar(graphics, hpRatio, barColor);
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-
-            int nameWidth = mc.font.width(displayName);
-            int textX = (TEX_WIDTH - nameWidth) / 2;
-
-            graphics.drawString(mc.font, displayName, textX, NAME_Y, 0xFFFFFFFF, true);
-
+            renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
+            renderHpText(graphics, mc, health, maxHealth, hpRatio);
+            renderEffects(graphics, mc, effects);
         } finally {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableBlend();
             graphics.pose().popPose();
         }
+    }
+
+    private void renderBackground(GuiGraphics graphics, int effectsRows) {
+        if (effectsRows > 0) {
+            graphics.fill(0, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT + effectsRows * EFFECT_ROW_HEIGHT, 0x80000000);
+            graphics.fill(0, TEX_HEIGHT - 1, TEX_WIDTH, TEX_HEIGHT, 0x40404040);
+        }
+    }
+
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, int barColor) {
+        graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
+
+        int filledWidth = (int) (BAR_WIDTH * hpRatio);
+        if (filledWidth > 0) {
+            graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, barColor);
+        }
+    }
+
+    private void renderNameAndLevel(GuiGraphics graphics, Minecraft mc, String displayName, String levelText, int nameColor) {
+        if (!levelText.isEmpty()) {
+            int levelWidth = mc.font.width(levelText);
+            int nameWidth = mc.font.width(displayName);
+            int totalWidth = levelWidth + 4 + nameWidth;
+            int startX = (TEX_WIDTH - totalWidth) / 2;
+
+            graphics.drawString(mc.font, levelText, startX, NAME_Y, 0xFFAAAAAA, true);
+            graphics.drawString(mc.font, displayName, startX + levelWidth + 4, NAME_Y, nameColor, true);
+        } else {
+            int nameWidth = mc.font.width(displayName);
+            int textX = (TEX_WIDTH - nameWidth) / 2;
+            graphics.drawString(mc.font, displayName, textX, NAME_Y, nameColor, true);
+        }
+    }
+
+    private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
+        String hpText = formatHpText(health, maxHealth);
+        int hpWidth = mc.font.width(hpText);
+        int hpX = BAR_X + (BAR_WIDTH - hpWidth) / 2;
+        int hpY = BAR_Y + 1;
+
+        int textColor = hpRatio > 0.5f ? 0xFFFFFFFF : (hpRatio > 0.25f ? 0xFFFFFF00 : 0xFFFF4444);
+        graphics.drawString(mc.font, hpText, hpX, hpY, textColor, true);
+    }
+
+    private void renderEffects(GuiGraphics graphics, Minecraft mc, List<MineAndSlashHelper.MobEffectInfo> effects) {
+        if (effects.isEmpty()) return;
+
+        int drawX = EFFECT_PADDING_X;
+        int drawY = TEX_HEIGHT + EFFECT_PADDING_Y;
+
+        int count = Math.min(effects.size(), MAX_EFFECTS_PER_ROW);
+        for (int i = 0; i < count; i++) {
+            MineAndSlashHelper.MobEffectInfo effect = effects.get(i);
+            int iconX = drawX + i * EFFECT_SPACING;
+
+            if (effect.texture != null) {
+                graphics.blit(effect.texture, iconX, drawY, 0, 0, EFFECT_ICON_SIZE, EFFECT_ICON_SIZE,
+                        EFFECT_ICON_SIZE, EFFECT_ICON_SIZE);
+
+                if (effect.isNegative) {
+                    graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, 0x40FF0000);
+                }
+            } else {
+                int bgColor = effect.isNegative ? 0x80FF0000 : 0x8000FF00;
+                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, bgColor);
+            }
+
+            if (effect.stacks > 1) {
+                String stackText = String.valueOf(effect.stacks);
+                int stackX = iconX + EFFECT_ICON_SIZE - mc.font.width(stackText) - 1;
+                int stackY = drawY + EFFECT_ICON_SIZE - 9;
+                graphics.drawString(mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
+            }
+
+            if (!effect.isInfinite && effect.durationText != null && !effect.durationText.isEmpty()) {
+                int durWidth = mc.font.width(effect.durationText);
+                int durX = iconX + (EFFECT_ICON_SIZE - durWidth) / 2;
+                int durY = drawY + EFFECT_ICON_SIZE + 1;
+                graphics.drawString(mc.font, effect.durationText, durX, durY, 0xFFAAAAAA, false);
+            }
+        }
+    }
+
+    private String buildAffixPrefix(List<MineAndSlashHelper.MobAffixInfo> affixes) {
+        if (affixes.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
+            if (affix.name != null && !affix.name.isEmpty()) {
+                sb.append(affix.name).append(" ");
+            }
+        }
+        return sb.toString();
+    }
+
+    private int resolveBarColor(MineAndSlashHelper.MobRarityInfo rarity, float health, float maxHealth) {
+        if (rarity != null) {
+            if (rarity.isSpecial) return BOSS_BAR_COLOR;
+            if (rarity.isElite) return ELITE_BAR_COLOR;
+            if ("uncommon".equals(rarity.id)) return 0xFF44CC44;
+        }
+        return HP_BAR_COLOR;
     }
 
     private String formatHpText(float health, float maxHealth) {

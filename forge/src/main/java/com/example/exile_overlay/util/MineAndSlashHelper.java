@@ -1,5 +1,6 @@
 package com.example.exile_overlay.util;
 
+import com.example.exile_overlay.api.MethodHandlesUtil;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
@@ -1076,5 +1077,128 @@ public class MineAndSlashHelper {
     public static boolean isPotionOnCooldown(Player player, net.minecraft.world.item.ItemStack stack) {
         if (player == null || stack.isEmpty()) return false;
         return player.getCooldowns().isOnCooldown(stack.getItem());
+    }
+
+    // ========== Mob Info API ==========
+
+    public static class MobRarityInfo {
+        public final String id;
+        public final int color;
+        public final boolean isElite;
+        public final boolean isSpecial;
+
+        public MobRarityInfo(String id, int color, boolean isElite, boolean isSpecial) {
+            this.id = id;
+            this.color = color;
+            this.isElite = isElite;
+            this.isSpecial = isSpecial;
+        }
+    }
+
+    public static class MobAffixInfo {
+        public final String name;
+
+        public MobAffixInfo(String name) {
+            this.name = name;
+        }
+    }
+
+    public static class MobEffectInfo {
+        public final String id;
+        public final String name;
+        public final ResourceLocation texture;
+        public final int ticksLeft;
+        public final int stacks;
+        public final boolean isInfinite;
+        public final boolean isNegative;
+        public final String durationText;
+
+        public MobEffectInfo(String id, String name, ResourceLocation texture, int ticksLeft,
+                             int stacks, boolean isInfinite, boolean isNegative, String durationText) {
+            this.id = id;
+            this.name = name;
+            this.texture = texture;
+            this.ticksLeft = ticksLeft;
+            this.stacks = stacks;
+            this.isInfinite = isInfinite;
+            this.isNegative = isNegative;
+            this.durationText = durationText;
+        }
+    }
+
+    public static MobRarityInfo getMobRarity(net.minecraft.world.entity.LivingEntity entity) {
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return null;
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return null;
+            Object mobRarity = MethodHandlesUtil.getMobRarityObj(entityData);
+            if (mobRarity == null) return null;
+            String rarityId = MethodHandlesUtil.getRarityString(entityData);
+            int color = MethodHandlesUtil.getRarityColor(mobRarity);
+            boolean elite = MethodHandlesUtil.isRarityElite(mobRarity);
+            boolean special = MethodHandlesUtil.isRaritySpecial(mobRarity);
+            return new MobRarityInfo(rarityId != null ? rarityId : "common", color, elite, special);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob rarity: {}", t.getMessage());
+            return null;
+        }
+    }
+
+    public static List<MobAffixInfo> getMobAffixes(net.minecraft.world.entity.LivingEntity entity) {
+        List<MobAffixInfo> result = new ArrayList<>();
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return result;
+            List<Object> affixObjs = MethodHandlesUtil.getMobAffixObjects(entityData);
+            for (Object affix : affixObjs) {
+                String locName = MethodHandlesUtil.getAffixLocName(affix);
+                result.add(new MobAffixInfo(locName));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob affixes: {}", t.getMessage());
+        }
+        return result;
+    }
+
+    public static List<MobEffectInfo> getMobStatusEffects(net.minecraft.world.entity.LivingEntity entity) {
+        List<MobEffectInfo> result = new ArrayList<>();
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return result;
+            Object statusData = MethodHandlesUtil.getStatusEffectsData(entityData);
+            if (statusData == null) return result;
+
+            Map<String, Object> exileMap = MethodHandlesUtil.getExileEffectMap(statusData);
+            for (Map.Entry<String, Object> entry : exileMap.entrySet()) {
+                String effectId = entry.getKey();
+                Object instanceData = entry.getValue();
+                if (instanceData == null) continue;
+                if (MethodHandlesUtil.shouldEffectRemove(instanceData)) continue;
+
+                try {
+                    int ticksLeft = MethodHandlesUtil.getEffectTicksLeft(instanceData);
+                    int stacks = MethodHandlesUtil.getEffectStacks(instanceData);
+                    boolean isInfinite = MethodHandlesUtil.isEffectInfinite(instanceData);
+                    String durationText = MethodHandlesUtil.getEffectDurationString(instanceData);
+
+                    Object exileEffect = MethodHandlesUtil.getExileEffectFromDB(effectId);
+                    if (exileEffect == null) continue;
+
+                    String name = MethodHandlesUtil.getExileEffectName(exileEffect);
+                    ResourceLocation texture = MethodHandlesUtil.getExileEffectTexture(exileEffect);
+                    boolean isNegative = MethodHandlesUtil.isEffectNegative(exileEffect);
+
+                    result.add(new MobEffectInfo(effectId, name, texture, ticksLeft,
+                            stacks, isInfinite, isNegative, durationText));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process mob effect {}: {}", effectId, inner.getMessage());
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob status effects: {}", t.getMessage());
+        }
+        return result;
     }
 }
