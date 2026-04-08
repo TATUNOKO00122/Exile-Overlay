@@ -59,7 +59,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     private static final int ELITE_BAR_COLOR = 0xFFFF4400;
     private static final int BOSS_BAR_COLOR = 0xFFDD0000;
 
-    private static final int NAME_Y = 10;
+    private static final int NAME_Y = 22;
 
     public TargetInfoRenderer() {
     }
@@ -196,26 +196,22 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     }
 
     private void renderNameAndLevel(GuiGraphics graphics, Minecraft mc, String displayName, String levelText, int nameColor) {
+        String combinedName;
         if (!levelText.isEmpty()) {
-            int levelWidth = mc.font.width(levelText);
-            int nameWidth = mc.font.width(displayName);
-            int totalWidth = levelWidth + 4 + nameWidth;
-            int startX = (TEX_WIDTH - totalWidth) / 2;
-
-            graphics.drawString(mc.font, levelText, startX, NAME_Y, 0xFFAAAAAA, true);
-            graphics.drawString(mc.font, displayName, startX + levelWidth + 4, NAME_Y, nameColor, true);
+            combinedName = levelText + " " + displayName;
         } else {
-            int nameWidth = mc.font.width(displayName);
-            int textX = (TEX_WIDTH - nameWidth) / 2;
-            graphics.drawString(mc.font, displayName, textX, NAME_Y, nameColor, true);
+            combinedName = displayName;
         }
+        int nameWidth = mc.font.width(combinedName);
+        int textX = (TEX_WIDTH - nameWidth) / 2;
+        graphics.drawString(mc.font, combinedName, textX, NAME_Y, nameColor, true);
     }
 
     private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
         String hpText = formatHpText(health, maxHealth);
         int hpWidth = mc.font.width(hpText);
-        int hpX = BAR_X + (BAR_WIDTH - hpWidth) / 2;
-        int hpY = BAR_Y + 1;
+        int hpX = BAR_X + BAR_WIDTH - hpWidth - 2;
+        int hpY = BAR_Y - 9;
 
         int textColor = hpRatio > 0.5f ? 0xFFFFFFFF : (hpRatio > 0.25f ? 0xFFFFFF00 : 0xFFFF4444);
         graphics.drawString(mc.font, hpText, hpX, hpY, textColor, true);
