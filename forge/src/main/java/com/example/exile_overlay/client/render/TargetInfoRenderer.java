@@ -7,6 +7,7 @@ import com.example.exile_overlay.api.RenderLayer;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
+import com.example.exile_overlay.util.TopDownViewHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -313,6 +314,11 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     }
 
     private static LivingEntity getTargetEntity(Player player, double maxDistance) {
+        LivingEntity tdvTarget = TopDownViewHelper.getTarget();
+        if (tdvTarget != null && tdvTarget.isAlive()) {
+            return tdvTarget;
+        }
+
         try {
             Vec3 eyePos = player.getEyePosition(1.0f);
             Vec3 lookVec = player.getViewVector(1.0f);
