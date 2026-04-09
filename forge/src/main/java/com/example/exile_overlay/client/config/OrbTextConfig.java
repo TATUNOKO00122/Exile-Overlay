@@ -11,14 +11,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * オーブテキスト表示設定を管理する設定クラス
- *
- * 【責任】
- * - オーブテキスト表示ON/OFF
- * - POE2スタイル（Orb上表示）ON/OFF
- * - JSONファイルへの保存・読み込み
- */
 public class OrbTextConfig {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/OrbTextConfig");
@@ -26,10 +18,22 @@ public class OrbTextConfig {
     private static final String CONFIG_FILE_NAME = "exile_overlay_orb_text.json";
     private static OrbTextConfig instance;
 
+    private static final float[] SCALE_OPTIONS = {0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f};
+
     private boolean showOrbText = true;
-    private boolean poe2StyleText = false;
+    private boolean compactNumbers = false;
+    private float textScale = 1.0f;
+    private float energyTextScale = 1.0f;
 
     private OrbTextConfig() {
+    }
+
+    public static float[] getScaleOptions() {
+        return SCALE_OPTIONS;
+    }
+
+    public static String getScaleLabel(float scale) {
+        return ((int)(scale * 100)) + "%";
     }
 
     public static OrbTextConfig getInstance() {
@@ -60,11 +64,17 @@ public class OrbTextConfig {
             if (obj.has("showOrbText")) {
                 showOrbText = obj.get("showOrbText").getAsBoolean();
             }
-            if (obj.has("poe2StyleText")) {
-                poe2StyleText = obj.get("poe2StyleText").getAsBoolean();
+            if (obj.has("compactNumbers")) {
+                compactNumbers = obj.get("compactNumbers").getAsBoolean();
+            }
+            if (obj.has("textScale")) {
+                textScale = obj.get("textScale").getAsFloat();
+            }
+            if (obj.has("energyTextScale")) {
+                energyTextScale = obj.get("energyTextScale").getAsFloat();
             }
 
-            LOGGER.info("Loaded orb text config: showOrbText={}, poe2StyleText={}", showOrbText, poe2StyleText);
+            LOGGER.info("Loaded orb text config: showOrbText={}, compactNumbers={}, textScale={}, energyTextScale={}", showOrbText, compactNumbers, textScale, energyTextScale);
         } catch (IOException e) {
             LOGGER.error("Failed to load orb text config: {}", e.getMessage());
         }
@@ -81,7 +91,9 @@ public class OrbTextConfig {
 
         JsonObject obj = new JsonObject();
         obj.addProperty("showOrbText", showOrbText);
-        obj.addProperty("poe2StyleText", poe2StyleText);
+        obj.addProperty("compactNumbers", compactNumbers);
+        obj.addProperty("textScale", textScale);
+        obj.addProperty("energyTextScale", energyTextScale);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -99,11 +111,49 @@ public class OrbTextConfig {
         this.showOrbText = show;
     }
 
-    public boolean isPoe2StyleText() {
-        return poe2StyleText;
+    public boolean isCompactNumbers() {
+        return compactNumbers;
     }
 
-    public void setPoe2StyleText(boolean poe2Style) {
-        this.poe2StyleText = poe2Style;
+    public void setCompactNumbers(boolean compact) {
+        this.compactNumbers = compact;
+    }
+
+    public float getTextScale() {
+        return textScale;
+    }
+
+    public void setTextScale(float scale) {
+        this.textScale = scale;
+    }
+
+    public float cycleTextScale() {
+        for (int i = 0; i < SCALE_OPTIONS.length; i++) {
+            if (Float.compare(SCALE_OPTIONS[i], textScale) == 0) {
+                textScale = SCALE_OPTIONS[(i + 1) % SCALE_OPTIONS.length];
+                return textScale;
+            }
+        }
+        textScale = 1.0f;
+        return textScale;
+    }
+
+    public float getEnergyTextScale() {
+        return energyTextScale;
+    }
+
+    public void setEnergyTextScale(float scale) {
+        this.energyTextScale = scale;
+    }
+
+    public float cycleEnergyTextScale() {
+        for (int i = 0; i < SCALE_OPTIONS.length; i++) {
+            if (Float.compare(SCALE_OPTIONS[i], energyTextScale) == 0) {
+                energyTextScale = SCALE_OPTIONS[(i + 1) % SCALE_OPTIONS.length];
+                return energyTextScale;
+            }
+        }
+        energyTextScale = 1.0f;
+        return energyTextScale;
     }
 }

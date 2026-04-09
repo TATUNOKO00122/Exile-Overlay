@@ -133,6 +133,10 @@
   "section.exile_overlay.orb_text": "オーブテキスト",
   "exile_overlay.config.show_orb_text": "テキスト表示: %s",
   "exile_overlay.config.show_orb_text.tooltip": "オーブに数値テキストを表示",
-  "exile_overlay.config.poe2_style_text": "POE2スタイル: %s",
-  "exile_overlay.config.poe2_style_text.tooltip": "オーブ内ではなくオーブの上に数値を表示\n左Orb上: ES/Life/Energy 縦並べ\n右Orb上: Mana単体"
+  "exile_overlay.config.compact_numbers_orb": "HP/Mana省略: %s",
+  "exile_overlay.config.compact_numbers_orb.tooltip": "HP・マナの数値を省略表示（例: 1500 → 1k）。エネルギーオーブは常に省略表示。",
+  "exile_overlay.config.text_scale": "文字サイズ: %s",
+  "exile_overlay.config.text_scale.tooltip": "HP・マナのテキストサイズ倍率",
+  "exile_overlay.config.energy_text_scale": "エネルギー文字サイズ: %s",
+  "exile_overlay.config.energy_text_scale.tooltip": "エネルギーオーブのテキストサイズ倍率"
 }

@@ -357,11 +357,33 @@ public class ConfigScreen extends Screen {
         y += sp;
 
         addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.poe2_style_text", config.isPoe2StyleText()), btn -> {
-                    config.setPoe2StyleText(!config.isPoe2StyleText());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.poe2_style_text", config.isPoe2StyleText()));
+                Button.builder(getOnOffComponent("exile_overlay.config.compact_numbers_orb", config.isCompactNumbers()), btn -> {
+                    config.setCompactNumbers(!config.isCompactNumbers());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.compact_numbers_orb", config.isCompactNumbers()));
                 }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.poe2_style_text.tooltip")))
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.compact_numbers_orb.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(
+                        Component.translatable("exile_overlay.config.text_scale", OrbTextConfig.getScaleLabel(config.getTextScale())),
+                        btn -> {
+                            config.cycleTextScale();
+                            btn.setMessage(Component.translatable("exile_overlay.config.text_scale", OrbTextConfig.getScaleLabel(config.getTextScale())));
+                        }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.text_scale.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(
+                        Component.translatable("exile_overlay.config.energy_text_scale", OrbTextConfig.getScaleLabel(config.getEnergyTextScale())),
+                        btn -> {
+                            config.cycleEnergyTextScale();
+                            btn.setMessage(Component.translatable("exile_overlay.config.energy_text_scale", OrbTextConfig.getScaleLabel(config.getEnergyTextScale())));
+                        }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.energy_text_scale.tooltip")))
                         .build());
         y += sp;
 
@@ -652,7 +674,9 @@ public class ConfigScreen extends Screen {
 
         OrbTextConfig orbTextConfig = OrbTextConfig.getInstance();
         orbTextConfig.setShowOrbText(true);
-        orbTextConfig.setPoe2StyleText(false);
+        orbTextConfig.setCompactNumbers(false);
+        orbTextConfig.setTextScale(1.0f);
+        orbTextConfig.setEnergyTextScale(1.0f);
         orbTextConfig.save();
 
         DamageFontRenderer.reloadCustomFont();
