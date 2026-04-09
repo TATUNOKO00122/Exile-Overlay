@@ -203,13 +203,13 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         } else {
             combinedName = displayName;
         }
-        float nameWidth = HudFontHelper.getTextWidth(mc.font, combinedName) * NAME_TEXT_SCALE;
+        float nameWidth = mc.font.width(combinedName) * NAME_TEXT_SCALE;
         float textX = (TEX_WIDTH - nameWidth) / 2.0f;
         float textY = NAME_Y + (mc.font.lineHeight * (1.0f - NAME_TEXT_SCALE)) / 2.0f;
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(NAME_TEXT_SCALE, NAME_TEXT_SCALE, 1.0f);
-        HudFontHelper.drawString(graphics, mc.font, combinedName, 0, 0, nameColor, true);
+        graphics.drawString(mc.font, combinedName, 0, 0, nameColor, true);
         graphics.pose().popPose();
     }
 
