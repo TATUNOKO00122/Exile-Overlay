@@ -1245,23 +1245,5 @@ public class MineAndSlashHelper {
         return result;
     }
 
-    public static List<MobEffectInfo> getVanillaMobEffects(net.minecraft.world.entity.LivingEntity entity) {
-        List<MobEffectInfo> result = new ArrayList<>();
-        if (entity == null) return result;
 
-        for (var instance : entity.getActiveEffects()) {
-            var effect = instance.getEffect();
-            var regKey = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect);
-            String id = regKey.toString();
-            String name = net.minecraft.network.chat.Component.translatable(effect.getDescriptionId()).getString();
-            int duration = instance.getDuration();
-            int amplifier = instance.getAmplifier();
-            boolean isNegative = !effect.isBeneficial();
-            ResourceLocation texture = new ResourceLocation("minecraft", "textures/mob_effect/" + regKey.getPath() + ".png");
-
-            result.add(new MobEffectInfo(id, name, texture, duration, amplifier + 1,
-                    duration < 0, isNegative));
-        }
-        return result;
-    }
 }

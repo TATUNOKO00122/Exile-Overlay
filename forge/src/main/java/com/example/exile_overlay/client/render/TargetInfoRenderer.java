@@ -122,10 +122,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
         MineAndSlashHelper.MobRarityInfo rarity = MineAndSlashHelper.getMobRarity(target);
         List<MineAndSlashHelper.MobAffixInfo> affixes = MineAndSlashHelper.getMobAffixes(target);
-        List<MineAndSlashHelper.MobEffectInfo> mnsEffects = MineAndSlashHelper.getMobStatusEffects(target);
-        List<MineAndSlashHelper.MobEffectInfo> vanillaEffects = MineAndSlashHelper.getVanillaMobEffects(target);
-        List<MineAndSlashHelper.MobEffectInfo> effects = new ArrayList<>(mnsEffects);
-        effects.addAll(vanillaEffects);
+        List<MineAndSlashHelper.MobEffectInfo> effects = MineAndSlashHelper.getMobStatusEffects(target);
 
         String affixPrefix = buildAffixPrefix(affixes);
         String vanillaName = target.getDisplayName().getString();
