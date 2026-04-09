@@ -176,7 +176,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
             renderHpText(graphics, mc, health, maxHealth, hpRatio);
             renderEffects(graphics, mc, effects);
-            renderAffixStats(graphics, mc, affixes, !effects.isEmpty());
+            renderAffixStats(graphics, mc, affixes);
         } finally {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             RenderSystem.defaultBlendFunc();
@@ -222,7 +222,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
         int textColor = hpRatio > 0.5f ? 0xFFFFFFFF : (hpRatio > 0.25f ? 0xFFFFFF00 : 0xFFFF4444);
         graphics.pose().pushPose();
-        graphics.pose().translate(hpX, hpY - 0.5f, 0);
+        graphics.pose().translate(hpX, hpY - 1.0f, 0);
         graphics.pose().scale(hpScale, hpScale, 1.0f);
         graphics.drawString(mc.font, hpText, 0, 0, textColor, true);
         graphics.pose().popPose();
@@ -254,8 +254,8 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
             if (effect.stacks > 1) {
                 String stackText = String.valueOf(effect.stacks);
-                int stackX = iconX + EFFECT_ICON_SIZE - mc.font.width(stackText) - 1;
-                int stackY = drawY + EFFECT_ICON_SIZE - 9;
+                int stackX = iconX + 1;
+                int stackY = drawY + 1;
                 graphics.drawString(mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
             }
 
@@ -270,16 +270,14 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     }
 
     private void renderAffixStats(GuiGraphics graphics, Minecraft mc,
-                                   List<MineAndSlashHelper.MobAffixInfo> affixes, boolean hasEffects) {
+                                   List<MineAndSlashHelper.MobAffixInfo> affixes) {
         List<MineAndSlashHelper.AffixStatInfo> allStats = new ArrayList<>();
         for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
             allStats.addAll(affix.stats);
         }
         if (allStats.isEmpty()) return;
 
-        int startY = hasEffects
-                ? TEX_HEIGHT + EFFECT_PADDING_Y + EFFECT_ICON_SIZE + EFFECT_PADDING_Y
-                : TEX_HEIGHT + EFFECT_PADDING_Y;
+        int startY = TEX_HEIGHT + EFFECT_PADDING_Y;
 
         int count = Math.min(allStats.size(), MAX_AFFIX_STATS_DISPLAY);
         for (int i = 0; i < count; i++) {
