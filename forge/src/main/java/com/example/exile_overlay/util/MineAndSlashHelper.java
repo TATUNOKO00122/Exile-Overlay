@@ -2,6 +2,7 @@ package com.example.exile_overlay.util;
 
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
@@ -203,6 +204,26 @@ public class MineAndSlashHelper {
             return ((Number) method.invoke(null, player)).floatValue();
         } catch (Exception e) {
             return player.getMaxHealth();
+        }
+    }
+
+    public static float getEntityHealth(LivingEntity entity) {
+        if (!isMnsLoaded())
+            return entity.getHealth();
+        try {
+            return MethodHandlesUtil.getCurrentHealth(entity);
+        } catch (Throwable e) {
+            return entity.getHealth();
+        }
+    }
+
+    public static float getEntityMaxHealth(LivingEntity entity) {
+        if (!isMnsLoaded())
+            return entity.getMaxHealth();
+        try {
+            return MethodHandlesUtil.getMaxHealth(entity);
+        } catch (Throwable e) {
+            return entity.getMaxHealth();
         }
     }
 

@@ -117,8 +117,8 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         }
 
         int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
-        float health = target.getHealth();
-        float maxHealth = target.getMaxHealth();
+        float health = MineAndSlashHelper.getEntityHealth(target);
+        float maxHealth = MineAndSlashHelper.getEntityMaxHealth(target);
 
         MineAndSlashHelper.MobRarityInfo rarity = MineAndSlashHelper.getMobRarity(target);
         List<MineAndSlashHelper.MobAffixInfo> affixes = MineAndSlashHelper.getMobAffixes(target);
@@ -146,14 +146,12 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
 
-        int totalHeight = effects.isEmpty() ? TEX_HEIGHT : TEX_HEIGHT + EFFECT_ROW_HEIGHT;
-
         HudPosition position = getPosition();
         int[] pos = position.resolve(screenWidth, screenHeight);
         float scale = getScale();
 
         int scaledWidth = (int) (TEX_WIDTH * scale);
-        int scaledHeight = (int) (totalHeight * scale);
+        int scaledHeight = (int) (TEX_HEIGHT * scale);
 
         int x = pos[0] - scaledWidth / 2;
         int y = pos[1] - scaledHeight / 2;
