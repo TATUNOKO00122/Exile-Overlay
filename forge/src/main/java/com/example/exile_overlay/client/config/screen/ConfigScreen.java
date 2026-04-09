@@ -8,7 +8,6 @@ import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
 import com.example.exile_overlay.client.render.DayCounterConfig;
-import com.example.exile_overlay.client.render.HudFontManager;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
@@ -192,9 +191,6 @@ public class ConfigScreen extends Screen {
                 Button.builder(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()), btn -> {
                     hudFontConfig.setUseCustomFont(!hudFontConfig.isUseCustomFont());
                     btn.setMessage(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()));
-                    if (hudFontConfig.isUseCustomFont()) {
-                        HudFontManager.getInstance().reloadFont();
-                    }
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.use_custom_font.tooltip")))
                         .build());
@@ -568,7 +564,6 @@ public class ConfigScreen extends Screen {
         EntityHealthBarConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
         DamageFontRenderer.reloadCustomFont();
-        HudFontManager.getInstance().reloadFont();
     }
 
     private void resetToDefaults() {

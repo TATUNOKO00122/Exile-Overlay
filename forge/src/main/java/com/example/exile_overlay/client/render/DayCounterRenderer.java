@@ -127,7 +127,7 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
         String text = getAnimationText(animationTick);
         if (text != null) {
             float scale = getScale();
-            int rawWidth = mc.font.width(text);
+            int rawWidth = HudFontHelper.getTextWidth(mc.font, text);
             int scaledWidth = (int) (rawWidth * scale);
 
             // Center position
@@ -139,7 +139,7 @@ public class DayCounterRenderer implements IRenderCommand, IHudRenderer {
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1.0f);
 
-            graphics.drawString(mc.font, text, 0, 0, 0xFFFFFF, true);
+            HudFontHelper.drawString(graphics, mc.font, text, 0, 0, 0xFFFFFF, true);
             graphics.pose().popPose();
 
             // Play sound on certain frames

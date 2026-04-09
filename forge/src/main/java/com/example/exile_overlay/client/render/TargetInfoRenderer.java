@@ -203,20 +203,20 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         } else {
             combinedName = displayName;
         }
-        float nameWidth = mc.font.width(combinedName) * NAME_TEXT_SCALE;
+        float nameWidth = HudFontHelper.getTextWidth(mc.font, combinedName) * NAME_TEXT_SCALE;
         float textX = (TEX_WIDTH - nameWidth) / 2.0f;
         float textY = NAME_Y + (mc.font.lineHeight * (1.0f - NAME_TEXT_SCALE)) / 2.0f;
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(NAME_TEXT_SCALE, NAME_TEXT_SCALE, 1.0f);
-        graphics.drawString(mc.font, combinedName, 0, 0, nameColor, true);
+        HudFontHelper.drawString(graphics, mc.font, combinedName, 0, 0, nameColor, true);
         graphics.pose().popPose();
     }
 
     private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
         String hpText = formatHpText(health, maxHealth);
         float hpScale = 0.7f;
-        float textWidth = mc.font.width(hpText) * hpScale;
+        float textWidth = HudFontHelper.getTextWidth(mc.font, hpText) * hpScale;
         int hpX = (int) (BAR_X + BAR_WIDTH - textWidth - 2);
         int hpY = BAR_Y - (int) (mc.font.lineHeight * hpScale);
 
@@ -224,7 +224,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().pushPose();
         graphics.pose().translate(hpX, hpY - 1.0f, 0);
         graphics.pose().scale(hpScale, hpScale, 1.0f);
-        graphics.drawString(mc.font, hpText, 0, 0, textColor, true);
+        HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, textColor, true);
         graphics.pose().popPose();
     }
 
@@ -256,15 +256,15 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
                 String stackText = String.valueOf(effect.stacks);
                 int stackX = iconX + 1;
                 int stackY = drawY + 1;
-                graphics.drawString(mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
+                HudFontHelper.drawString(graphics, mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
             }
 
             String durText = effect.getDurationText();
             if (!durText.isEmpty()) {
-                int durWidth = mc.font.width(durText);
+                int durWidth = HudFontHelper.getTextWidth(mc.font, durText);
                 int durX = iconX + (EFFECT_ICON_SIZE - durWidth) / 2;
                 int durY = drawY + EFFECT_ICON_SIZE + 1;
-                graphics.drawString(mc.font, durText, durX, durY, 0xFFAAAAAA, false);
+                HudFontHelper.drawString(graphics, mc.font, durText, durX, durY, 0xFFAAAAAA, false);
             }
         }
     }
@@ -283,13 +283,13 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         for (int i = 0; i < count; i++) {
             MineAndSlashHelper.AffixStatInfo stat = allStats.get(i);
             String text = stat.getDisplayText();
-            float textWidth = mc.font.width(text) * AFFIX_STAT_SCALE;
+            float textWidth = HudFontHelper.getTextWidth(mc.font, text) * AFFIX_STAT_SCALE;
             int x = (int) (TEX_WIDTH - textWidth - 3);
             int y = startY + (int) (i * AFFIX_STAT_LINE_HEIGHT / AFFIX_STAT_SCALE);
             graphics.pose().pushPose();
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(AFFIX_STAT_SCALE, AFFIX_STAT_SCALE, 1.0f);
-            graphics.drawString(mc.font, text, 0, 0, MineAndSlashHelper.AffixStatInfo.DISPLAY_COLOR, true);
+            HudFontHelper.drawString(graphics, mc.font, text, 0, 0, MineAndSlashHelper.AffixStatInfo.DISPLAY_COLOR, true);
             graphics.pose().popPose();
         }
     }

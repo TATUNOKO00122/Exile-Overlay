@@ -127,10 +127,10 @@ public class ArmorDurabilityRenderer implements IRenderCommand, IHudRenderer {
             // 影描画時はブレンディングを一時的に無効化（ブレンディング有効時に影が描画されない問題への対処）
             if (shadow) {
                 RenderSystem.disableBlend();
-                graphics.drawString(mc.font, text, leftX + TEXT_OFFSET, y + 4, color, true);
+                HudFontHelper.drawString(graphics, mc.font, text, leftX + TEXT_OFFSET, y + 4, color, true);
                 RenderSystem.enableBlend();
             } else {
-                graphics.drawString(mc.font, text, leftX + TEXT_OFFSET, y + 4, color, false);
+                HudFontHelper.drawString(graphics, mc.font, text, leftX + TEXT_OFFSET, y + 4, color, false);
             }
         }
     }

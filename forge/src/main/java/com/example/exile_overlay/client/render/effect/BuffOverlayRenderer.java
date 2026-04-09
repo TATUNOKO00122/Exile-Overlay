@@ -6,6 +6,7 @@ import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.render.HudFontHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -278,7 +279,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
 
             String stackText = toRoman(stacks);
             float stackScale = 0.7f;
-            int stackTextWidth = mc.font.width(stackText);
+            int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
 
             float badgeCenterX = x + FRAME_WIDTH - 5;
             float badgeCenterY = y + 7;
@@ -289,7 +290,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             try {
                 graphics.pose().scale(stackScale, stackScale, 1.0f);
                 graphics.pose().translate(0, 0, 201.0f);
-                graphics.drawString(mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
+                HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
             } finally {
                 graphics.pose().popPose();
             }
@@ -298,7 +299,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         String durationText = effect.getDurationText();
         if (durationText != null && !durationText.isEmpty()) {
             float textScale = 0.5f;
-            int textWidth = mc.font.width(durationText);
+            int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
             graphics.pose().pushPose();
             try {
@@ -309,7 +310,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
                 graphics.pose().translate(0, 0, 201.0f);
 
                 int textColor = effect.isInfinite() ? 0xFF88FF88 : 0xFFFFFFFF;
-                graphics.drawString(mc.font, durationText, (int) textX, (int) textY, textColor, false);
+                HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, textColor, false);
             } finally {
                 graphics.pose().popPose();
             }

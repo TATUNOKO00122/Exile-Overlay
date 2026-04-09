@@ -242,9 +242,9 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         String modStr = String.valueOf(modLevel);
 
         // 各テキストの幅を計算
-        int vanillaWidth = mc.font.width(vanillaStr);
-        int sepWidth = mc.font.width(separator);
-        int modWidth = mc.font.width(modStr);
+        int vanillaWidth = HudFontHelper.getTextWidth(mc.font, vanillaStr);
+        int sepWidth = HudFontHelper.getTextWidth(mc.font, separator);
+        int modWidth = HudFontHelper.getTextWidth(mc.font, modStr);
         int totalWidth = vanillaWidth + sepWidth + modWidth;
         int textHeight = mc.font.lineHeight;
 
@@ -261,13 +261,11 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         int textY = -textHeight / 2 + 1;
 
         // バニラレベル（緑）
-        graphics.drawString(mc.font, vanillaStr, startX, textY, 0x55FF55, false);
+        HudFontHelper.drawString(graphics, mc.font, vanillaStr, startX, textY, 0x55FF55, false);
 
-        // 区切り（白）
-        graphics.drawString(mc.font, separator, startX + vanillaWidth, textY, 0xFFFFFF, false);
+        HudFontHelper.drawString(graphics, mc.font, separator, startX + vanillaWidth, textY, 0xFFFFFF, false);
 
-        // M&Sレベル（黄色）
-        graphics.drawString(mc.font, modStr, startX + vanillaWidth + sepWidth, textY, 0xFFFF55, false);
+        HudFontHelper.drawString(graphics, mc.font, modStr, startX + vanillaWidth + sepWidth, textY, 0xFFFF55, false);
 
         graphics.pose().popPose();
     }

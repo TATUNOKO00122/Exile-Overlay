@@ -5,6 +5,7 @@ import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.render.HudFontHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -148,14 +149,14 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                     if (seconds > 0) {
                         String text = String.valueOf(seconds);
                         float cdTextScale = 1.5f;
-                        int textWidth = mc.font.width(text);
+                        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
                         float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
                         float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
                         graphics.pose().pushPose();
                         try {
                             graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
-                            graphics.drawString(mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
-                            graphics.drawString(mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
                         } finally {
                             graphics.pose().popPose();
                         }
@@ -184,10 +185,10 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 float scaledSlotY = slotY / manaTextScale;
 
                 String manaText = String.valueOf(manaCost);
-                int textWidth = mc.font.width(manaText);
+                int textWidth = HudFontHelper.getTextWidth(mc.font, manaText);
                 graphics.fill(Math.round(scaledSlotX) + 2, Math.round(scaledSlotY) + 2,
                         Math.round(scaledSlotX) + textWidth + 4, Math.round(scaledSlotY) + 12, 0xAA000066);
-                graphics.drawString(mc.font, manaText, Math.round(scaledSlotX) + 3, Math.round(scaledSlotY) + 3, 0xFF00CCFF, false);
+                HudFontHelper.drawString(graphics, mc.font, manaText, Math.round(scaledSlotX) + 3, Math.round(scaledSlotY) + 3, 0xFF00CCFF, false);
 
                 graphics.pose().popPose();
             }
@@ -200,7 +201,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 keyText = keyText.replace(" + ", "+");
                 keyText = keyText.replace(" ", "");
 
-                int fullTextWidth = mc.font.width(keyText);
+                int fullTextWidth = HudFontHelper.getTextWidth(mc.font, keyText);
                 float textScale = 0.8f;
                 float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
                 float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
@@ -213,13 +214,13 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 if (plusIndex >= 0) {
                     String modKeyPart = keyText.substring(0, plusIndex);
                     String mainKeyPart = keyText.substring(plusIndex + 1);
-                    int modKeyWidth = mc.font.width(modKeyPart);
-                    int plusWidth = mc.font.width("+");
-                    graphics.drawString(mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
-                    graphics.drawString(mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
-                    graphics.drawString(mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
+                    int modKeyWidth = HudFontHelper.getTextWidth(mc.font, modKeyPart);
+                    int plusWidth = HudFontHelper.getTextWidth(mc.font, "+");
+                    HudFontHelper.drawString(graphics, mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
+                    HudFontHelper.drawString(graphics, mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
+                    HudFontHelper.drawString(graphics, mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
                 } else {
-                    graphics.drawString(mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+                    HudFontHelper.drawString(graphics, mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
                 }
 
                 graphics.pose().popPose();
@@ -245,7 +246,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
         String text = String.valueOf(count);
-        int textWidth = mc.font.width(text);
+        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
         float s = 0.8f;
@@ -255,7 +256,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
-        graphics.drawString(mc.font, text, 0, 0, SUMMON_TEXT_COLOR, false);
+        HudFontHelper.drawString(graphics, mc.font, text, 0, 0, SUMMON_TEXT_COLOR, false);
         graphics.pose().popPose();
     }
 
@@ -264,7 +265,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
         String text = String.valueOf(charges);
-        int textWidth = mc.font.width(text);
+        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
         float s = 0.8f;
@@ -283,7 +284,7 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
-        graphics.drawString(mc.font, text, 0, 0, color, false);
+        HudFontHelper.drawString(graphics, mc.font, text, 0, 0, color, false);
         graphics.pose().popPose();
     }
 
