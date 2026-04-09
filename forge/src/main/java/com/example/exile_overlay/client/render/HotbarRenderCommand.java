@@ -8,6 +8,8 @@ import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.config.OrbTextConfig;
+import com.example.exile_overlay.client.render.orb.OrbConfig;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.orb.OrbRenderer;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
@@ -203,6 +205,12 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
             
             // Layer 4: Overlay Layer (最前面)
             visibleOrbs.forEach(orbType -> OrbRenderer.renderOverlayLayer(graphics, orbType.getConfig(), player, mc));
+
+            OrbTextConfig textConfig = OrbTextConfig.getInstance();
+            if (textConfig.isShowOrbText() && textConfig.isPoe2StyleText()) {
+                renderPoe2OrbTexts(graphics, mc, player);
+            }
+
             renderLevelDisplay(graphics, mc);
             renderHotbarSlots(graphics, mc);
         } finally {
@@ -375,6 +383,34 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
         graphics.pose().popPose();
     }
     
+    private void renderPoe2OrbTexts(GuiGraphics graphics, Minecraft mc, Player player) {
+        OrbType orb1 = findOrbType("orb_1");
+        OrbType orb2 = findOrbType("orb_2");
+
+        if (orb1 != null) {
+            OrbConfig c1 = orb1.getConfig();
+            int centerX = c1.getCenterX() + c1.getSize() / 2;
+            int topY = c1.getCenterY();
+            OrbRenderer.renderPoe2LeftOrbText(graphics, mc, player, centerX, topY);
+        }
+
+        if (orb2 != null) {
+            OrbConfig c2 = orb2.getConfig();
+            int centerX = c2.getCenterX() + c2.getSize() / 2;
+            int topY = c2.getCenterY();
+            OrbRenderer.renderPoe2RightOrbText(graphics, mc, player, centerX, topY);
+        }
+    }
+
+    private OrbType findOrbType(String id) {
+        for (OrbType type : OrbType.values()) {
+            if (type.getId().equals(id)) {
+                return type;
+            }
+        }
+        return null;
+    }
+
     // IHudRenderer implementation
     
     @Override

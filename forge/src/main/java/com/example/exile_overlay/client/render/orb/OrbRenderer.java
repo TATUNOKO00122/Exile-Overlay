@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.render.orb;
 
+import com.example.exile_overlay.client.config.OrbTextConfig;
 import com.example.exile_overlay.client.render.HudFontHelper;
 import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
@@ -30,6 +31,12 @@ import net.minecraft.world.entity.player.Player;
  * - 色: シアン/スカイブルー (0.0f, 0.9f, 1.0f, 0.7f)
  * - 描画順: 下から上へ溜まる方式
  * - Mine and SlashのMagic Shieldデータを使用
+ *
+ * 【POE2スタイルテキスト表示】
+ * OrbTextConfig.poe2StyleText=true時:
+ * - 左Orb上: ES → Life → Energy を縦に並べて表示
+ * - 右Orb上: Mana単体を表示
+ * - Orb内部にはテキストを描画しない
  */
 public class OrbRenderer {
 
@@ -37,8 +44,18 @@ public class OrbRenderer {
             "textures/gui/orb_reflection.png");
 
     // ES（エナジーシールド）の色設定（HJUD Mod方式）
-    // ARGB形式: 0x66 = 0.4 * 255 (40% alpha) - PoE等ハクスラ標準の半透明度
     private static final int ES_COLOR = 0x6600E6FF;
+
+    // POE2スタイル表示色
+    private static final int ES_TEXT_COLOR = 0xFF00E6FF;
+    private static final int HP_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int ENERGY_TEXT_COLOR = 0xFFFFFF00;
+    private static final int MANA_TEXT_COLOR = 0xFF5555FF;
+
+    // POE2スタイル表示スケール
+    private static final float POE2_TEXT_SCALE = 0.75f;
+    private static final int POE2_LINE_HEIGHT = 12;
+    private static final int POE2_TEXT_OFFSET_Y = -20;
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
         return !config.isVisible(player) || config.isOverlay();
@@ -51,15 +68,14 @@ public class OrbRenderer {
     private static int getDynamicColor(OrbConfig config, Player player) {
         String orbId = config.getId();
         String slotId = mapOrbIdToSlotId(orbId);
-        
+
         if (slotId != null) {
             int dynamicColor = ResourceSlotManager.getInstance().getActiveColor(slotId, player);
-            // デフォルト色（グレー）でない場合は動的色を使用
             if (dynamicColor != 0x808080) {
                 return dynamicColor;
             }
         }
-        
+
         return config.getColor();
     }
 
@@ -96,7 +112,6 @@ public class OrbRenderer {
         int orbY = config.getCenterY();
         int orbSize = config.getSize();
 
-        // 動的な色を取得（ResourceSlotManagerから）
         int color = getDynamicColor(config, player);
 
         OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, color);
@@ -112,7 +127,6 @@ public class OrbRenderer {
 
         if (config.shouldShowReflection()) {
             RenderSystem.enableBlend();
-            // 反射テクスチャを2px拡大、左に2pxずらす、上に2px上げる
             graphics.blit(REFLECTION_TEXTURE, orbX - 2, orbY - 2, 0, 0, 0, orbSize + 2, orbSize + 2, orbSize + 2, orbSize + 2);
         }
     }
@@ -120,6 +134,14 @@ public class OrbRenderer {
     public static void renderOverlayLayer(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc) {
         if (shouldSkipRender(config, player))
             return;
+
+        OrbTextConfig textConfig = OrbTextConfig.getInstance();
+        if (!textConfig.isShowOrbText()) {
+            return;
+        }
+        if (textConfig.isPoe2StyleText()) {
+            return;
+        }
 
         int orbX = config.getCenterX();
         int orbY = config.getCenterY();
@@ -130,13 +152,72 @@ public class OrbRenderer {
         if ("orb_1".equals(config.getId())) {
             renderHpEsValues(graphics, config, player, mc, orbX, orbY, orbSize, centerX);
         } else if (config.getDataProvider().shouldShowValue()) {
-            // 他のオーブは今まで通り
             float current = config.getDataProvider().getCurrentValue(player);
             float max = config.getDataProvider().getMaxValue(player);
             String text = (int) current + " / " + (int) max;
             float textScale = config.getDataProvider().getTextScale();
             renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
         }
+    }
+
+    /**
+     * POE2スタイル: 左Orb（ORB_1）上にES/Life/Energyを縦に並べて描画
+     * HotbarRenderCommandのLayer 4から呼び出される
+     *
+     * データ取得はResourceSlotManager経由で統一（既存パイプラインと同一）
+     */
+    public static void renderPoe2LeftOrbText(GuiGraphics graphics, Minecraft mc, Player player,
+            int orb1CenterX, int orb1TopY) {
+        ResourceSlotManager rsm = ResourceSlotManager.getInstance();
+
+        float esCurrent = rsm.getCurrentValue("orb1_overlay", player);
+        float esMax = rsm.getMaxValue("orb1_overlay", player);
+        float hpCurrent = rsm.getCurrentValue("orb1", player);
+        float hpMax = rsm.getMaxValue("orb1", player);
+        float energyCurrent = rsm.getCurrentValue("orb3", player);
+        float energyMax = rsm.getMaxValue("orb3", player);
+
+        float centerX = orb1CenterX;
+        float startY = orb1TopY + POE2_TEXT_OFFSET_Y;
+
+        int lineCount = 0;
+        if (esMax > 0) lineCount++;
+        lineCount++;
+        if (energyMax > 0) lineCount++;
+
+        float totalHeight = (lineCount - 1) * POE2_LINE_HEIGHT;
+        float currentY = startY - totalHeight;
+
+        if (esMax > 0) {
+            String esText = (int) esCurrent + "/" + (int) esMax;
+            renderCenteredScaledText(graphics, mc, esText, centerX, currentY, POE2_TEXT_SCALE, ES_TEXT_COLOR);
+            currentY += POE2_LINE_HEIGHT;
+        }
+
+        String hpText = (int) hpCurrent + "/" + (int) hpMax;
+        renderCenteredScaledText(graphics, mc, hpText, centerX, currentY, POE2_TEXT_SCALE, HP_TEXT_COLOR);
+        currentY += POE2_LINE_HEIGHT;
+
+        if (energyMax > 0) {
+            String energyText = (int) energyCurrent + "/" + (int) energyMax;
+            renderCenteredScaledText(graphics, mc, energyText, centerX, currentY, POE2_TEXT_SCALE, ENERGY_TEXT_COLOR);
+        }
+    }
+
+    /**
+     * POE2スタイル: 右Orb（ORB_2）上にManaを表示
+     */
+    public static void renderPoe2RightOrbText(GuiGraphics graphics, Minecraft mc, Player player,
+            int orb2CenterX, int orb2TopY) {
+        ResourceSlotManager rsm = ResourceSlotManager.getInstance();
+        float manaCurrent = rsm.getCurrentValue("orb2", player);
+        float manaMax = rsm.getMaxValue("orb2", player);
+
+        if (manaMax <= 0) return;
+
+        String text = (int) manaCurrent + "/" + (int) manaMax;
+        renderCenteredScaledText(graphics, mc, text, orb2CenterX, orb2TopY + POE2_TEXT_OFFSET_Y,
+                POE2_TEXT_SCALE, MANA_TEXT_COLOR);
     }
 
     /**
@@ -147,38 +228,30 @@ public class OrbRenderer {
      */
     private static void renderHpEsValues(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc,
             int orbX, int orbY, int orbSize, float centerX) {
-        // HP値はデータプロバイダーから取得（液面と同じ値）
         float hpCurrent = config.getDataProvider().getCurrentValue(player);
         float hpMax = config.getDataProvider().getMaxValue(player);
-        // ES値はMineAndSlashHelperから取得
         float esCurrent = MineAndSlashHelper.getCurrentMagicShield(player);
         float esMax = MineAndSlashHelper.getMaxMagicShield(player);
 
-        int whiteColor = 0xFFFFFFFF; // 白文字統一
+        int whiteColor = 0xFFFFFFFF;
 
-        // ESがない場合は従来通り中央にHPのみ表示
         if (esMax <= 0) {
             String text = (int) hpCurrent + "/" + (int) hpMax;
             renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, 0.75f, whiteColor);
             return;
         }
 
-        // ESがある場合：多い方を上、少ない方を下に表示
         boolean hpIsLarger = hpMax >= esMax;
         float largerCurrent = hpIsLarger ? hpCurrent : esCurrent;
         float largerMax = hpIsLarger ? hpMax : esMax;
         float smallerCurrent = hpIsLarger ? esCurrent : hpCurrent;
         float smallerMax = hpIsLarger ? esMax : hpMax;
 
-        // 上：多い方（通常サイズ）- 中心より少し上
         String largerText = (int) largerCurrent + "/" + (int) largerMax;
-        float mainScale = 0.75f;
-        renderCenteredScaledText(graphics, mc, largerText, centerX, orbY + orbSize / 2f - 4, mainScale, whiteColor);
+        renderCenteredScaledText(graphics, mc, largerText, centerX, orbY + orbSize / 2f - 4, 0.75f, whiteColor);
 
-        // 下：少ない方（少し小さいサイズ）- すぐ下に（隙間最小）
         String smallerText = (int) smallerCurrent + "/" + (int) smallerMax;
-        float subScale = 0.55f;
-        renderCenteredScaledText(graphics, mc, smallerText, centerX, orbY + orbSize / 2f + 5, subScale, whiteColor);
+        renderCenteredScaledText(graphics, mc, smallerText, centerX, orbY + orbSize / 2f + 5, 0.55f, whiteColor);
     }
 
     private static void renderOverlayFillLayer(GuiGraphics graphics, OrbConfig config, Player player) {
@@ -199,14 +272,6 @@ public class OrbRenderer {
 
     /**
      * エナジーシールド（ES）オーバーレイを描画（HJUD Mod方式）
-     * HPオーブ上にシアン色の半透明レイヤーを下から上に描画
-     * OrbShaderRendererを使用して位置ズレを防止
-     *
-     * @param graphics GUIグラフィックス
-     * @param x        オーブ左上X座標
-     * @param y        オーブ左上Y座標
-     * @param size     オーブサイズ
-     * @param player   プレイヤー
      */
     private static void renderEsOverlay(GuiGraphics graphics, int x, int y, int size, Player player) {
         float currentEs = MineAndSlashHelper.getCurrentMagicShield(player);
@@ -226,14 +291,6 @@ public class OrbRenderer {
 
     /**
      * 中央揃えのテキストを描画
-     * 
-     * @param graphics GuiGraphics
-     * @param mc       Minecraftインスタンス
-     * @param text     表示するテキスト
-     * @param centerX  中心X座標
-     * @param centerY  中心Y座標
-     * @param scale    スケール
-     * @param color    色
      */
     public static void renderCenteredScaledText(GuiGraphics graphics, Minecraft mc, String text,
             float centerX, float centerY, float scale, int color) {

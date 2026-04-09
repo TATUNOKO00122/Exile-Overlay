@@ -2,6 +2,7 @@ package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.HudFontConfig;
+import com.example.exile_overlay.client.config.OrbTextConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
@@ -62,7 +63,7 @@ public class ConfigScreen extends Screen {
         int rightPanelH = this.height - 40;
 
         int tabY = leftPanelY + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             final int index = i;
             Button btn = Button.builder(getTabComponent(i), b -> switchTab(index))
                     .bounds(leftPanelX + 10, tabY, leftPanelW - 20, 20)
@@ -103,7 +104,8 @@ public class ConfigScreen extends Screen {
             case 0 -> Component.translatable("exile_overlay.config.tab.general");
             case 1 -> Component.translatable("exile_overlay.config.tab.damage_popup");
             case 2 -> Component.translatable("exile_overlay.config.tab.hp_bar");
-            case 3 -> Component.translatable("exile_overlay.config.tab.compatibility");
+            case 3 -> Component.translatable("exile_overlay.config.tab.orb");
+            case 4 -> Component.translatable("exile_overlay.config.tab.compatibility");
             default -> Component.empty();
         };
     }
@@ -118,7 +120,8 @@ public class ConfigScreen extends Screen {
             case 0 -> buildGeneralTab(colX, y, colW, btnH, spacing, titleX);
             case 1 -> buildDamagePopupTab(colX, y, colW, btnH, spacing, titleX);
             case 2 -> buildEntityHealthBarTab(colX, y, colW, btnH, spacing, titleX);
-            case 3 -> buildCompatibilityTab(colX, y, colW, btnH, spacing, titleX);
+            case 3 -> buildOrbTab(colX, y, colW, btnH, spacing, titleX);
+            case 4 -> buildCompatibilityTab(colX, y, colW, btnH, spacing, titleX);
         }
     }
 
@@ -336,6 +339,32 @@ public class ConfigScreen extends Screen {
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.popup_height",
                 config.getPopupHeightRatio(), 0.0f, 1.0f, val -> config.setPopupHeightRatio(val)));
         
+        contentHeight = y - (30 - (int) scrollOffset) + sp;
+    }
+
+    private void buildOrbTab(int x, int y, int w, int h, int sp, int tx) {
+        OrbTextConfig config = OrbTextConfig.getInstance();
+
+        y = addSection(y, "section.exile_overlay.orb_text", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_orb_text", config.isShowOrbText()), btn -> {
+                    config.setShowOrbText(!config.isShowOrbText());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_orb_text", config.isShowOrbText()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_orb_text.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.poe2_style_text", config.isPoe2StyleText()), btn -> {
+                    config.setPoe2StyleText(!config.isPoe2StyleText());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.poe2_style_text", config.isPoe2StyleText()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.poe2_style_text.tooltip")))
+                        .build());
+        y += sp;
+
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
@@ -562,6 +591,7 @@ public class ConfigScreen extends Screen {
         HudFontConfig.getInstance().save();
         DamagePopupConfig.getInstance().save();
         EntityHealthBarConfig.getInstance().save();
+        OrbTextConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
         DamageFontRenderer.reloadCustomFont();
     }
@@ -619,6 +649,11 @@ public class ConfigScreen extends Screen {
         hpBarConfig.setBarHeight(2);
         hpBarConfig.setScale(1.0f);
         hpBarConfig.save();
+
+        OrbTextConfig orbTextConfig = OrbTextConfig.getInstance();
+        orbTextConfig.setShowOrbText(true);
+        orbTextConfig.setPoe2StyleText(false);
+        orbTextConfig.save();
 
         DamageFontRenderer.reloadCustomFont();
         this.init();

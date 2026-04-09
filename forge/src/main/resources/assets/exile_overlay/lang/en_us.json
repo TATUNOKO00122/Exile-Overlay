@@ -128,5 +128,11 @@
   "exile_overlay.config.hp_color.crimson": "Crimson",
   "exile_overlay.config.hp_color.pure_red": "Pure Red",
   "exile_overlay.config.hp_bar_display_duration.tooltip": "Duration to show HP bar after damage (seconds)",
-  "exile_overlay.config.hp_bar_display_duration": "Display Duration: %ss"
+  "exile_overlay.config.hp_bar_display_duration": "Display Duration: %ss",
+  "exile_overlay.config.tab.orb": "Orb",
+  "section.exile_overlay.orb_text": "Orb Text",
+  "exile_overlay.config.show_orb_text": "Show Text: %s",
+  "exile_overlay.config.show_orb_text.tooltip": "Display numeric text on orbs",
+  "exile_overlay.config.poe2_style_text": "POE2 Style: %s",
+  "exile_overlay.config.poe2_style_text.tooltip": "Show values above orbs instead of inside\nLeft Orb: ES/Life/Energy stacked\nRight Orb: Mana only"
 }
