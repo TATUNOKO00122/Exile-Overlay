@@ -3,7 +3,7 @@ package com.example.exile_overlay.client.damage;
 public enum FontPreset {
     MINECRAFT("Minecraft", null),
     LINESEED("Lineseed", "damage_font"),
-    TITAN_ONE("Titan One", "font/TitanOne-Regular.ttf");
+    TITAN_ONE("Titan One", "font/titan_one_regular.ttf");
 
     private final String displayName;
     private final String resourcePath;

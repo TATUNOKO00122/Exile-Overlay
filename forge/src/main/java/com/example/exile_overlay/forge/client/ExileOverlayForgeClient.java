@@ -132,7 +132,6 @@ public class ExileOverlayForgeClient {
             String fontPath = config.getCustomFontPath();
             if (fontPath != null && !fontPath.isEmpty()) {
                 LOGGER.info("Initializing custom damage font: {}", fontPath);
-                // リソースからフォントを読み込み
                 boolean loaded = CustomDamageFontRenderer.getInstance().loadFontFromResource(
                         fontPath, config.getCustomFontSize());
                 if (loaded) {

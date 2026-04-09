@@ -1,10 +1,13 @@
 package com.example.exile_overlay.client.render.orb;
 
+import com.example.exile_overlay.client.config.HudFontConfig;
 import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
@@ -236,11 +239,25 @@ public class OrbRenderer {
      */
     public static void renderCenteredScaledText(GuiGraphics graphics, Minecraft mc, String text,
             float centerX, float centerY, float scale, int color) {
-        int textWidth = mc.font.width(text);
-        graphics.pose().pushPose();
-        graphics.pose().translate(centerX, centerY, 0);
-        graphics.pose().scale(scale, scale, 1.0f);
-        graphics.drawString(mc.font, text, -textWidth / 2, -mc.font.lineHeight / 2, color, true);
-        graphics.pose().popPose();
+        HudFontConfig config = HudFontConfig.getInstance();
+        
+        if (config.isUseCustomFont()) {
+            ResourceLocation customFont = ResourceLocation.tryParse("exile_overlay:hud_font");
+            Component component = Component.literal(text).withStyle(Style.EMPTY.withFont(customFont));
+            int textWidth = mc.font.width(component);
+            
+            graphics.pose().pushPose();
+            graphics.pose().translate(centerX, centerY, 0);
+            graphics.pose().scale(scale, scale, 1.0f);
+            graphics.drawString(mc.font, component, -textWidth / 2, -mc.font.lineHeight / 2, color, true);
+            graphics.pose().popPose();
+        } else {
+            int textWidth = mc.font.width(text);
+            graphics.pose().pushPose();
+            graphics.pose().translate(centerX, centerY, 0);
+            graphics.pose().scale(scale, scale, 1.0f);
+            graphics.drawString(mc.font, text, -textWidth / 2, -mc.font.lineHeight / 2, color, true);
+            graphics.pose().popPose();
+        }
     }
 }

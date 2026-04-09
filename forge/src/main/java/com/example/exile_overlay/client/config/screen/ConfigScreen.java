@@ -1,12 +1,14 @@
 package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
+import com.example.exile_overlay.client.config.HudFontConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
 import com.example.exile_overlay.client.render.DayCounterConfig;
+import com.example.exile_overlay.client.render.HudFontManager;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
@@ -180,6 +182,22 @@ public class ConfigScreen extends Screen {
                 .bounds(x, y, w, h)
                 .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.open_hud_editor.tooltip")))
                 .build());
+        y += sp;
+        
+        y = addSection(y, "section.exile_overlay.hud_font", tx);
+        
+        HudFontConfig hudFontConfig = HudFontConfig.getInstance();
+        
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()), btn -> {
+                    hudFontConfig.setUseCustomFont(!hudFontConfig.isUseCustomFont());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()));
+                    if (hudFontConfig.isUseCustomFont()) {
+                        HudFontManager.getInstance().reloadFont();
+                    }
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.use_custom_font.tooltip")))
+                        .build());
         y += sp;
         
         y = addSection(y, "section.exile_overlay.day_counter", tx);
@@ -545,10 +563,12 @@ public class ConfigScreen extends Screen {
 
     private void saveConfig() {
         EquipmentDisplayConfig.getInstance().save();
+        HudFontConfig.getInstance().save();
         DamagePopupConfig.getInstance().save();
         EntityHealthBarConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
         DamageFontRenderer.reloadCustomFont();
+        HudFontManager.getInstance().reloadFont();
     }
 
     private void resetToDefaults() {
@@ -568,6 +588,10 @@ public class ConfigScreen extends Screen {
         config.setCancelDungeonRealmScoreboard(true);
         config.setAutoSortLootrChest(true);
         config.save();
+        
+        HudFontConfig hudFontConfig = HudFontConfig.getInstance();
+        hudFontConfig.setUseCustomFont(false);
+        hudFontConfig.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);
         
