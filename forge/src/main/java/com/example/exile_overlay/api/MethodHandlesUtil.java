@@ -49,6 +49,8 @@ public class MethodHandlesUtil {
     private static Class<?> exileEffectInstanceDataClass = null;
     private static Class<?> entityStatusEffectsDataClass = null;
     private static Class<?> chatFormattingClass = null;
+    private static Class<?> statModClass = null;
+    private static Class<?> statClass = null;
 
     // === MethodHandles ===
     private static MethodHandle LOAD_UNIT = null;
@@ -81,6 +83,17 @@ public class MethodHandlesUtil {
     private static MethodHandle GET_AFFIX_ICON = null;
     private static MethodHandle GET_STATUS_EFFECTS_DATA = null;
     private static MethodHandle EXILE_EFFECTS_GET = null;
+
+    // === Affix Stats MethodHandles ===
+    private static java.lang.reflect.Field AFFIX_STATS_FIELD = null;
+    private static MethodHandle GET_STAT_MOD_MIN = null;
+    private static MethodHandle GET_STAT_MOD_STAT = null;
+    private static MethodHandle GET_STAT_MOD_TYPE = null;
+    private static MethodHandle GET_STAT_LOC_NAME = null;
+    private static MethodHandle GET_STAT_IS_PERC = null;
+    private static java.lang.reflect.Method statsRegistryMethod = null;
+    private static Object statsRegistry = null;
+    private static java.lang.reflect.Method statsRegistryGetMethod = null;
 
     // === ResourceType enum values ===
     private static Object MANA_TYPE = null;
@@ -186,6 +199,21 @@ public class MethodHandlesUtil {
             GET_AFFIXES_LIST = lookupMethod(mobDataClass, "getAffixes");
             GET_AFFIX_LOC_NAME = lookupMethod(mobAffixClass, "locName");
             GET_AFFIX_ICON = lookupFieldGetter(mobAffixClass, "icon");
+
+            statModClass = Class.forName("com.robertx22.mine_and_slash.database.data.StatMod");
+            statClass = Class.forName("com.robertx22.mine_and_slash.database.data.stats.Stat");
+
+            AFFIX_STATS_FIELD = mobAffixClass.getDeclaredField("stats");
+            AFFIX_STATS_FIELD.setAccessible(true);
+
+            GET_STAT_MOD_MIN = lookupFieldGetter(statModClass, "min");
+            GET_STAT_MOD_STAT = lookupFieldGetter(statModClass, "stat");
+            GET_STAT_MOD_TYPE = lookupFieldGetter(statModClass, "type");
+
+            GET_STAT_LOC_NAME = lookupMethod(statClass, "locName");
+            GET_STAT_IS_PERC = lookupFieldGetter(statClass, "is_perc");
+
+            statsRegistryMethod = exileDBClass.getMethod("Stats");
 
             GET_STATUS_EFFECTS_DATA = lookupMethod(entityDataClass, "getStatusEffectsData");
             EXILE_EFFECTS_GET = lookupMethod(exileDBClass, "ExileEffects");
@@ -575,6 +603,96 @@ public class MethodHandlesUtil {
             return icon != null ? icon.toString() : "";
         } catch (Throwable t) {
             return "";
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static java.util.List<Object> getAffixStatsList(Object affix) {
+        if (AFFIX_STATS_FIELD == null || affix == null) return java.util.Collections.emptyList();
+        try {
+            Object list = AFFIX_STATS_FIELD.get(affix);
+            if (list instanceof java.util.List) return (java.util.List<Object>) list;
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get affix stats: {}", e.getMessage());
+        }
+        return java.util.Collections.emptyList();
+    }
+
+    public static float getStatModMin(Object statMod) {
+        if (GET_STAT_MOD_MIN == null || statMod == null) return 0f;
+        try {
+            Object result = GET_STAT_MOD_MIN.invoke(statMod);
+            return result instanceof Number ? ((Number) result).floatValue() : 0f;
+        } catch (Throwable t) {
+            return 0f;
+        }
+    }
+
+    public static String getStatModStatGuid(Object statMod) {
+        if (GET_STAT_MOD_STAT == null || statMod == null) return null;
+        try {
+            Object result = GET_STAT_MOD_STAT.invoke(statMod);
+            return result instanceof String ? (String) result : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    public static String getStatModType(Object statMod) {
+        if (GET_STAT_MOD_TYPE == null || statMod == null) return "FLAT";
+        try {
+            Object result = GET_STAT_MOD_TYPE.invoke(statMod);
+            return result instanceof String ? (String) result : "FLAT";
+        } catch (Throwable t) {
+            return "FLAT";
+        }
+    }
+
+    public static Object getStatFromRegistry(String guid) {
+        if (guid == null || exileDBClass == null) return null;
+        try {
+            if (statsRegistry == null) {
+                if (statsRegistryMethod == null) {
+                    statsRegistryMethod = exileDBClass.getMethod("Stats");
+                }
+                statsRegistry = statsRegistryMethod.invoke(null);
+                if (statsRegistry == null) return null;
+            }
+            if (statsRegistryGetMethod == null) {
+                statsRegistryGetMethod = statsRegistry.getClass().getMethod("get", String.class);
+            }
+            return statsRegistryGetMethod.invoke(statsRegistry, guid);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            LOGGER.debug("Stats registry lookup error for {}: {}", guid,
+                    e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            return null;
+        } catch (Exception e) {
+            LOGGER.debug("Stats registry lookup error for {}: {}", guid, e.getMessage());
+            statsRegistry = null;
+            return null;
+        }
+    }
+
+    public static String getStatLocName(Object stat) {
+        if (stat == null || GET_STAT_LOC_NAME == null) return "";
+        try {
+            Object name = GET_STAT_LOC_NAME.invoke(stat);
+            if (name instanceof net.minecraft.network.chat.Component comp) {
+                return comp.getString();
+            }
+            return name != null ? name.toString() : "";
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    public static boolean getStatIsPercent(Object stat) {
+        if (stat == null || GET_STAT_IS_PERC == null) return false;
+        try {
+            Object result = GET_STAT_IS_PERC.invoke(stat);
+            return result instanceof Boolean && (Boolean) result;
+        } catch (Throwable t) {
+            return false;
         }
     }
 

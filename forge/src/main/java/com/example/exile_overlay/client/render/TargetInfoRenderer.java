@@ -49,6 +49,9 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     private static final int EFFECT_PADDING_X = 5;
     private static final int EFFECT_PADDING_Y = 2;
     private static final int MAX_EFFECTS_PER_ROW = 12;
+    private static final int MAX_AFFIX_STATS_DISPLAY = 5;
+    private static final int AFFIX_STAT_LINE_HEIGHT = 6;
+    private static final float AFFIX_STAT_SCALE = 0.65f;
 
     private static final int BAR_X = 5;
     private static final int BAR_Y = 20;
@@ -140,7 +143,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         String levelText = mnsLevel > 0 ? "Lv." + mnsLevel : "";
 
         int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
-        int barColor = resolveBarColor(rarity, health, maxHealth);
+            int barColor = HP_BAR_COLOR;
         float hpRatio = Mth.clamp(health / maxHealth, 0.0f, 1.0f);
 
         int screenWidth = ctx.getScreenWidth();
@@ -168,6 +171,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
             renderHpText(graphics, mc, health, maxHealth, hpRatio);
             renderEffects(graphics, mc, effects);
+            renderAffixStats(graphics, mc, affixes, !effects.isEmpty());
         } finally {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             RenderSystem.defaultBlendFunc();
@@ -199,12 +203,17 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
         String hpText = formatHpText(health, maxHealth);
-        int hpWidth = mc.font.width(hpText);
-        int hpX = BAR_X + BAR_WIDTH - hpWidth - 2;
-        int hpY = BAR_Y - 9;
+        float hpScale = 0.7f;
+        float textWidth = mc.font.width(hpText) * hpScale;
+        int hpX = (int) (BAR_X + BAR_WIDTH - textWidth - 2);
+        int hpY = BAR_Y - (int) (mc.font.lineHeight * hpScale);
 
         int textColor = hpRatio > 0.5f ? 0xFFFFFFFF : (hpRatio > 0.25f ? 0xFFFFFF00 : 0xFFFF4444);
-        graphics.drawString(mc.font, hpText, hpX, hpY, textColor, true);
+        graphics.pose().pushPose();
+        graphics.pose().translate(hpX, hpY - 0.5f, 0);
+        graphics.pose().scale(hpScale, hpScale, 1.0f);
+        graphics.drawString(mc.font, hpText, 0, 0, textColor, true);
+        graphics.pose().popPose();
     }
 
     private void renderEffects(GuiGraphics graphics, Minecraft mc, List<MineAndSlashHelper.MobEffectInfo> effects) {
@@ -239,6 +248,33 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
                 int durY = drawY + EFFECT_ICON_SIZE + 1;
                 graphics.drawString(mc.font, durText, durX, durY, 0xFFAAAAAA, false);
             }
+        }
+    }
+
+    private void renderAffixStats(GuiGraphics graphics, Minecraft mc,
+                                   List<MineAndSlashHelper.MobAffixInfo> affixes, boolean hasEffects) {
+        List<MineAndSlashHelper.AffixStatInfo> allStats = new ArrayList<>();
+        for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
+            allStats.addAll(affix.stats);
+        }
+        if (allStats.isEmpty()) return;
+
+        int startY = hasEffects
+                ? TEX_HEIGHT + EFFECT_PADDING_Y + EFFECT_ICON_SIZE + EFFECT_PADDING_Y
+                : TEX_HEIGHT + EFFECT_PADDING_Y;
+
+        int count = Math.min(allStats.size(), MAX_AFFIX_STATS_DISPLAY);
+        for (int i = 0; i < count; i++) {
+            MineAndSlashHelper.AffixStatInfo stat = allStats.get(i);
+            String text = stat.getDisplayText();
+            float textWidth = mc.font.width(text) * AFFIX_STAT_SCALE;
+            int x = (int) (TEX_WIDTH - textWidth - 3);
+            int y = startY + (int) (i * AFFIX_STAT_LINE_HEIGHT / AFFIX_STAT_SCALE);
+            graphics.pose().pushPose();
+            graphics.pose().translate(x, y, 0);
+            graphics.pose().scale(AFFIX_STAT_SCALE, AFFIX_STAT_SCALE, 1.0f);
+            graphics.drawString(mc.font, text, 0, 0, MineAndSlashHelper.AffixStatInfo.DISPLAY_COLOR, true);
+            graphics.pose().popPose();
         }
     }
 

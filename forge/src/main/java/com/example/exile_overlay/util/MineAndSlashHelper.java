@@ -1116,13 +1116,38 @@ public class MineAndSlashHelper {
         }
     }
 
+    public static class AffixStatInfo {
+        public final float value;
+        public final String statName;
+        public final boolean isPercent;
+
+        public AffixStatInfo(float value, String statName, boolean isPercent) {
+            this.value = value;
+            this.statName = statName != null ? statName : "";
+            this.isPercent = isPercent;
+        }
+
+        public String getDisplayText() {
+            String sign = value >= 0 ? "+" : "";
+            String pct = isPercent ? "%" : "";
+            String val = (value == (int) value)
+                    ? String.valueOf((int) value)
+                    : String.format("%.1f", value);
+            return sign + val + pct + " " + statName;
+        }
+
+        public static final int DISPLAY_COLOR = 0xFFFFFFFF;
+    }
+
     public static class MobAffixInfo {
         public final String name;
         public final String icon;
+        public final List<AffixStatInfo> stats;
 
-        public MobAffixInfo(String name, String icon) {
+        public MobAffixInfo(String name, String icon, List<AffixStatInfo> stats) {
             this.name = name;
             this.icon = icon != null ? icon : "";
+            this.stats = stats != null ? stats : new ArrayList<>();
         }
     }
 
@@ -1211,10 +1236,39 @@ public class MineAndSlashHelper {
             for (Object affix : affixObjs) {
                 String locName = MethodHandlesUtil.getAffixLocName(affix);
                 String icon = MethodHandlesUtil.getAffixIcon(affix);
-                result.add(new MobAffixInfo(locName, icon));
+                List<AffixStatInfo> statInfos = getAffixStatInfos(affix);
+                result.add(new MobAffixInfo(locName, icon, statInfos));
             }
         } catch (Throwable t) {
             LOGGER.debug("Failed to get mob affixes: {}", t.getMessage());
+        }
+        return result;
+    }
+
+    private static List<AffixStatInfo> getAffixStatInfos(Object affix) {
+        List<AffixStatInfo> result = new ArrayList<>();
+        try {
+            List<Object> statMods = MethodHandlesUtil.getAffixStatsList(affix);
+            for (Object statMod : statMods) {
+                try {
+                    float min = MethodHandlesUtil.getStatModMin(statMod);
+                    String statGuid = MethodHandlesUtil.getStatModStatGuid(statMod);
+                    String modTypeStr = MethodHandlesUtil.getStatModType(statMod);
+                    if (statGuid == null) continue;
+
+                    Object stat = MethodHandlesUtil.getStatFromRegistry(statGuid);
+                    String statName = stat != null ? MethodHandlesUtil.getStatLocName(stat) : statGuid;
+                    boolean statIsPercent = stat != null && MethodHandlesUtil.getStatIsPercent(stat);
+                    boolean modIsPercent = "PERCENT".equals(modTypeStr) || "MORE".equals(modTypeStr);
+                    boolean isPercent = statIsPercent || modIsPercent;
+
+                    result.add(new AffixStatInfo(min, statName, isPercent));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process affix stat: {}", inner.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get affix stat infos: {}", e.getMessage());
         }
         return result;
     }
