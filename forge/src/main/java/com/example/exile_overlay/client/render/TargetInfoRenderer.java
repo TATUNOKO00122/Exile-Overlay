@@ -149,8 +149,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
 
-        int effectsRows = effects.isEmpty() ? 0 : 1;
-        int totalHeight = TEX_HEIGHT + effectsRows * EFFECT_ROW_HEIGHT;
+        int totalHeight = effects.isEmpty() ? TEX_HEIGHT : TEX_HEIGHT + EFFECT_ROW_HEIGHT;
 
         HudPosition position = getPosition();
         int[] pos = position.resolve(screenWidth, screenHeight);
@@ -169,7 +168,6 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
 
-            renderBackground(graphics, effectsRows);
             renderHpBar(graphics, hpRatio, barColor);
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
             renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
@@ -180,13 +178,6 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             RenderSystem.defaultBlendFunc();
             RenderSystem.disableBlend();
             graphics.pose().popPose();
-        }
-    }
-
-    private void renderBackground(GuiGraphics graphics, int effectsRows) {
-        if (effectsRows > 0) {
-            graphics.fill(0, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT + effectsRows * EFFECT_ROW_HEIGHT, 0x80000000);
-            graphics.fill(0, TEX_HEIGHT - 1, TEX_WIDTH, TEX_HEIGHT, 0x40404040);
         }
     }
 
@@ -234,16 +225,9 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             int iconX = drawX + i * EFFECT_SPACING;
 
             if (effect.texture != null) {
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
                 graphics.blit(effect.texture, iconX, drawY, 0, 0, EFFECT_ICON_SIZE, EFFECT_ICON_SIZE,
                         EFFECT_ICON_SIZE, EFFECT_ICON_SIZE);
-            } else {
-                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, 0xB0000000);
-                int accentColor = effect.isNegative ? 0xFFFF4444 : 0xFF44FF44;
-                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + 1, accentColor);
-                String symbol = effect.isNegative ? "-" : "+";
-                int symX = iconX + (EFFECT_ICON_SIZE - mc.font.width(symbol)) / 2;
-                int symY = drawY + (EFFECT_ICON_SIZE - 9) / 2;
-                graphics.drawString(mc.font, symbol, symX, symY, accentColor, false);
             }
 
             if (effect.stacks > 1) {

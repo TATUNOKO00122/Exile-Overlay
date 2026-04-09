@@ -1109,36 +1109,57 @@ public class MineAndSlashHelper {
         public final String id;
         public final String name;
         public final ResourceLocation texture;
-        public final int ticksLeft;
         public final int stacks;
         public final boolean isInfinite;
         public final boolean isNegative;
-        public final long clientExpireTimeMs;
+        private final int displayTicksLeft;
 
         public MobEffectInfo(String id, String name, ResourceLocation texture, int ticksLeft,
-                             int stacks, boolean isInfinite, boolean isNegative, String durationText) {
+                             int stacks, boolean isInfinite, boolean isNegative) {
             this.id = id;
             this.name = name;
             this.texture = texture;
-            this.ticksLeft = ticksLeft;
             this.stacks = stacks;
             this.isInfinite = isInfinite;
             this.isNegative = isNegative;
-            this.clientExpireTimeMs = isInfinite ? Long.MAX_VALUE : System.currentTimeMillis() + ticksLeft * 50L;
+            this.displayTicksLeft = ticksLeft;
         }
 
         public String getDurationText() {
             if (isInfinite) return "";
-            long remaining = (clientExpireTimeMs - System.currentTimeMillis()) / 1000;
-            if (remaining <= 0) return "0:00";
-            long min = remaining / 60;
-            long sec = remaining % 60;
-            return min + ":" + String.format("%02d", sec);
+            int seconds = Math.max(0, displayTicksLeft / 20);
+            if (seconds <= 0) return "0s";
+            if (seconds >= 60) return (seconds / 60) + "m";
+            return seconds + "s";
         }
 
         public boolean isExpired() {
-            return !isInfinite && System.currentTimeMillis() >= clientExpireTimeMs;
+            return !isInfinite && displayTicksLeft <= 0;
         }
+    }
+
+    private static final ConcurrentHashMap<String, long[]> effectTimerCache = new ConcurrentHashMap<>();
+    private static long lastEffectCleanup = 0;
+
+    private static int calcDisplayTicks(String cacheKey, int syncedTicksLeft) {
+        long now = System.currentTimeMillis();
+        long[] entry = effectTimerCache.computeIfAbsent(cacheKey, k -> new long[]{syncedTicksLeft, now});
+        if (entry[0] != syncedTicksLeft) {
+            entry[0] = syncedTicksLeft;
+            entry[1] = now;
+        }
+        long elapsedTicks = (now - entry[1]) / 50;
+        return Math.max(0, (int) (syncedTicksLeft - elapsedTicks));
+    }
+
+    private static void cleanupEffectTimers() {
+        long now = System.currentTimeMillis();
+        if (now - lastEffectCleanup < 30000) return;
+        lastEffectCleanup = now;
+        effectTimerCache.entrySet().removeIf(e -> {
+            long elapsedTicks = (now - e.getValue()[1]) / 50;
+            return e.getValue()[0] - elapsedTicks <= 0;
+        });
     }
 
     public static MobRarityInfo getMobRarity(net.minecraft.world.entity.LivingEntity entity) {
@@ -1181,6 +1202,8 @@ public class MineAndSlashHelper {
         List<MobEffectInfo> result = new ArrayList<>();
         if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
 
+        cleanupEffectTimers();
+
         try {
             Object entityData = MethodHandlesUtil.getEntityData(entity);
             if (entityData == null) return result;
@@ -1199,7 +1222,6 @@ public class MineAndSlashHelper {
                     int ticksLeft = MethodHandlesUtil.getEffectTicksLeft(instanceData);
                     int stacks = MethodHandlesUtil.getEffectStacks(instanceData);
                     boolean isInfinite = MethodHandlesUtil.isEffectInfinite(instanceData);
-                    String durationText = MethodHandlesUtil.getEffectDurationString(instanceData);
 
                     Object exileEffect = MethodHandlesUtil.getExileEffectFromDB(effectId);
                     if (exileEffect == null) continue;
@@ -1208,8 +1230,11 @@ public class MineAndSlashHelper {
                     ResourceLocation texture = MethodHandlesUtil.getExileEffectTexture(exileEffect);
                     boolean isNegative = MethodHandlesUtil.isEffectNegative(exileEffect);
 
-                    result.add(new MobEffectInfo(effectId, name, texture, ticksLeft,
-                            stacks, isInfinite, isNegative, durationText));
+                    String cacheKey = entity.getUUID() + ":" + effectId;
+                    int displayTicks = isInfinite ? ticksLeft : calcDisplayTicks(cacheKey, ticksLeft);
+
+                    result.add(new MobEffectInfo(effectId, name, texture, displayTicks,
+                            stacks, isInfinite, isNegative));
                 } catch (Exception inner) {
                     LOGGER.debug("Failed to process mob effect {}: {}", effectId, inner.getMessage());
                 }
@@ -1226,15 +1251,16 @@ public class MineAndSlashHelper {
 
         for (var instance : entity.getActiveEffects()) {
             var effect = instance.getEffect();
-            String id = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect).toString();
+            var regKey = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect);
+            String id = regKey.toString();
             String name = net.minecraft.network.chat.Component.translatable(effect.getDescriptionId()).getString();
             int duration = instance.getDuration();
             int amplifier = instance.getAmplifier();
             boolean isNegative = !effect.isBeneficial();
-            String durationText = duration >= 32000 ? "" : formatDuration(duration / 20);
+            ResourceLocation texture = new ResourceLocation("minecraft", "textures/mob_effect/" + regKey.getPath() + ".png");
 
-            result.add(new MobEffectInfo(id, name, null, duration, amplifier + 1,
-                    duration < 0, isNegative, durationText));
+            result.add(new MobEffectInfo(id, name, texture, duration, amplifier + 1,
+                    duration < 0, isNegative));
         }
         return result;
     }
