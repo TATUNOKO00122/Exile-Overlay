@@ -40,16 +40,20 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final ResourceLocation FRAME_TEXTURE = new ResourceLocation("exile_overlay",
             "textures/gui/target_hp_bar_frame.png");
+    private static final ResourceLocation EFFECT_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/effect_icon_frame.png");
 
     private static final int TEX_WIDTH = 224;
     private static final int TEX_HEIGHT = 32;
 
     private static final int EFFECT_ROW_HEIGHT = 20;
     private static final int EFFECT_ICON_SIZE = 16;
-    private static final int EFFECT_SPACING = 18;
+    private static final int EFFECT_FRAME_SIZE = 18;
+    private static final int EFFECT_FRAME_OFFSET = 1;
+    private static final int EFFECT_SPACING = 20;
     private static final int EFFECT_PADDING_X = 5;
     private static final int EFFECT_PADDING_Y = 2;
-    private static final int MAX_EFFECTS_PER_ROW = 12;
+    private static final int MAX_EFFECTS_PER_ROW = 11;
     private static final int MAX_AFFIX_STATS_DISPLAY = 5;
     private static final int AFFIX_STAT_LINE_HEIGHT = 6;
     private static final float AFFIX_STAT_SCALE = 0.65f;
@@ -190,6 +194,8 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         }
     }
 
+    private static final float NAME_TEXT_SCALE = 0.945f;
+
     private void renderNameAndLevel(GuiGraphics graphics, Minecraft mc, String displayName, String levelText, int nameColor) {
         String combinedName;
         if (!levelText.isEmpty()) {
@@ -197,9 +203,14 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         } else {
             combinedName = displayName;
         }
-        int nameWidth = mc.font.width(combinedName);
-        int textX = (TEX_WIDTH - nameWidth) / 2;
-        graphics.drawString(mc.font, combinedName, textX, NAME_Y, nameColor, true);
+        float nameWidth = mc.font.width(combinedName) * NAME_TEXT_SCALE;
+        float textX = (TEX_WIDTH - nameWidth) / 2.0f;
+        float textY = NAME_Y + (mc.font.lineHeight * (1.0f - NAME_TEXT_SCALE)) / 2.0f;
+        graphics.pose().pushPose();
+        graphics.pose().translate(textX, textY, 0);
+        graphics.pose().scale(NAME_TEXT_SCALE, NAME_TEXT_SCALE, 1.0f);
+        graphics.drawString(mc.font, combinedName, 0, 0, nameColor, true);
+        graphics.pose().popPose();
     }
 
     private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
@@ -234,6 +245,12 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
                 graphics.blit(effect.texture, iconX, drawY, 0, 0, EFFECT_ICON_SIZE, EFFECT_ICON_SIZE,
                         EFFECT_ICON_SIZE, EFFECT_ICON_SIZE);
             }
+
+            RenderSystem.enableBlend();
+            graphics.blit(EFFECT_FRAME_TEXTURE,
+                    iconX - EFFECT_FRAME_OFFSET, drawY - EFFECT_FRAME_OFFSET,
+                    0, 0, EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE,
+                    EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE);
 
             if (effect.stacks > 1) {
                 String stackText = String.valueOf(effect.stacks);
