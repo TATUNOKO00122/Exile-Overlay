@@ -558,7 +558,21 @@ public class MethodHandlesUtil {
         if (affix == null || GET_AFFIX_LOC_NAME == null) return "";
         try {
             Object locName = GET_AFFIX_LOC_NAME.invoke(affix);
-            return locName != null ? locName.toString() : "";
+            if (locName == null) return "";
+            if (locName instanceof net.minecraft.network.chat.Component comp) {
+                return comp.getString();
+            }
+            return locName.toString();
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
+    public static String getAffixIcon(Object affix) {
+        if (affix == null || GET_AFFIX_ICON == null) return "";
+        try {
+            Object icon = GET_AFFIX_ICON.invoke(affix);
+            return icon != null ? icon.toString() : "";
         } catch (Throwable t) {
             return "";
         }
@@ -567,6 +581,10 @@ public class MethodHandlesUtil {
     public static Object getStatusEffectsData(Object entityData) throws Throwable {
         if (GET_STATUS_EFFECTS_DATA == null || entityData == null) return null;
         return GET_STATUS_EFFECTS_DATA.invoke(entityData);
+    }
+
+    public static boolean isStatusEffectsHandleAvailable() {
+        return GET_STATUS_EFFECTS_DATA != null;
     }
 
     public static java.util.Map<String, Object> getExileEffectMap(Object statusEffectsData) throws Throwable {
@@ -621,17 +639,31 @@ public class MethodHandlesUtil {
         }
     }
 
+    private static java.lang.reflect.Method exileRegistryGetMethod = null;
+    private static Object exileEffectsRegistry = null;
+    private static java.lang.reflect.Method exileEffectsMethod = null;
+
     public static Object getExileEffectFromDB(String effectId) {
         if (exileDBClass == null || effectId == null) return null;
         try {
-            if (EXILE_EFFECTS_GET == null) {
-                EXILE_EFFECTS_GET = lookupMethod(exileDBClass, "ExileEffects");
+            if (exileEffectsRegistry == null) {
+                if (exileEffectsMethod == null) {
+                    exileEffectsMethod = exileDBClass.getMethod("ExileEffects");
+                }
+                exileEffectsRegistry = exileEffectsMethod.invoke(null);
+                if (exileEffectsRegistry == null) return null;
             }
-            Object registry = EXILE_EFFECTS_GET.invoke(null);
-            if (registry == null) return null;
-            java.lang.reflect.Method getMethod = registry.getClass().getMethod("get", String.class);
-            return getMethod.invoke(registry, effectId);
-        } catch (Throwable t) {
+            if (exileRegistryGetMethod == null) {
+                exileRegistryGetMethod = exileEffectsRegistry.getClass().getMethod("get", String.class);
+            }
+            return exileRegistryGetMethod.invoke(exileEffectsRegistry, effectId);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            LOGGER.debug("ExileDB.get({}) threw: {}", effectId,
+                    e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+            return null;
+        } catch (Exception e) {
+            LOGGER.debug("ExileDB lookup error for {}: {}", effectId, e.getMessage());
+            exileEffectsRegistry = null;
             return null;
         }
     }

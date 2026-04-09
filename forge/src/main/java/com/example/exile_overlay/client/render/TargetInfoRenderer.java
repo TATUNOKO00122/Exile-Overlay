@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
@@ -121,7 +122,10 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
         MineAndSlashHelper.MobRarityInfo rarity = MineAndSlashHelper.getMobRarity(target);
         List<MineAndSlashHelper.MobAffixInfo> affixes = MineAndSlashHelper.getMobAffixes(target);
-        List<MineAndSlashHelper.MobEffectInfo> effects = MineAndSlashHelper.getMobStatusEffects(target);
+        List<MineAndSlashHelper.MobEffectInfo> mnsEffects = MineAndSlashHelper.getMobStatusEffects(target);
+        List<MineAndSlashHelper.MobEffectInfo> vanillaEffects = MineAndSlashHelper.getVanillaMobEffects(target);
+        List<MineAndSlashHelper.MobEffectInfo> effects = new ArrayList<>(mnsEffects);
+        effects.addAll(vanillaEffects);
 
         String affixPrefix = buildAffixPrefix(affixes);
         String vanillaName = target.getDisplayName().getString();
@@ -226,18 +230,20 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         int count = Math.min(effects.size(), MAX_EFFECTS_PER_ROW);
         for (int i = 0; i < count; i++) {
             MineAndSlashHelper.MobEffectInfo effect = effects.get(i);
+            if (effect.isExpired()) continue;
             int iconX = drawX + i * EFFECT_SPACING;
 
             if (effect.texture != null) {
                 graphics.blit(effect.texture, iconX, drawY, 0, 0, EFFECT_ICON_SIZE, EFFECT_ICON_SIZE,
                         EFFECT_ICON_SIZE, EFFECT_ICON_SIZE);
-
-                if (effect.isNegative) {
-                    graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, 0x40FF0000);
-                }
             } else {
-                int bgColor = effect.isNegative ? 0x80FF0000 : 0x8000FF00;
-                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, bgColor);
+                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + EFFECT_ICON_SIZE, 0xB0000000);
+                int accentColor = effect.isNegative ? 0xFFFF4444 : 0xFF44FF44;
+                graphics.fill(iconX, drawY, iconX + EFFECT_ICON_SIZE, drawY + 1, accentColor);
+                String symbol = effect.isNegative ? "-" : "+";
+                int symX = iconX + (EFFECT_ICON_SIZE - mc.font.width(symbol)) / 2;
+                int symY = drawY + (EFFECT_ICON_SIZE - 9) / 2;
+                graphics.drawString(mc.font, symbol, symX, symY, accentColor, false);
             }
 
             if (effect.stacks > 1) {
@@ -247,11 +253,12 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
                 graphics.drawString(mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
             }
 
-            if (!effect.isInfinite && effect.durationText != null && !effect.durationText.isEmpty()) {
-                int durWidth = mc.font.width(effect.durationText);
+            String durText = effect.getDurationText();
+            if (!durText.isEmpty()) {
+                int durWidth = mc.font.width(durText);
                 int durX = iconX + (EFFECT_ICON_SIZE - durWidth) / 2;
                 int durY = drawY + EFFECT_ICON_SIZE + 1;
-                graphics.drawString(mc.font, effect.durationText, durX, durY, 0xFFAAAAAA, false);
+                graphics.drawString(mc.font, durText, durX, durY, 0xFFAAAAAA, false);
             }
         }
     }
@@ -260,9 +267,11 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         if (affixes.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
         for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
-            if (affix.name != null && !affix.name.isEmpty()) {
-                sb.append(affix.name).append(" ");
+            if (affix.name == null || affix.name.isEmpty()) continue;
+            if (!affix.icon.isEmpty()) {
+                sb.append(affix.icon);
             }
+            sb.append(affix.name).append(" ");
         }
         return sb.toString();
     }

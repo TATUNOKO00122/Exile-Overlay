@@ -1097,9 +1097,11 @@ public class MineAndSlashHelper {
 
     public static class MobAffixInfo {
         public final String name;
+        public final String icon;
 
-        public MobAffixInfo(String name) {
+        public MobAffixInfo(String name, String icon) {
             this.name = name;
+            this.icon = icon != null ? icon : "";
         }
     }
 
@@ -1111,7 +1113,7 @@ public class MineAndSlashHelper {
         public final int stacks;
         public final boolean isInfinite;
         public final boolean isNegative;
-        public final String durationText;
+        public final long clientExpireTimeMs;
 
         public MobEffectInfo(String id, String name, ResourceLocation texture, int ticksLeft,
                              int stacks, boolean isInfinite, boolean isNegative, String durationText) {
@@ -1122,7 +1124,20 @@ public class MineAndSlashHelper {
             this.stacks = stacks;
             this.isInfinite = isInfinite;
             this.isNegative = isNegative;
-            this.durationText = durationText;
+            this.clientExpireTimeMs = isInfinite ? Long.MAX_VALUE : System.currentTimeMillis() + ticksLeft * 50L;
+        }
+
+        public String getDurationText() {
+            if (isInfinite) return "";
+            long remaining = (clientExpireTimeMs - System.currentTimeMillis()) / 1000;
+            if (remaining <= 0) return "0:00";
+            long min = remaining / 60;
+            long sec = remaining % 60;
+            return min + ":" + String.format("%02d", sec);
+        }
+
+        public boolean isExpired() {
+            return !isInfinite && System.currentTimeMillis() >= clientExpireTimeMs;
         }
     }
 
@@ -1153,7 +1168,8 @@ public class MineAndSlashHelper {
             List<Object> affixObjs = MethodHandlesUtil.getMobAffixObjects(entityData);
             for (Object affix : affixObjs) {
                 String locName = MethodHandlesUtil.getAffixLocName(affix);
-                result.add(new MobAffixInfo(locName));
+                String icon = MethodHandlesUtil.getAffixIcon(affix);
+                result.add(new MobAffixInfo(locName, icon));
             }
         } catch (Throwable t) {
             LOGGER.debug("Failed to get mob affixes: {}", t.getMessage());
@@ -1164,6 +1180,7 @@ public class MineAndSlashHelper {
     public static List<MobEffectInfo> getMobStatusEffects(net.minecraft.world.entity.LivingEntity entity) {
         List<MobEffectInfo> result = new ArrayList<>();
         if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
+
         try {
             Object entityData = MethodHandlesUtil.getEntityData(entity);
             if (entityData == null) return result;
@@ -1171,6 +1188,7 @@ public class MineAndSlashHelper {
             if (statusData == null) return result;
 
             Map<String, Object> exileMap = MethodHandlesUtil.getExileEffectMap(statusData);
+
             for (Map.Entry<String, Object> entry : exileMap.entrySet()) {
                 String effectId = entry.getKey();
                 Object instanceData = entry.getValue();
@@ -1198,6 +1216,25 @@ public class MineAndSlashHelper {
             }
         } catch (Throwable t) {
             LOGGER.debug("Failed to get mob status effects: {}", t.getMessage());
+        }
+        return result;
+    }
+
+    public static List<MobEffectInfo> getVanillaMobEffects(net.minecraft.world.entity.LivingEntity entity) {
+        List<MobEffectInfo> result = new ArrayList<>();
+        if (entity == null) return result;
+
+        for (var instance : entity.getActiveEffects()) {
+            var effect = instance.getEffect();
+            String id = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getKey(effect).toString();
+            String name = net.minecraft.network.chat.Component.translatable(effect.getDescriptionId()).getString();
+            int duration = instance.getDuration();
+            int amplifier = instance.getAmplifier();
+            boolean isNegative = !effect.isBeneficial();
+            String durationText = duration >= 32000 ? "" : formatDuration(duration / 20);
+
+            result.add(new MobEffectInfo(id, name, null, duration, amplifier + 1,
+                    duration < 0, isNegative, durationText));
         }
         return result;
     }
