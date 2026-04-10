@@ -374,12 +374,21 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
 
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.round_energy_orb", orbConfig.isRoundEnergyOrb()), btn -> {
+                    orbConfig.setRoundEnergyOrb(!orbConfig.isRoundEnergyOrb());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.round_energy_orb", orbConfig.isRoundEnergyOrb()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.round_energy_orb.tooltip")))
+                        .build());
+        y += sp;
+
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.text_scale",
-                orbConfig.getTextScale(), 0.5f, 2.0f, "%.0f%%", orbConfig::setTextScale));
+                orbConfig.getTextScale(), 0.5f, 2.0f, null, orbConfig::setTextScale));
         y += sp;
 
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.energy_text_scale",
-                orbConfig.getEnergyTextScale(), 0.5f, 2.0f, "%.0f%%", orbConfig::setEnergyTextScale));
+                orbConfig.getEnergyTextScale(), 0.5f, 2.0f, null, orbConfig::setEnergyTextScale));
         y += sp;
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
@@ -529,6 +538,7 @@ public class ConfigScreen extends Screen {
 
     private void buildEntityHealthBarTab(int x, int y, int w, int h, int sp, int tx) {
         EntityHealthBarConfig config = EntityHealthBarConfig.getInstance();
+        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
 
         y = addSection(y, "section.exile_overlay.display_settings", tx);
 
@@ -538,6 +548,24 @@ public class ConfigScreen extends Screen {
                     btn.setMessage(getOnOffComponent("exile_overlay.config.entity_hp_bar_enabled", config.isEnabled()));
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.entity_hp_bar_enabled.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()), btn -> {
+                    equipConfig.setShowTargetAffixStats(!equipConfig.isShowTargetAffixStats());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_affix_stats.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()), btn -> {
+                    equipConfig.setShowTargetMobEffects(!equipConfig.isShowTargetMobEffects());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_mob_effects.tooltip")))
                         .build());
         y += sp;
 
@@ -626,6 +654,8 @@ public class ConfigScreen extends Screen {
         config.setCancelDungeonRealmScoreboard(true);
         config.setAutoSortLootrChest(true);
         config.setLevelDisplayMode(EquipmentDisplayConfig.LevelDisplayMode.BOTH);
+        config.setShowTargetAffixStats(true);
+        config.setShowTargetMobEffects(true);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);
@@ -663,6 +693,7 @@ public class ConfigScreen extends Screen {
         OrbTextConfig orbTextConfig = OrbTextConfig.getInstance();
         orbTextConfig.setShowOrbText(true);
         orbTextConfig.setCompactNumbers(false);
+        orbTextConfig.setRoundEnergyOrb(true);
         orbTextConfig.setTextScale(1.0f);
         orbTextConfig.setEnergyTextScale(1.0f);
         orbTextConfig.save();
@@ -804,8 +835,12 @@ public class ConfigScreen extends Screen {
 
         @Override
         protected void updateMessage() {
-            float value = min + (max - min) * (float) this.value;
-            this.setMessage(Component.translatable(translationKey, String.format(format, value)));
+            if (format == null) {
+                this.setMessage(Component.translatable(translationKey));
+            } else {
+                float value = min + (max - min) * (float) this.value;
+                this.setMessage(Component.translatable(translationKey, String.format(format, value)));
+            }
         }
 
         @Override

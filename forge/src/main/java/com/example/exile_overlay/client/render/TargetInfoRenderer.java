@@ -4,6 +4,7 @@ import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
@@ -173,12 +174,18 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
 
+            EquipmentDisplayConfig targetConfig = EquipmentDisplayConfig.getInstance();
+
             renderHpBar(graphics, hpRatio, barColor);
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
             renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
-            renderHpText(graphics, mc, health, maxHealth, hpRatio);
-            renderEffects(graphics, mc, effects);
-            renderAffixStats(graphics, mc, affixes);
+            renderHpText(graphics, mc, health, maxHealth);
+            if (targetConfig.isShowTargetMobEffects()) {
+                renderEffects(graphics, mc, effects);
+            }
+            if (targetConfig.isShowTargetAffixStats()) {
+                renderAffixStats(graphics, mc, affixes);
+            }
         } finally {
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             RenderSystem.defaultBlendFunc();
@@ -215,18 +222,17 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().popPose();
     }
 
-    private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth, float hpRatio) {
+    private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth) {
         String hpText = formatHpText(health, maxHealth);
         float hpScale = 0.7f;
         float textWidth = HudFontHelper.getTextWidth(mc.font, hpText) * hpScale;
         int hpX = (int) (BAR_X + BAR_WIDTH - textWidth - 2);
         int hpY = BAR_Y - (int) (mc.font.lineHeight * hpScale);
 
-        int textColor = hpRatio > 0.5f ? 0xFFFFFFFF : (hpRatio > 0.25f ? 0xFFFFFF00 : 0xFFFF4444);
         graphics.pose().pushPose();
         graphics.pose().translate(hpX, hpY - 1.0f, 0);
         graphics.pose().scale(hpScale, hpScale, 1.0f);
-        HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, textColor, true);
+        HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, 0xFFFFFFFF, true);
         graphics.pose().popPose();
     }
 

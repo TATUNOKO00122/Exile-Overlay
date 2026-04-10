@@ -151,10 +151,15 @@ public class OrbRenderer {
         } else if (config.getDataProvider().shouldShowValue()) {
             float current = config.getDataProvider().getCurrentValue(player);
             float max = config.getDataProvider().getMaxValue(player);
+            if (isEnergyOrb && textConfig.isRoundEnergyOrb()) {
+                current = Math.round(current);
+                max = Math.round(max);
+            }
             String text = formatValuePair((int) current, (int) max, "/", compact || isEnergyOrb);
             float effectiveScale = isEnergyOrb ? textConfig.getEnergyTextScale() : scaleFactor;
             float textScale = config.getDataProvider().getTextScale() * effectiveScale;
-            renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
+            float textCenterX = isEnergyOrb ? centerX - 0.5f : centerX;
+            renderCenteredScaledText(graphics, mc, text, textCenterX, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
         }
     }
 

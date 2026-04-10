@@ -249,7 +249,7 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
                 String displayText = String.valueOf(modLevel);
                 totalWidth = HudFontHelper.getTextWidth(mc.font, displayText);
                 scale = Math.min(maxWidth / totalWidth, 1.0f);
-                scale = Math.min(scale, 1.0f);
+                scale = Math.min(scale, 0.9f);
                 graphics.pose().scale(scale, scale, 1.0f);
 
                 startX = -totalWidth / 2;
@@ -260,7 +260,7 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
                 String displayText = String.valueOf(vanillaLevel);
                 totalWidth = HudFontHelper.getTextWidth(mc.font, displayText);
                 scale = Math.min(maxWidth / totalWidth, 1.0f);
-                scale = Math.min(scale, 1.0f);
+                scale = Math.min(scale, 0.9f);
                 graphics.pose().scale(scale, scale, 1.0f);
 
                 startX = -totalWidth / 2;

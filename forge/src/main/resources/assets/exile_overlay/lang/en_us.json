@@ -143,8 +143,14 @@
   "exile_overlay.config.show_orb_text.tooltip": "Display numeric text on orbs",
   "exile_overlay.config.compact_numbers_orb": "Compact HP/Mana: %s",
   "exile_overlay.config.compact_numbers_orb.tooltip": "Abbreviate HP and Mana numbers (e.g. 1500 → 1k). Energy orb always uses compact format.",
-  "exile_overlay.config.text_scale": "Text Size: %s",
+  "exile_overlay.config.text_scale": "Text Size",
   "exile_overlay.config.text_scale.tooltip": "HP and Mana text size multiplier",
-  "exile_overlay.config.energy_text_scale": "Energy Text Size: %s",
-  "exile_overlay.config.energy_text_scale.tooltip": "Energy orb text size multiplier"
+  "exile_overlay.config.energy_text_scale": "Energy Text Size",
+  "exile_overlay.config.energy_text_scale.tooltip": "Energy orb text size multiplier",
+  "exile_overlay.config.round_energy_orb": "Round Energy: %s",
+  "exile_overlay.config.round_energy_orb.tooltip": "Round energy orb values to integers (hide decimals)",
+  "exile_overlay.config.show_target_affix_stats": "Target Affix Stats: %s",
+  "exile_overlay.config.show_target_affix_stats.tooltip": "Show affix stat bonuses on the target info overlay",
+  "exile_overlay.config.show_target_mob_effects": "Target Mob Effects: %s",
+  "exile_overlay.config.show_target_mob_effects.tooltip": "Show status effect icons on the target info overlay"
 }

@@ -143,8 +143,14 @@
   "exile_overlay.config.show_orb_text.tooltip": "オーブに数値テキストを表示",
   "exile_overlay.config.compact_numbers_orb": "HP/Mana省略: %s",
   "exile_overlay.config.compact_numbers_orb.tooltip": "HP・マナの数値を省略表示（例: 1500 → 1k）。エネルギーオーブは常に省略表示。",
-  "exile_overlay.config.text_scale": "文字サイズ: %s",
+  "exile_overlay.config.text_scale": "文字サイズ",
   "exile_overlay.config.text_scale.tooltip": "HP・マナのテキストサイズ倍率",
-  "exile_overlay.config.energy_text_scale": "エネルギー文字サイズ: %s",
-  "exile_overlay.config.energy_text_scale.tooltip": "エネルギーオーブのテキストサイズ倍率"
+  "exile_overlay.config.energy_text_scale": "エネルギー文字サイズ",
+  "exile_overlay.config.energy_text_scale.tooltip": "エネルギーオーブのテキストサイズ倍率",
+  "exile_overlay.config.round_energy_orb": "エネルギーを丸める: %s",
+  "exile_overlay.config.round_energy_orb.tooltip": "エネルギーオーブの数値を整数に丸める（小数点以下を非表示）",
+  "exile_overlay.config.show_target_affix_stats": "ターゲットアフィックス: %s",
+  "exile_overlay.config.show_target_affix_stats.tooltip": "ターゲット情報にアフィックスステータス補正を表示",
+  "exile_overlay.config.show_target_mob_effects": "ターゲットエフェクト: %s",
+  "exile_overlay.config.show_target_mob_effects.tooltip": "ターゲット情報にステータス効果アイコンを表示"
 }

@@ -61,6 +61,8 @@ public class EquipmentDisplayConfig {
     private boolean cancelDungeonRealmScoreboard = true;
     private boolean autoSortLootrChest = true;
     private LevelDisplayMode levelDisplayMode = LevelDisplayMode.BOTH;
+    private boolean showTargetAffixStats = true;
+    private boolean showTargetMobEffects = true;
 
     private EquipmentDisplayConfig() {
     }
@@ -147,8 +149,14 @@ public class EquipmentDisplayConfig {
                     levelDisplayMode = LevelDisplayMode.BOTH;
                 }
             }
+            if (obj.has("showTargetAffixStats")) {
+                showTargetAffixStats = obj.get("showTargetAffixStats").getAsBoolean();
+            }
+            if (obj.has("showTargetMobEffects")) {
+                showTargetMobEffects = obj.get("showTargetMobEffects").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelMnsRpgBars={}, cancelMnsSpellHotbar={}, cancelMnsCastBar={}, cancelMnsStatusEffects={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelMnsRpgBars, cancelMnsSpellHotbar, cancelMnsCastBar, cancelMnsStatusEffects, cancelDungeonRealmScoreboard, autoSortLootrChest);
+            LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelMnsRpgBars={}, cancelMnsSpellHotbar={}, cancelMnsCastBar={}, cancelMnsStatusEffects={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}, showTargetAffixStats={}, showTargetMobEffects={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelMnsRpgBars, cancelMnsSpellHotbar, cancelMnsCastBar, cancelMnsStatusEffects, cancelDungeonRealmScoreboard, autoSortLootrChest, showTargetAffixStats, showTargetMobEffects);
         } catch (IOException e) {
             LOGGER.error("Failed to load equipment display config: {}", e.getMessage());
         }
@@ -179,6 +187,8 @@ public class EquipmentDisplayConfig {
         obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
         obj.addProperty("autoSortLootrChest", autoSortLootrChest);
         obj.addProperty("levelDisplayMode", levelDisplayMode.name());
+        obj.addProperty("showTargetAffixStats", showTargetAffixStats);
+        obj.addProperty("showTargetMobEffects", showTargetMobEffects);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -308,5 +318,21 @@ public class EquipmentDisplayConfig {
 
     public void setLevelDisplayMode(LevelDisplayMode mode) {
         this.levelDisplayMode = mode;
+    }
+
+    public boolean isShowTargetAffixStats() {
+        return showTargetAffixStats;
+    }
+
+    public void setShowTargetAffixStats(boolean show) {
+        this.showTargetAffixStats = show;
+    }
+
+    public boolean isShowTargetMobEffects() {
+        return showTargetMobEffects;
+    }
+
+    public void setShowTargetMobEffects(boolean show) {
+        this.showTargetMobEffects = show;
     }
 }
