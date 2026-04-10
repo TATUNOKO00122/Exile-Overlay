@@ -147,6 +147,17 @@ public class ConfigScreen extends Screen {
         return Component.translatable(key, Component.translatable(modeKey));
     }
 
+    private Component getLevelDisplayModeComponent() {
+        EquipmentDisplayConfig.LevelDisplayMode mode =
+                EquipmentDisplayConfig.getInstance().getLevelDisplayMode();
+        String modeKey = switch (mode) {
+            case BOTH -> "exile_overlay.config.level_display.both";
+            case MS_ONLY -> "exile_overlay.config.level_display.ms_only";
+            case VANILLA_ONLY -> "exile_overlay.config.level_display.vanilla_only";
+        };
+        return Component.translatable("exile_overlay.config.level_display_mode", Component.translatable(modeKey));
+    }
+
     private void buildGeneralTab(int x, int y, int w, int h, int sp, int tx) {
         y = addSection(y, "section.exile_overlay.hud_position", tx);
 
@@ -326,6 +337,19 @@ public class ConfigScreen extends Screen {
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.enable_shadow.tooltip")))
                         .build());
+        y += sp;
+
+        y = addSection(y, "section.exile_overlay.level_display", tx);
+
+        addRightWidget(Button.builder(getLevelDisplayModeComponent(), btn -> {
+            EquipmentDisplayConfig.LevelDisplayMode[] modes = EquipmentDisplayConfig.LevelDisplayMode.values();
+            int currentIndex = equipConfig.getLevelDisplayMode().ordinal();
+            int nextIndex = (currentIndex + 1) % modes.length;
+            equipConfig.setLevelDisplayMode(modes[nextIndex]);
+            btn.setMessage(getLevelDisplayModeComponent());
+        }).bounds(x, y, w, h)
+                .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.level_display_mode.tooltip")))
+                .build());
         y += sp;
 
         y = addSection(y, "section.exile_overlay.orb_text", tx);
@@ -601,6 +625,7 @@ public class ConfigScreen extends Screen {
         config.setCancelMnsStatusEffects(true);
         config.setCancelDungeonRealmScoreboard(true);
         config.setAutoSortLootrChest(true);
+        config.setLevelDisplayMode(EquipmentDisplayConfig.LevelDisplayMode.BOTH);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);

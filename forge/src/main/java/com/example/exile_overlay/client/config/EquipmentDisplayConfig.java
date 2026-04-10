@@ -31,6 +31,20 @@ public class EquipmentDisplayConfig {
         DROP
     }
 
+    /**
+     * レベル数値の表示モード
+     *
+     * 【設計思想】
+     * - BOTH: バニラ(緑) / MS(黄) の両方を表示
+     * - MS_ONLY: MS Levelのみ(黄)表示
+     * - VANILLA_ONLY: バニラLevelのみ(緑)表示
+     */
+    public enum LevelDisplayMode {
+        BOTH,
+        MS_ONLY,
+        VANILLA_ONLY
+    }
+
     // 設定値
     private boolean usePercentage = false;
     private boolean enableShadow = true;
@@ -46,6 +60,7 @@ public class EquipmentDisplayConfig {
     private boolean cancelMnsStatusEffects = true;
     private boolean cancelDungeonRealmScoreboard = true;
     private boolean autoSortLootrChest = true;
+    private LevelDisplayMode levelDisplayMode = LevelDisplayMode.BOTH;
 
     private EquipmentDisplayConfig() {
     }
@@ -125,6 +140,13 @@ public class EquipmentDisplayConfig {
             if (obj.has("autoSortLootrChest")) {
                 autoSortLootrChest = obj.get("autoSortLootrChest").getAsBoolean();
             }
+            if (obj.has("levelDisplayMode")) {
+                try {
+                    levelDisplayMode = LevelDisplayMode.valueOf(obj.get("levelDisplayMode").getAsString());
+                } catch (IllegalArgumentException e) {
+                    levelDisplayMode = LevelDisplayMode.BOTH;
+                }
+            }
 
             LOGGER.info("Loaded equipment display config: usePercentage={}, enableShadow={}, quickLootEnabled={}, autoQuickLootEnabled={}, autoQuickLootMode={}, keyQuickLootEnabled={}, keyQuickLootMode={}, disableMnsHpBar={}, cancelMnsRpgBars={}, cancelMnsSpellHotbar={}, cancelMnsCastBar={}, cancelMnsStatusEffects={}, cancelDungeonRealmScoreboard={}, autoSortLootrChest={}", usePercentage, enableShadow, quickLootEnabled, autoQuickLootEnabled, autoQuickLootMode, keyQuickLootEnabled, keyQuickLootMode, disableMnsHpBar, cancelMnsRpgBars, cancelMnsSpellHotbar, cancelMnsCastBar, cancelMnsStatusEffects, cancelDungeonRealmScoreboard, autoSortLootrChest);
         } catch (IOException e) {
@@ -156,6 +178,7 @@ public class EquipmentDisplayConfig {
         obj.addProperty("cancelMnsStatusEffects", cancelMnsStatusEffects);
         obj.addProperty("cancelDungeonRealmScoreboard", cancelDungeonRealmScoreboard);
         obj.addProperty("autoSortLootrChest", autoSortLootrChest);
+        obj.addProperty("levelDisplayMode", levelDisplayMode.name());
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -277,5 +300,13 @@ public class EquipmentDisplayConfig {
 
     public void setAutoSortLootrChest(boolean enabled) {
         this.autoSortLootrChest = enabled;
+    }
+
+    public LevelDisplayMode getLevelDisplayMode() {
+        return levelDisplayMode;
+    }
+
+    public void setLevelDisplayMode(LevelDisplayMode mode) {
+        this.levelDisplayMode = mode;
     }
 }

@@ -6,6 +6,7 @@ import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.ModDataProviderRegistry;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.orb.OrbRenderer;
@@ -89,31 +90,6 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     
     // レイアウト設定
     private final int screenOffsetY;
-    
-    // 文字列フォーマットキャッシュ
-    private final StringFormatCache levelFormatCache = new StringFormatCache();
-    
-    /**
-     * 文字列フォーマットキャッシュ
-     * StringBuilderを再利用してGCプレッシャーを低減
-     */
-    private static final class StringFormatCache {
-        private final StringBuilder sb = new StringBuilder(32);
-        private int lastVanillaLevel = -1;
-        private int lastModLevel = -1;
-        private String cached = "";
-        
-        String formatLevel(int vanillaLevel, int modLevel) {
-            if (vanillaLevel != lastVanillaLevel || modLevel != lastModLevel) {
-                sb.setLength(0);
-                sb.append(vanillaLevel).append(" / ").append(modLevel);
-                cached = sb.toString();
-                lastVanillaLevel = vanillaLevel;
-                lastModLevel = modLevel;
-            }
-            return cached;
-        }
-    }
     
     public HotbarRenderCommand() {
         this(0);
@@ -233,38 +209,65 @@ public class HotbarRenderCommand implements IRenderCommand, IHudRenderer {
     }
 
     private void renderLevelDisplay(GuiGraphics graphics, Minecraft mc) {
+        EquipmentDisplayConfig.LevelDisplayMode mode =
+                EquipmentDisplayConfig.getInstance().getLevelDisplayMode();
+
         int vanillaLevel = mc.player.experienceLevel;
         int modLevel = (int) ModDataProviderRegistry.getValue(mc.player, DataType.LEVEL);
-
-        String vanillaStr = String.valueOf(vanillaLevel);
-        String separator = "/";
-        String modStr = String.valueOf(modLevel);
-
-        // 各テキストの幅を計算
-        int vanillaWidth = HudFontHelper.getTextWidth(mc.font, vanillaStr);
-        int sepWidth = HudFontHelper.getTextWidth(mc.font, separator);
-        int modWidth = HudFontHelper.getTextWidth(mc.font, modStr);
-        int totalWidth = vanillaWidth + sepWidth + modWidth;
         int textHeight = mc.font.lineHeight;
 
-        // HJUDと同じ計算方法
         float maxWidth = 27.0f;
-        float scale = Math.min(maxWidth / totalWidth, 1.0f);
-        scale = Math.min(scale, 0.8f);
+        int totalWidth;
+        int startX;
+        float scale;
 
         graphics.pose().pushPose();
         graphics.pose().translate(LEVEL_CENTER_X, LEVEL_CENTER_Y, 0);
-        graphics.pose().scale(scale, scale, 1.0f);
 
-        int startX = -totalWidth / 2;
-        int textY = -textHeight / 2 + 1;
+        switch (mode) {
+            case BOTH -> {
+                String vanillaStr = String.valueOf(vanillaLevel);
+                String modStr = String.valueOf(modLevel);
+                int vanillaWidth = HudFontHelper.getTextWidth(mc.font, vanillaStr);
+                int sepWidth = HudFontHelper.getTextWidth(mc.font, "/");
+                int modWidth = HudFontHelper.getTextWidth(mc.font, modStr);
+                totalWidth = vanillaWidth + sepWidth + modWidth;
 
-        // バニラレベル（緑）
-        HudFontHelper.drawString(graphics, mc.font, vanillaStr, startX, textY, 0x55FF55, false);
+                scale = Math.min(maxWidth / totalWidth, 1.0f);
+                scale = Math.min(scale, 0.8f);
+                graphics.pose().scale(scale, scale, 1.0f);
 
-        HudFontHelper.drawString(graphics, mc.font, separator, startX + vanillaWidth, textY, 0xFFFFFF, false);
+                startX = -totalWidth / 2;
+                int textY = -textHeight / 2 + 1;
 
-        HudFontHelper.drawString(graphics, mc.font, modStr, startX + vanillaWidth + sepWidth, textY, 0xFFFF55, false);
+                HudFontHelper.drawString(graphics, mc.font, vanillaStr, startX, textY, 0x55FF55, false);
+                HudFontHelper.drawString(graphics, mc.font, "/", startX + vanillaWidth, textY, 0xFFFFFF, false);
+                HudFontHelper.drawString(graphics, mc.font, modStr,
+                        startX + vanillaWidth + sepWidth, textY, 0xFFFF55, false);
+            }
+            case MS_ONLY -> {
+                String displayText = String.valueOf(modLevel);
+                totalWidth = HudFontHelper.getTextWidth(mc.font, displayText);
+                scale = Math.min(maxWidth / totalWidth, 1.0f);
+                scale = Math.min(scale, 1.0f);
+                graphics.pose().scale(scale, scale, 1.0f);
+
+                startX = -totalWidth / 2;
+                int textY = -textHeight / 2 + 1;
+                HudFontHelper.drawString(graphics, mc.font, displayText, startX, textY, 0xFFFF55, false);
+            }
+            case VANILLA_ONLY -> {
+                String displayText = String.valueOf(vanillaLevel);
+                totalWidth = HudFontHelper.getTextWidth(mc.font, displayText);
+                scale = Math.min(maxWidth / totalWidth, 1.0f);
+                scale = Math.min(scale, 1.0f);
+                graphics.pose().scale(scale, scale, 1.0f);
+
+                startX = -totalWidth / 2;
+                int textY = -textHeight / 2 + 1;
+                HudFontHelper.drawString(graphics, mc.font, displayText, startX, textY, 0x55FF55, false);
+            }
+        }
 
         graphics.pose().popPose();
     }
