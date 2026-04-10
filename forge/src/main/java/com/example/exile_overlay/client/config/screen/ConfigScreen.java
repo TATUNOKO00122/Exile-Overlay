@@ -365,26 +365,12 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
 
-        addRightWidget(
-                Button.builder(
-                        Component.translatable("exile_overlay.config.text_scale", OrbTextConfig.getScaleLabel(config.getTextScale())),
-                        btn -> {
-                            config.cycleTextScale();
-                            btn.setMessage(Component.translatable("exile_overlay.config.text_scale", OrbTextConfig.getScaleLabel(config.getTextScale())));
-                        }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.text_scale.tooltip")))
-                        .build());
+        addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.text_scale",
+                config.getTextScale(), 0.5f, 2.0f, "%.0f%%", config::setTextScale));
         y += sp;
 
-        addRightWidget(
-                Button.builder(
-                        Component.translatable("exile_overlay.config.energy_text_scale", OrbTextConfig.getScaleLabel(config.getEnergyTextScale())),
-                        btn -> {
-                            config.cycleEnergyTextScale();
-                            btn.setMessage(Component.translatable("exile_overlay.config.energy_text_scale", OrbTextConfig.getScaleLabel(config.getEnergyTextScale())));
-                        }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.energy_text_scale.tooltip")))
-                        .build());
+        addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.energy_text_scale",
+                config.getEnergyTextScale(), 0.5f, 2.0f, "%.0f%%", config::setEnergyTextScale));
         y += sp;
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
@@ -794,14 +780,21 @@ public class ConfigScreen extends Screen {
         private final String translationKey;
         private final float min;
         private final float max;
+        private final String format;
         private final java.util.function.Consumer<Float> setter;
 
         public FloatConfigSlider(int x, int y, int width, int height, String translationKey, float current, float min,
                 float max, java.util.function.Consumer<Float> setter) {
+            this(x, y, width, height, translationKey, current, min, max, "%.2f", setter);
+        }
+
+        public FloatConfigSlider(int x, int y, int width, int height, String translationKey, float current, float min,
+                float max, String format, java.util.function.Consumer<Float> setter) {
             super(x, y, width, height, Component.empty(), (current - min) / (max - min));
             this.translationKey = translationKey;
             this.min = min;
             this.max = max;
+            this.format = format;
             this.setter = setter;
             this.setTooltip(Tooltip.create(Component.translatable(translationKey + ".tooltip")));
             this.updateMessage();
@@ -810,7 +803,7 @@ public class ConfigScreen extends Screen {
         @Override
         protected void updateMessage() {
             float value = min + (max - min) * (float) this.value;
-            this.setMessage(Component.translatable(translationKey, String.format("%.2f", value)));
+            this.setMessage(Component.translatable(translationKey, String.format(format, value)));
         }
 
         @Override
