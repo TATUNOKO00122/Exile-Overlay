@@ -19,6 +19,12 @@ public final class HudFontHelper {
 
     private static final ResourceLocation HUD_FONT = ResourceLocation.tryParse("exile_overlay:hud_font");
 
+    // TODO: フォントプリベント選択（後で再有効化）
+    // private static ResourceLocation getFontLocation() {
+    //     HudFontPreset preset = HudFontConfig.getInstance().getFontPreset();
+    //     return preset.isCustomFont() ? preset.getFontLocation() : null;
+    // }
+
     private HudFontHelper() {
     }
 

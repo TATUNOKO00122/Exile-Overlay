@@ -2,7 +2,7 @@
     "providers": [
         {
             "type": "ttf",
-            "file": "exile_overlay:google_sans_medium.ttf",
+            "file": "exile_overlay:m6x11.ttf",
             "shift": [-1, 0],
             "size": 13.0,
             "oversample": 4.0,

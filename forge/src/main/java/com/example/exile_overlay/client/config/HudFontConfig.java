@@ -25,6 +25,7 @@ public class HudFontConfig {
     private static HudFontConfig instance;
 
     private boolean useCustomFont = false;
+    private HudFontPreset fontPreset = HudFontPreset.GOOGLE_SANS;
 
     private HudFontConfig() {
     }
@@ -57,8 +58,13 @@ public class HudFontConfig {
             if (obj.has("useCustomFont")) {
                 useCustomFont = obj.get("useCustomFont").getAsBoolean();
             }
+            if (obj.has("fontPreset")) {
+                fontPreset = HudFontPreset.fromName(obj.get("fontPreset").getAsString());
+            } else if (obj.has("useCustomFont") && !useCustomFont) {
+                fontPreset = HudFontPreset.MINECRAFT;
+            }
 
-            LOGGER.info("Loaded HUD font config: useCustomFont={}", useCustomFont);
+            LOGGER.info("Loaded HUD font config: useCustomFont={}, fontPreset={}", useCustomFont, fontPreset.name());
         } catch (IOException e) {
             LOGGER.error("Failed to load HUD font config: {}", e.getMessage());
         }
@@ -75,6 +81,7 @@ public class HudFontConfig {
 
         JsonObject obj = new JsonObject();
         obj.addProperty("useCustomFont", useCustomFont);
+        obj.addProperty("fontPreset", fontPreset.name());
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -90,5 +97,14 @@ public class HudFontConfig {
 
     public void setUseCustomFont(boolean use) {
         this.useCustomFont = use;
+    }
+
+    public HudFontPreset getFontPreset() {
+        return fontPreset;
+    }
+
+    public void setFontPreset(HudFontPreset preset) {
+        this.fontPreset = preset;
+        this.useCustomFont = preset.isCustomFont();
     }
 }

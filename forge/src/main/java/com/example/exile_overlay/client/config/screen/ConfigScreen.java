@@ -1,7 +1,6 @@
 package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
-import com.example.exile_overlay.client.config.HudFontConfig;
 import com.example.exile_overlay.client.config.OrbTextConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
@@ -63,7 +62,7 @@ public class ConfigScreen extends Screen {
         int rightPanelH = this.height - 40;
 
         int tabY = leftPanelY + 10;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             final int index = i;
             Button btn = Button.builder(getTabComponent(i), b -> switchTab(index))
                     .bounds(leftPanelX + 10, tabY, leftPanelW - 20, 20)
@@ -104,8 +103,7 @@ public class ConfigScreen extends Screen {
             case 0 -> Component.translatable("exile_overlay.config.tab.general");
             case 1 -> Component.translatable("exile_overlay.config.tab.damage_popup");
             case 2 -> Component.translatable("exile_overlay.config.tab.hp_bar");
-            case 3 -> Component.translatable("exile_overlay.config.tab.orb");
-            case 4 -> Component.translatable("exile_overlay.config.tab.compatibility");
+            case 3 -> Component.translatable("exile_overlay.config.tab.equipment_orb");
             default -> Component.empty();
         };
     }
@@ -120,8 +118,7 @@ public class ConfigScreen extends Screen {
             case 0 -> buildGeneralTab(colX, y, colW, btnH, spacing, titleX);
             case 1 -> buildDamagePopupTab(colX, y, colW, btnH, spacing, titleX);
             case 2 -> buildEntityHealthBarTab(colX, y, colW, btnH, spacing, titleX);
-            case 3 -> buildOrbTab(colX, y, colW, btnH, spacing, titleX);
-            case 4 -> buildCompatibilityTab(colX, y, colW, btnH, spacing, titleX);
+            case 3 -> buildEquipmentOrbTab(colX, y, colW, btnH, spacing, titleX);
         }
     }
 
@@ -151,31 +148,8 @@ public class ConfigScreen extends Screen {
     }
 
     private void buildGeneralTab(int x, int y, int w, int h, int sp, int tx) {
-        EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
-        
-        y = addSection(y, "section.exile_overlay.equipment_hud", tx);
-        
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.use_percentage", config.isUsePercentage()), btn -> {
-                    config.setUsePercentage(!config.isUsePercentage());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.use_percentage", config.isUsePercentage()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.use_percentage.tooltip")))
-                        .build());
-        y += sp;
-        
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.enable_shadow", config.isEnableShadow()), btn -> {
-                    config.setEnableShadow(!config.isEnableShadow());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.enable_shadow", config.isEnableShadow()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.enable_shadow.tooltip")))
-                        .build());
-        y += sp;
-        
         y = addSection(y, "section.exile_overlay.hud_position", tx);
-        y += sp;
-        
+
         addRightWidget(Button.builder(
                 Component.translatable("exile_overlay.config.open_hud_editor"),
                 btn -> {
@@ -185,24 +159,11 @@ public class ConfigScreen extends Screen {
                 .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.open_hud_editor.tooltip")))
                 .build());
         y += sp;
-        
-        y = addSection(y, "section.exile_overlay.hud_font", tx);
-        
-        HudFontConfig hudFontConfig = HudFontConfig.getInstance();
-        
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()), btn -> {
-                    hudFontConfig.setUseCustomFont(!hudFontConfig.isUseCustomFont());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.use_custom_font", hudFontConfig.isUseCustomFont()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.use_custom_font.tooltip")))
-                        .build());
-        y += sp;
-        
+
         y = addSection(y, "section.exile_overlay.day_counter", tx);
-        
+
         HudPosition dayCounterPos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
-        
+
         addRightWidget(
                 Button.builder(getOnOffComponent("exile_overlay.config.day_counter_enabled", dayCounterPos.isVisible()), btn -> {
                     HudPosition pos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
@@ -212,14 +173,14 @@ public class ConfigScreen extends Screen {
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.day_counter_enabled.tooltip")))
                         .build());
         y += sp;
-        
+
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.day_counter_scale",
                 dayCounterPos.getScale(), 0.5f, 3.0f, val -> {
                     HudPosition pos = HudPositionManager.getInstance().getPosition(DAY_COUNTER_KEY);
                     HudPositionManager.getInstance().setPosition(DAY_COUNTER_KEY, pos.withScale(val));
                 }));
         y += sp;
-        
+
         DayCounterConfig dayCounterConfig = DayCounterConfig.getInstance();
         addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.day_counter_volume",
                 dayCounterConfig.getSoundVolume(), 0, 100, val -> {
@@ -227,7 +188,9 @@ public class ConfigScreen extends Screen {
                     dayCounterConfig.save();
                 }));
         y += sp;
-        
+
+        y = buildCompatibilitySection(x, y, w, h, sp, tx);
+
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
@@ -342,48 +305,70 @@ public class ConfigScreen extends Screen {
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
-    private void buildOrbTab(int x, int y, int w, int h, int sp, int tx) {
-        OrbTextConfig config = OrbTextConfig.getInstance();
+    private void buildEquipmentOrbTab(int x, int y, int w, int h, int sp, int tx) {
+        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+
+        y = addSection(y, "section.exile_overlay.equipment_hud", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.use_percentage", equipConfig.isUsePercentage()), btn -> {
+                    equipConfig.setUsePercentage(!equipConfig.isUsePercentage());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.use_percentage", equipConfig.isUsePercentage()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.use_percentage.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.enable_shadow", equipConfig.isEnableShadow()), btn -> {
+                    equipConfig.setEnableShadow(!equipConfig.isEnableShadow());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.enable_shadow", equipConfig.isEnableShadow()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.enable_shadow.tooltip")))
+                        .build());
+        y += sp;
 
         y = addSection(y, "section.exile_overlay.orb_text", tx);
 
+        OrbTextConfig orbConfig = OrbTextConfig.getInstance();
+
         addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.show_orb_text", config.isShowOrbText()), btn -> {
-                    config.setShowOrbText(!config.isShowOrbText());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_orb_text", config.isShowOrbText()));
+                Button.builder(getOnOffComponent("exile_overlay.config.show_orb_text", orbConfig.isShowOrbText()), btn -> {
+                    orbConfig.setShowOrbText(!orbConfig.isShowOrbText());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_orb_text", orbConfig.isShowOrbText()));
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_orb_text.tooltip")))
                         .build());
         y += sp;
 
         addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.compact_numbers_orb", config.isCompactNumbers()), btn -> {
-                    config.setCompactNumbers(!config.isCompactNumbers());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.compact_numbers_orb", config.isCompactNumbers()));
+                Button.builder(getOnOffComponent("exile_overlay.config.compact_numbers_orb", orbConfig.isCompactNumbers()), btn -> {
+                    orbConfig.setCompactNumbers(!orbConfig.isCompactNumbers());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.compact_numbers_orb", orbConfig.isCompactNumbers()));
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.compact_numbers_orb.tooltip")))
                         .build());
         y += sp;
 
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.text_scale",
-                config.getTextScale(), 0.5f, 2.0f, "%.0f%%", config::setTextScale));
+                orbConfig.getTextScale(), 0.5f, 2.0f, "%.0f%%", orbConfig::setTextScale));
         y += sp;
 
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.energy_text_scale",
-                config.getEnergyTextScale(), 0.5f, 2.0f, "%.0f%%", config::setEnergyTextScale));
+                orbConfig.getEnergyTextScale(), 0.5f, 2.0f, "%.0f%%", orbConfig::setEnergyTextScale));
         y += sp;
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
-    private void buildCompatibilityTab(int x, int y, int w, int h, int sp, int tx) {
+    private int buildCompatibilitySection(int x, int y, int w, int h, int sp, int tx) {
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         boolean hasAnyCompat = false;
-        
+
         if (LootrHelper.isLoaded()) {
             hasAnyCompat = true;
             y = addSection(y, "section.exile_overlay.quick_loot", tx);
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.quick_loot_enabled", config.isQuickLootEnabled()), btn -> {
                         config.setQuickLootEnabled(!config.isQuickLootEnabled());
@@ -392,7 +377,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.quick_loot_enabled.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.auto_execute", config.isAutoQuickLootEnabled()), btn -> {
                         config.setAutoQuickLootEnabled(!config.isAutoQuickLootEnabled());
@@ -401,11 +386,11 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_execute.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getModeOnlyComponent(config.getAutoQuickLootMode()), btn -> {
-                        EquipmentDisplayConfig.QuickLootMode next = config.getAutoQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT 
-                                ? EquipmentDisplayConfig.QuickLootMode.DROP 
+                        EquipmentDisplayConfig.QuickLootMode next = config.getAutoQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT
+                                ? EquipmentDisplayConfig.QuickLootMode.DROP
                                 : EquipmentDisplayConfig.QuickLootMode.LOOT;
                         config.setAutoQuickLootMode(next);
                         btn.setMessage(getModeOnlyComponent(next));
@@ -413,7 +398,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.auto_execute_mode.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.key_execute", config.isKeyQuickLootEnabled()), btn -> {
                         config.setKeyQuickLootEnabled(!config.isKeyQuickLootEnabled());
@@ -422,11 +407,11 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.key_execute.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getModeOnlyComponent(config.getKeyQuickLootMode()), btn -> {
-                        EquipmentDisplayConfig.QuickLootMode next = config.getKeyQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT 
-                                ? EquipmentDisplayConfig.QuickLootMode.DROP 
+                        EquipmentDisplayConfig.QuickLootMode next = config.getKeyQuickLootMode() == EquipmentDisplayConfig.QuickLootMode.LOOT
+                                ? EquipmentDisplayConfig.QuickLootMode.DROP
                                 : EquipmentDisplayConfig.QuickLootMode.LOOT;
                         config.setKeyQuickLootMode(next);
                         btn.setMessage(getModeOnlyComponent(next));
@@ -435,13 +420,11 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
         }
-        
+
         if (MineAndSlashHelper.isLoaded()) {
             hasAnyCompat = true;
             y = addSection(y, "section.exile_overlay.mns_compat", tx);
-            
-            y = addSection(y, "section.exile_overlay.mns_overlay_elements", tx);
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_rpg_bars", config.isCancelMnsRpgBars()), btn -> {
                         config.setCancelMnsRpgBars(!config.isCancelMnsRpgBars());
@@ -450,7 +433,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_rpg_bars.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_spell_hotbar", config.isCancelMnsSpellHotbar()), btn -> {
                         config.setCancelMnsSpellHotbar(!config.isCancelMnsSpellHotbar());
@@ -459,7 +442,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_spell_hotbar.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_cast_bar", config.isCancelMnsCastBar()), btn -> {
                         config.setCancelMnsCastBar(!config.isCancelMnsCastBar());
@@ -468,7 +451,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_cast_bar.tooltip")))
                             .build());
             y += sp;
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_status_effects", config.isCancelMnsStatusEffects()), btn -> {
                         config.setCancelMnsStatusEffects(!config.isCancelMnsStatusEffects());
@@ -477,9 +460,7 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_status_effects.tooltip")))
                             .build());
             y += sp;
-            
-            y = addSection(y, "section.exile_overlay.mns_entity_display", tx);
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()), btn -> {
                         config.setDisableMnsHpBar(!config.isDisableMnsHpBar());
@@ -490,11 +471,11 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
         }
-        
+
         if (com.example.exile_overlay.api.DungeonRealmReflection.isAvailable()) {
             hasAnyCompat = true;
             y = addSection(y, "section.exile_overlay.dungeon_realm_compat", tx);
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_dungeon_scoreboard", config.isCancelDungeonRealmScoreboard()), btn -> {
                         config.setCancelDungeonRealmScoreboard(!config.isCancelDungeonRealmScoreboard());
@@ -504,11 +485,11 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
         }
-        
+
         if (LootrHelper.isLoaded() && InventorySorterHelper.isLoaded()) {
             hasAnyCompat = true;
             y = addSection(y, "section.exile_overlay.inventory_sorter", tx);
-            
+
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.auto_sort_lootr_chest", config.isAutoSortLootrChest()), btn -> {
                         config.setAutoSortLootrChest(!config.isAutoSortLootrChest());
@@ -518,12 +499,8 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
         }
-        
-        if (!hasAnyCompat) {
-            y = addSection(y, "section.exile_overlay.no_mods", tx);
-        }
-        
-        contentHeight = y - (30 - (int) scrollOffset) + sp;
+
+        return y;
     }
 
     private void buildEntityHealthBarTab(int x, int y, int w, int h, int sp, int tx) {
@@ -577,6 +554,11 @@ public class ConfigScreen extends Screen {
         return Component.translatable("exile_overlay.config.font_preset", preset.getDisplayName());
     }
 
+    // TODO: フォントプリセット選択再有効化時に使用
+    // private Component getHudFontPresetComponent(HudFontPreset preset) {
+    //     return Component.translatable("exile_overlay.config.hud_font_preset", preset.getDisplayName());
+    // }
+
     private record SectionHeader(int x, int y, Component label) {
     }
 
@@ -596,7 +578,6 @@ public class ConfigScreen extends Screen {
 
     private void saveConfig() {
         EquipmentDisplayConfig.getInstance().save();
-        HudFontConfig.getInstance().save();
         DamagePopupConfig.getInstance().save();
         EntityHealthBarConfig.getInstance().save();
         OrbTextConfig.getInstance().save();
@@ -621,10 +602,6 @@ public class ConfigScreen extends Screen {
         config.setCancelDungeonRealmScoreboard(true);
         config.setAutoSortLootrChest(true);
         config.save();
-        
-        HudFontConfig hudFontConfig = HudFontConfig.getInstance();
-        hudFontConfig.setUseCustomFont(false);
-        hudFontConfig.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);
         
