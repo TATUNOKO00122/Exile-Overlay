@@ -42,6 +42,8 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             "textures/gui/target_hp_bar_frame.png");
     private static final ResourceLocation EFFECT_FRAME_TEXTURE = ResourceLocation.tryParse(
             "exile_overlay:textures/gui/effect_icon_frame.png");
+    private static final ResourceLocation EFFECT_BACKGROUND_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/effect_icon_background.png");
 
     private static final int TEX_WIDTH = 224;
     private static final int TEX_HEIGHT = 32;
@@ -239,6 +241,12 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             MineAndSlashHelper.MobEffectInfo effect = effects.get(i);
             if (effect.isExpired()) continue;
             int iconX = drawX + i * EFFECT_SPACING;
+
+            RenderSystem.enableBlend();
+            graphics.blit(EFFECT_BACKGROUND_TEXTURE,
+                    iconX - EFFECT_FRAME_OFFSET, drawY - EFFECT_FRAME_OFFSET,
+                    0, 0, EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE,
+                    EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE);
 
             if (effect.texture != null) {
                 RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
