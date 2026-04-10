@@ -22,9 +22,9 @@ public class OrbTextConfig {
 
     private boolean showOrbText = true;
     private boolean compactNumbers = false;
-    private boolean roundEnergyOrb = true;
+    private boolean energyCompact = true;
     private float textScale = 1.25f;
-    private float energyTextScale = 1.68f;
+    private float energyTextScale = 1.6f;
 
     private OrbTextConfig() {
     }
@@ -69,7 +69,10 @@ public class OrbTextConfig {
                 compactNumbers = obj.get("compactNumbers").getAsBoolean();
             }
             if (obj.has("roundEnergyOrb")) {
-                roundEnergyOrb = obj.get("roundEnergyOrb").getAsBoolean();
+                energyCompact = obj.get("roundEnergyOrb").getAsBoolean();
+            }
+            if (obj.has("energyCompact")) {
+                energyCompact = obj.get("energyCompact").getAsBoolean();
             }
             if (obj.has("textScale")) {
                 textScale = obj.get("textScale").getAsFloat();
@@ -78,7 +81,7 @@ public class OrbTextConfig {
                 energyTextScale = obj.get("energyTextScale").getAsFloat();
             }
 
-            LOGGER.info("Loaded orb text config: showOrbText={}, compactNumbers={}, roundEnergyOrb={}, textScale={}, energyTextScale={}", showOrbText, compactNumbers, roundEnergyOrb, textScale, energyTextScale);
+            LOGGER.info("Loaded orb text config: showOrbText={}, compactNumbers={}, energyCompact={}, textScale={}, energyTextScale={}", showOrbText, compactNumbers, energyCompact, textScale, energyTextScale);
         } catch (IOException e) {
             LOGGER.error("Failed to load orb text config: {}", e.getMessage());
         }
@@ -96,7 +99,7 @@ public class OrbTextConfig {
         JsonObject obj = new JsonObject();
         obj.addProperty("showOrbText", showOrbText);
         obj.addProperty("compactNumbers", compactNumbers);
-        obj.addProperty("roundEnergyOrb", roundEnergyOrb);
+        obj.addProperty("energyCompact", energyCompact);
         obj.addProperty("textScale", textScale);
         obj.addProperty("energyTextScale", energyTextScale);
 
@@ -162,11 +165,11 @@ public class OrbTextConfig {
         return energyTextScale;
     }
 
-    public boolean isRoundEnergyOrb() {
-        return roundEnergyOrb;
+    public boolean isEnergyCompact() {
+        return energyCompact;
     }
 
-    public void setRoundEnergyOrb(boolean round) {
-        this.roundEnergyOrb = round;
+    public void setEnergyCompact(boolean compact) {
+        this.energyCompact = compact;
     }
 }

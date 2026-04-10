@@ -151,11 +151,8 @@ public class OrbRenderer {
         } else if (config.getDataProvider().shouldShowValue()) {
             float current = config.getDataProvider().getCurrentValue(player);
             float max = config.getDataProvider().getMaxValue(player);
-            if (isEnergyOrb && textConfig.isRoundEnergyOrb()) {
-                current = Math.round(current);
-                max = Math.round(max);
-            }
-            String text = formatValuePair((int) current, (int) max, "/", compact || isEnergyOrb);
+            boolean energyCompact = isEnergyOrb && textConfig.isEnergyCompact();
+            String text = formatValuePair((int) current, (int) max, "/", compact || energyCompact);
             float effectiveScale = isEnergyOrb ? textConfig.getEnergyTextScale() : scaleFactor;
             float textScale = config.getDataProvider().getTextScale() * effectiveScale;
             float textCenterX = isEnergyOrb ? centerX - 0.5f : centerX;

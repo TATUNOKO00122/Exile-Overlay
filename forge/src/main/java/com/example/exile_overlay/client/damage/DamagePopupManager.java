@@ -3,14 +3,17 @@ package com.example.exile_overlay.client.damage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,7 +210,6 @@ public class DamagePopupManager {
     private void renderDamageNumber(PoseStack poseStack, MultiBufferSource bufferSource, DamageNumber dn) {
         Minecraft mc = Minecraft.getInstance();
         Vec3 camPos = mc.gameRenderer.getMainCamera().getPosition();
-        DamagePopupConfig config = DamagePopupConfig.getInstance();
 
         poseStack.pushPose();
         try {
@@ -225,22 +227,25 @@ public class DamagePopupManager {
             int alpha = (int) (dn.getAlpha() * 255);
             int colorWithAlpha = (alpha << 24) | (dn.getDisplayColor() & 0xFFFFFF);
 
-            float dmgValue = dn.getDamage();
-            String text = formatDamageText(dmgValue, dn.getType() == DamageType.HEALING);
+            String text = formatDamageText(dn.getDamage(), dn.getType() == DamageType.HEALING);
 
-            float textWidth = mc.font.width(text);
+            FontPreset preset = DamagePopupConfig.getInstance().getFontPreset();
+            Font font = mc.font;
+            ResourceLocation fontLoc = preset.getFontLocation();
+            Style fontStyle = fontLoc != null ? Style.EMPTY.withFont(fontLoc) : Style.EMPTY;
+            float textWidth = font.width(Component.literal(text).withStyle(fontStyle));
             float x = -textWidth / 2.0f;
-            float centerY = mc.font.lineHeight / 2.0f;
-            float y = -centerY;
+            float y = -font.lineHeight / 2.0f;
 
+            DamagePopupConfig config = DamagePopupConfig.getInstance();
             if (config.isEnableShadow()) {
                 int shadowColor = ((int) (alpha * 0.5f) << 24) | 0x000000;
-                DamageFontRenderer.renderText(poseStack, text, x + 1.0f, y + 1.0f, 
-                    shadowColor, bufferSource, 0xF000F0, scale);
+                DamageFontRenderer.renderText(poseStack, text, x + 1.0f, y + 1.0f,
+                    shadowColor, bufferSource, 0xF000F0);
             }
 
-            DamageFontRenderer.renderText(poseStack, text, x, y, colorWithAlpha, 
-                bufferSource, 0xF000F0, scale);
+            DamageFontRenderer.renderText(poseStack, text, x, y, colorWithAlpha,
+                bufferSource, 0xF000F0);
 
         } finally {
             poseStack.popPose();

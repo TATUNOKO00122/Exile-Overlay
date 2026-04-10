@@ -4,7 +4,6 @@ import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.OrbTextConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
-import com.example.exile_overlay.client.damage.DamageFontRenderer;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.FontPreset;
 import com.example.exile_overlay.client.render.DayCounterConfig;
@@ -200,6 +199,27 @@ public class ConfigScreen extends Screen {
                 }));
         y += sp;
 
+        y = addSection(y, "section.exile_overlay.target_info", tx);
+
+        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()), btn -> {
+                    equipConfig.setShowTargetAffixStats(!equipConfig.isShowTargetAffixStats());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_affix_stats.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()), btn -> {
+                    equipConfig.setShowTargetMobEffects(!equipConfig.isShowTargetMobEffects());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_mob_effects.tooltip")))
+                        .build());
+        y += sp;
+
         y = buildCompatibilitySection(x, y, w, h, sp, tx);
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
@@ -375,11 +395,11 @@ public class ConfigScreen extends Screen {
         y += sp;
 
         addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.round_energy_orb", orbConfig.isRoundEnergyOrb()), btn -> {
-                    orbConfig.setRoundEnergyOrb(!orbConfig.isRoundEnergyOrb());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.round_energy_orb", orbConfig.isRoundEnergyOrb()));
+                Button.builder(getOnOffComponent("exile_overlay.config.energy_compact", orbConfig.isEnergyCompact()), btn -> {
+                    orbConfig.setEnergyCompact(!orbConfig.isEnergyCompact());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.energy_compact", orbConfig.isEnergyCompact()));
                 }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.round_energy_orb.tooltip")))
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.energy_compact.tooltip")))
                         .build());
         y += sp;
 
@@ -538,7 +558,6 @@ public class ConfigScreen extends Screen {
 
     private void buildEntityHealthBarTab(int x, int y, int w, int h, int sp, int tx) {
         EntityHealthBarConfig config = EntityHealthBarConfig.getInstance();
-        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
 
         y = addSection(y, "section.exile_overlay.display_settings", tx);
 
@@ -548,24 +567,6 @@ public class ConfigScreen extends Screen {
                     btn.setMessage(getOnOffComponent("exile_overlay.config.entity_hp_bar_enabled", config.isEnabled()));
                 }).bounds(x, y, w, h)
                         .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.entity_hp_bar_enabled.tooltip")))
-                        .build());
-        y += sp;
-
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()), btn -> {
-                    equipConfig.setShowTargetAffixStats(!equipConfig.isShowTargetAffixStats());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_affix_stats.tooltip")))
-                        .build());
-        y += sp;
-
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()), btn -> {
-                    equipConfig.setShowTargetMobEffects(!equipConfig.isShowTargetMobEffects());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_mob_effects.tooltip")))
                         .build());
         y += sp;
 
@@ -634,7 +635,6 @@ public class ConfigScreen extends Screen {
         EntityHealthBarConfig.getInstance().save();
         OrbTextConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
-        DamageFontRenderer.reloadCustomFont();
     }
 
     private void resetToDefaults() {
@@ -693,12 +693,11 @@ public class ConfigScreen extends Screen {
         OrbTextConfig orbTextConfig = OrbTextConfig.getInstance();
         orbTextConfig.setShowOrbText(true);
         orbTextConfig.setCompactNumbers(false);
-        orbTextConfig.setRoundEnergyOrb(true);
-        orbTextConfig.setTextScale(1.0f);
-        orbTextConfig.setEnergyTextScale(1.0f);
+        orbTextConfig.setEnergyCompact(true);
+        orbTextConfig.setTextScale(1.25f);
+        orbTextConfig.setEnergyTextScale(1.6f);
         orbTextConfig.save();
 
-        DamageFontRenderer.reloadCustomFont();
         this.init();
     }
 

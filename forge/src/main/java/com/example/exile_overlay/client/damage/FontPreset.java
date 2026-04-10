@@ -1,61 +1,44 @@
 package com.example.exile_overlay.client.damage;
 
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
+
 public enum FontPreset {
     MINECRAFT("Minecraft", null),
-    LINESEED("Lineseed", "damage_font"),
-    TITAN_ONE("Titan One", "font/titan_one_regular.ttf");
+    LINESEED("Lineseed", "exile_overlay:damage_font"),
+    GAME_POCKET("Game Pocket", "exile_overlay:damage_font_game_pocket"),
+    JERSEY_10("Jersey 10", "exile_overlay:damage_font_jersey_10"),
+    GOOGLE_SANS_BOLD("Google Sans Bold", "exile_overlay:damage_font_google_sans_bold");
+
+    private static final FontPreset DEFAULT = LINESEED;
 
     private final String displayName;
-    private final String resourcePath;
+    @Nullable
+    private final ResourceLocation fontLocation;
 
-    FontPreset(String displayName, String resourcePath) {
+    FontPreset(String displayName, @Nullable String fontLocationStr) {
         this.displayName = displayName;
-        this.resourcePath = resourcePath;
+        this.fontLocation = fontLocationStr != null ? ResourceLocation.tryParse(fontLocationStr) : null;
     }
 
     public String getDisplayName() {
         return displayName;
     }
 
-    public String getResourcePath() {
-        return resourcePath;
-    }
-
-    public boolean isCustomFont() {
-        return resourcePath != null;
-    }
-
-    public boolean isJsonFont() {
-        return "damage_font".equals(resourcePath);
+    @Nullable
+    public ResourceLocation getFontLocation() {
+        return fontLocation;
     }
 
     public static FontPreset fromName(String name) {
         if (name == null || name.isEmpty()) {
-            return LINESEED;
+            return DEFAULT;
         }
         for (FontPreset preset : values()) {
             if (preset.name().equalsIgnoreCase(name)) {
                 return preset;
             }
         }
-        return LINESEED;
-    }
-
-    public static FontPreset fromPath(String path) {
-        if (path == null || path.isEmpty()) {
-            return MINECRAFT;
-        }
-        for (FontPreset preset : values()) {
-            if (path.equals(preset.resourcePath)) {
-                return preset;
-            }
-        }
-        if (path.contains("lineseed") || path.contains("Lineseed") || path.contains("damage_font")) {
-            return LINESEED;
-        }
-        if (path.contains("Titan") || path.contains("titan")) {
-            return TITAN_ONE;
-        }
-        return MINECRAFT;
+        return DEFAULT;
     }
 }

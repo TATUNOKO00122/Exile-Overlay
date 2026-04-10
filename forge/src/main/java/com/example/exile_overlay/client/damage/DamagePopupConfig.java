@@ -35,7 +35,6 @@ public class DamagePopupConfig {
     private boolean compactNumbers = true;
 
     private FontPreset fontPreset = FontPreset.LINESEED;
-    private int customFontSize = 64;
 
     private int normalDamageColor = 0xFFFFFF;
     private int criticalDamageColor = 0xFFFF00;
@@ -97,9 +96,8 @@ public class DamagePopupConfig {
             if (obj.has("fontPreset")) {
                 fontPreset = FontPreset.fromName(obj.get("fontPreset").getAsString());
             } else if (obj.has("customFontPath")) {
-                fontPreset = FontPreset.fromPath(obj.get("customFontPath").getAsString());
+                fontPreset = FontPreset.fromName(obj.get("customFontPath").getAsString());
             }
-            if (obj.has("customFontSize")) customFontSize = obj.get("customFontSize").getAsInt();
 
             if (obj.has("colors")) {
                 JsonObject colors = obj.getAsJsonObject("colors");
@@ -147,7 +145,6 @@ public class DamagePopupConfig {
         obj.addProperty("compactNumbers", compactNumbers);
 
         obj.addProperty("fontPreset", fontPreset.name());
-        obj.addProperty("customFontSize", customFontSize);
 
         JsonObject colors = new JsonObject();
         colors.addProperty("normal", normalDamageColor);
@@ -186,9 +183,6 @@ public class DamagePopupConfig {
     public boolean isCompactNumbers() { return compactNumbers; }
 
     public FontPreset getFontPreset() { return fontPreset; }
-    public boolean isUseCustomFont() { return fontPreset.isCustomFont(); }
-    public String getCustomFontPath() { return fontPreset.getResourcePath(); }
-    public int getCustomFontSize() { return customFontSize; }
 
     public int getNormalDamageColor() { return normalDamageColor; }
     public int getCriticalDamageColor() { return criticalDamageColor; }
@@ -229,7 +223,6 @@ public class DamagePopupConfig {
     public void setPopupHeightRatio(float ratio) { this.popupHeightRatio = ratio; }
 
     public void setFontPreset(FontPreset preset) { this.fontPreset = preset; }
-    public void setCustomFontSize(int size) { this.customFontSize = size; }
 
     public void setNormalDamageColor(int color) { this.normalDamageColor = color; }
     public void setCriticalDamageColor(int color) { this.criticalDamageColor = color; }
