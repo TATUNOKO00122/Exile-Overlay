@@ -58,10 +58,10 @@ public class EquipmentDisplayConfig {
     private boolean cancelMnsSpellHotbar = true;
     private boolean cancelMnsCastBar = true;
     private boolean cancelMnsStatusEffects = true;
-    private boolean cancelDungeonRealmScoreboard = true;
+    private boolean cancelDungeonRealmScoreboard = false;
     private boolean autoSortLootrChest = true;
     private LevelDisplayMode levelDisplayMode = LevelDisplayMode.BOTH;
-    private boolean showTargetAffixStats = true;
+    private boolean showTargetAffixStats = false;
     private boolean showTargetMobEffects = true;
 
     private EquipmentDisplayConfig() {

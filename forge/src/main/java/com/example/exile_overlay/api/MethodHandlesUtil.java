@@ -464,7 +464,7 @@ public class MethodHandlesUtil {
             case "AQUA" -> 0x55FFFF;          // Cold (Water) - 水色
             case "YELLOW" -> 0xFFFF55;        // Nature (Lightning) - 黄色
             case "DARK_PURPLE" -> 0xAA00AA;   // Shadow (Chaos) - 紫
-            case "LIGHT_PURPLE" -> 0xFF55FF;  // Elemental/All - 薄紫
+            case "LIGHT_PURPLE" -> 0xFF77FF;  // Elemental/All - 薄紫
             case "DARK_RED" -> 0xAA0000;
             case "GREEN" -> 0x55FF55;
             case "DARK_GREEN" -> 0x00AA00;

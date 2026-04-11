@@ -153,5 +153,8 @@
   "exile_overlay.config.show_target_affix_stats": "Target Affix Stats: %s",
   "exile_overlay.config.show_target_affix_stats.tooltip": "Show affix stat bonuses on the target info overlay",
   "exile_overlay.config.show_target_mob_effects": "Target Mob Effects: %s",
-  "exile_overlay.config.show_target_mob_effects.tooltip": "Show status effect icons on the target info overlay"
+  "exile_overlay.config.show_target_mob_effects.tooltip": "Show status effect icons on the target info overlay",
+  "section.exile_overlay.damage_scale_settings": "Damage Scale",
+  "exile_overlay.config.enable_damage_scale": "Damage Scale: %s",
+  "exile_overlay.config.enable_damage_scale.tooltip": "Scale popup size based on damage amount"
 }

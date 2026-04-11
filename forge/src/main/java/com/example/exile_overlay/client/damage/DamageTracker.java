@@ -11,14 +11,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * HJUD MOD由来: ダメージ追跡・DPS計算クラス
+ * ダメージ追跡・DPS計算クラス
  */
 public class DamageTracker {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageTracker");
-    private static DamageTracker instance;
-    
-    private static final long DAMAGE_EXPIRY_TIME = 60000; // 60秒でデータ削除
-    private static final long DPS_CALCULATION_WINDOW = 5000; // 5秒間のDPS計算
+    private static volatile DamageTracker instance;
+
+    private static final long DAMAGE_EXPIRY_TIME = 60000;
+    private static final long DPS_CALCULATION_WINDOW = 5000;
 
     private final Map<Integer, EntityDamageData> entityDamageMap = new ConcurrentHashMap<>();
 
@@ -27,7 +27,11 @@ public class DamageTracker {
 
     public static DamageTracker getInstance() {
         if (instance == null) {
-            instance = new DamageTracker();
+            synchronized (DamageTracker.class) {
+                if (instance == null) {
+                    instance = new DamageTracker();
+                }
+            }
         }
         return instance;
     }
@@ -57,7 +61,6 @@ public class DamageTracker {
                 totalDamageDealt += entry.totalDamage;
                 lastDamageTime = entry.timestamp;
 
-                // 古いエントリを削除
                 long cutoffTime = System.currentTimeMillis() - DAMAGE_EXPIRY_TIME;
                 damageHistory.removeIf(e -> e.timestamp < cutoffTime);
             }
@@ -115,7 +118,6 @@ public class DamageTracker {
         LOGGER.debug("Detailed damage recorded for entity {}: {} total damage (crit: {})",
                 entityId, totalDamage, isCritical);
 
-        // ビジュアル表示
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
             Entity entity = mc.level.getEntity(entityId);
@@ -125,18 +127,12 @@ public class DamageTracker {
         }
     }
 
-    /**
-     * 単純ダメージ記録
-     */
     public void addDamage(LivingEntity entity, float damage, DamageType type, boolean isCrit) {
         Map<String, Float> damageByElement = new HashMap<>();
         damageByElement.put(type.toString(), damage);
         recordDetailedDamage(entity.getId(), damageByElement, isCrit);
     }
 
-    /**
-     * ダメージ表示
-     */
     private void displayDamage(LivingEntity entity, float totalDamage, Map<String, Float> damageByElement,
             boolean isCrit) {
         Minecraft mc = Minecraft.getInstance();
@@ -145,39 +141,26 @@ public class DamageTracker {
             return;
         }
 
-        // プレイヤーへのダメージは表示しない
         if (entity == mc.player) {
             return;
         }
 
-        // エンティティの頭上に表示
-        Vec3 position = entity.position().add(0, entity.getBbHeight() * 1.2, 0);
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+        Vec3 position = entity.position().add(0, entity.getBbHeight() * config.getPopupHeightRatio(), 0);
 
-        // 最も高いダメージの属性の色を使用
         String dominantElement = damageByElement.entrySet().stream()
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("NORMAL");
 
-        int color = getColorForElement(dominantElement);
-        
-        // Enumに存在しない要素名の場合はNORMALを使用
-        DamageType damageType;
-        try {
-            damageType = DamageType.valueOf(dominantElement);
-        } catch (IllegalArgumentException e) {
-            damageType = DamageType.NORMAL;
-        }
-        
+        DamageType damageType = mapElementToDamageType(dominantElement);
+
         DamagePopupManager.getInstance().addDamageNumber(
-            position, totalDamage, color, isCrit, 
-            damageType, entity.getId()
+            position, totalDamage, isCrit,
+            damageType, entity.getId(), Vec3.ZERO
         );
     }
 
-    /**
-     * ヒール表示
-     */
     public void addHeal(LivingEntity entity, float healAmount) {
         Minecraft mc = Minecraft.getInstance();
 
@@ -185,34 +168,28 @@ public class DamageTracker {
             return;
         }
 
-        Vec3 position = entity.position().add(0, entity.getBbHeight() * 1.2, 0);
-        
+        DamagePopupConfig config = DamagePopupConfig.getInstance();
+        Vec3 position = entity.position().add(0, entity.getBbHeight() * config.getPopupHeightRatio(), 0);
+
         DamagePopupManager.getInstance().addDamageNumber(
-            position, healAmount, 0x00FF00, false, 
-            DamageType.HEALING, entity.getId()
+            position, healAmount, false,
+            DamageType.HEALING, entity.getId(), Vec3.ZERO
         );
     }
 
-    /**
-     * 属性ごとの色を取得
-     */
-    private int getColorForElement(String element) {
+    private DamageType mapElementToDamageType(String element) {
         return switch (element) {
-            case "PHYSICAL", "NORMAL" -> 0xFFFFFF; // 白
-            case "FIRE" -> 0xFF4500; // 赤
-            case "COLD", "ICE" -> 0x0080FF; // 青
-            case "NATURE", "POISON" -> 0x00FF00; // 緑
-            case "SHADOW", "DARK" -> 0x800080; // 紫
-            case "LIGHTNING", "THUNDER" -> 0xFFFF00; // 黄
-            case "MAGIC" -> 0x800080; // 紫
-            case "ALL" -> 0xFFFFFF; // 白
-            default -> 0xFFFFFF; // デフォルト白
+            case "PHYSICAL" -> DamageType.PHYSICAL;
+            case "FIRE" -> DamageType.FIRE;
+            case "COLD", "ICE" -> DamageType.ICE;
+            case "NATURE", "POISON" -> DamageType.NATURE;
+            case "SHADOW", "DARK" -> DamageType.MAGIC;
+            case "LIGHTNING", "THUNDER" -> DamageType.LIGHTNING;
+            case "MAGIC" -> DamageType.MAGIC;
+            default -> DamageType.NORMAL;
         };
     }
 
-    /**
-     * DPSデータ取得
-     */
     public EntityDamageData getDamageData(int entityId) {
         return entityDamageMap.get(entityId);
     }
@@ -221,9 +198,6 @@ public class DamageTracker {
         return entity != null ? getDamageData(entity.getId()) : null;
     }
 
-    /**
-     * 全エンティティの合計DPSを計算
-     */
     public float getTotalDPS() {
         float total = 0;
         for (EntityDamageData data : entityDamageMap.values()) {
@@ -232,9 +206,6 @@ public class DamageTracker {
         return total;
     }
 
-    /**
-     * 戦闘中のエンティティ数を取得
-     */
     public int getCombatEntityCount() {
         int count = 0;
         for (EntityDamageData data : entityDamageMap.values()) {
@@ -245,9 +216,6 @@ public class DamageTracker {
         return count;
     }
 
-    /**
-     * データクリーンアップ
-     */
     public void cleanupOldData() {
         long cutoffTime = System.currentTimeMillis() - DAMAGE_EXPIRY_TIME;
         entityDamageMap.entrySet().removeIf(entry -> {

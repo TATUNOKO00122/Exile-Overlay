@@ -153,5 +153,8 @@
   "exile_overlay.config.show_target_affix_stats": "ターゲットアフィックス: %s",
   "exile_overlay.config.show_target_affix_stats.tooltip": "ターゲット情報にアフィックスステータス補正を表示",
   "exile_overlay.config.show_target_mob_effects": "ターゲットエフェクト: %s",
-  "exile_overlay.config.show_target_mob_effects.tooltip": "ターゲット情報にステータス効果アイコンを表示"
+  "exile_overlay.config.show_target_mob_effects.tooltip": "ターゲット情報にステータス効果アイコンを表示",
+  "section.exile_overlay.damage_scale_settings": "ダメージスケール",
+  "exile_overlay.config.enable_damage_scale": "ダメージスケール: %s",
+  "exile_overlay.config.enable_damage_scale.tooltip": "ダメージ量に応じてポップアップサイズを変化"
 }

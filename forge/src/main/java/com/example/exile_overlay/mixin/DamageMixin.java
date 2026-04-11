@@ -36,7 +36,7 @@ public abstract class DamageMixin {
 
             float diff = exileOverlay$lastHealth - health;
             if (Math.abs(diff) > 0.1f) {
-                DamagePopupManager.getInstance().onHealthChanged(entity, health);
+                DamagePopupManager.getInstance().onHealthChanged(entity, exileOverlay$lastHealth, health);
                 if (diff > 0) {
                     EntityHealthBarTimer.getInstance().onDamage(entity);
                 }

@@ -34,7 +34,7 @@ public class HealNumberMixin {
             }
 
             Object self = (Object) this;
-            
+
             Method numberMethod;
             try {
                 numberMethod = self.getClass().getDeclaredMethod("number");
@@ -49,27 +49,27 @@ public class HealNumberMixin {
                 return;
             }
             float healAmount = ((Number) result).floatValue();
-            
+
             if (entity instanceof LivingEntity living && healAmount > 0) {
                 if (living instanceof Player && !config.isShowPlayerHealing()) {
                     ci.cancel();
                     return;
                 }
-                
+
                 var position = living.position().add(0, living.getBbHeight() * config.getPopupHeightRatio(), 0);
                 DamagePopupManager.getInstance().addDamageNumber(
                     position,
                     healAmount,
-                    0xFF00FF00,
                     false,
                     DamageType.HEALING,
-                    living.getId()
+                    living.getId(),
+                    net.minecraft.world.phys.Vec3.ZERO
                 );
                 LOGGER.debug("Showing heal popup: {} for entity {}", healAmount, living.getId());
             }
-            
+
             ci.cancel();
-            
+
         } catch (Exception e) {
             LOGGER.error("Failed to process heal number: {}", e.getMessage(), e);
         }

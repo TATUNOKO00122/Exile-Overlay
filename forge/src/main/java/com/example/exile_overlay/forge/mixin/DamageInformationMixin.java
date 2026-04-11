@@ -35,7 +35,7 @@ public class DamageInformationMixin {
             }
 
             Object self = (Object) this;
-            
+
             Method isCritMethod;
             try {
                 isCritMethod = self.getClass().getDeclaredMethod("isCrit");
@@ -50,7 +50,7 @@ public class DamageInformationMixin {
                 return;
             }
             boolean isCrit = (Boolean) critResult;
-            
+
             Method getDmgMapMethod;
             try {
                 getDmgMapMethod = self.getClass().getDeclaredMethod("getDmgMap");
@@ -60,11 +60,11 @@ public class DamageInformationMixin {
             }
             getDmgMapMethod.setAccessible(true);
             Object dmgMapObj = getDmgMapMethod.invoke(self);
-            
+
             float totalDamage = 0f;
             String dominantElement = "Physical";
             float maxElementDamage = 0f;
-            
+
             if (dmgMapObj instanceof Map) {
                 Map<?, ?> dmgMap = (Map<?, ?>) dmgMapObj;
                 for (Map.Entry<?, ?> entry : dmgMap.entrySet()) {
@@ -74,70 +74,50 @@ public class DamageInformationMixin {
                         damage = ((Number) entry.getValue()).floatValue();
                     }
                     totalDamage += damage;
-                    
+
                     if (damage > maxElementDamage) {
                         maxElementDamage = damage;
                         dominantElement = elementName;
                     }
                 }
             }
-            
+
             if (entity instanceof LivingEntity living && totalDamage > 0) {
                 if (!config.isShowPlayerDamage() && living instanceof Player) {
                     ci.cancel();
                     return;
                 }
-                int color = getColorForElement(dominantElement);
+
                 DamageType damageType = getDamageTypeForElement(dominantElement);
-                int finalColor = color;
-                
                 float heightRatio = config.getPopupHeightRatio();
                 var position = living.position().add(0, living.getBbHeight() * heightRatio, 0);
                 DamagePopupManager.getInstance().addDamageNumber(
-                    position, 
-                    totalDamage, 
-                    finalColor, 
-                    isCrit, 
-                    damageType, 
-                    living.getId()
+                    position,
+                    totalDamage,
+                    isCrit,
+                    damageType,
+                    living.getId(),
+                    net.minecraft.world.phys.Vec3.ZERO
                 );
-                LOGGER.debug("Showing damage popup: {} (crit: {}, element: {}) for entity {}", 
+                LOGGER.debug("Showing damage popup: {} (crit: {}, element: {}) for entity {}",
                     totalDamage, isCrit, dominantElement, living.getId());
             }
-            
+
             ci.cancel();
-            
+
         } catch (Exception e) {
             LOGGER.error("Failed to process damage information: {}", e.getMessage(), e);
         }
     }
-    
-    /**
-     * 属性名から色を取得
-     */
-    private int getColorForElement(String element) {
-        return switch (element) {
-            case "Physical" -> 0xFFFFFF;    // 白色
-            case "Fire" -> 0xFF5555;        // 赤色 (M&SのChatFormatting.RED)
-            case "Cold" -> 0x55FFFF;        // 水色 (M&SのChatFormatting.AQUA)
-            case "Nature" -> 0xFFFF55;      // 黄色 (M&SのChatFormatting.YELLOW)
-            case "Shadow" -> 0xAA00AA;      // 紫色 (M&SのChatFormatting.DARK_PURPLE)
-            case "Elemental" -> 0xFF55FF;   // 薄紫色
-            case "ALL" -> 0xFFFFFF;         // 白色
-            default -> 0xFFFFFF;            // デフォルト白色
-        };
-    }
-    
-    /**
-     * 属性名からDamageTypeを取得
-     */
+
     private DamageType getDamageTypeForElement(String element) {
         return switch (element) {
             case "Fire" -> DamageType.FIRE;
             case "Cold" -> DamageType.ICE;
             case "Nature" -> DamageType.LIGHTNING;
             case "Shadow" -> DamageType.MAGIC;
-            default -> DamageType.NORMAL;
+            case "Elemental" -> DamageType.ELEMENTAL;
+            default -> DamageType.PHYSICAL;
         };
     }
 }

@@ -2,13 +2,16 @@ package com.example.exile_overlay.client.damage;
 
 public enum DamageType {
     NORMAL(0xFFFFFF, "normal"),
-    FIRE(0xFF6600, "fire"),
-    ICE(0x00CCFF, "ice"),
-    LIGHTNING(0xFFFF66, "lightning"),
+    PHYSICAL(0xFFAA00, "physical"),
+    FIRE(0xFF5555, "fire"),
+    ICE(0x55FFFF, "ice"),
+    LIGHTNING(0xFFFF55, "lightning"),
+    NATURE(0xFFFF55, "nature"),
     POISON(0x00FF00, "poison"),
-    MAGIC(0x800080, "magic"),
+    MAGIC(0xAA00AA, "magic"),
+    ELEMENTAL(0xFF77FF, "elemental"),
     WITHER(0x2F2F2F, "wither"),
-    HEALING(0x00FF00, "healing");
+    HEALING(0x55FF55, "healing");
 
     private final int defaultColor;
     private final String id;

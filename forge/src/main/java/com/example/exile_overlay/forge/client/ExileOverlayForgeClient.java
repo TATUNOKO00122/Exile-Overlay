@@ -10,6 +10,7 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
+import com.example.exile_overlay.client.render.orb.OrbSmoothedValue;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -96,7 +97,11 @@ public class ExileOverlayForgeClient {
     private static final int SCOREBOARD_CLEAR_INTERVAL = 20; // 20 ticks = 1秒
 
     private static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && Minecraft.getInstance().player != null) {
+        if (event.phase == TickEvent.Phase.END) {
+            if (Minecraft.getInstance().player == null) {
+                OrbSmoothedValue.resetAll();
+                return;
+            }
             if (hudConfigKey != null && hudConfigKey.consumeClick()) {
                 LOGGER.info("HUD config key pressed on Forge, opening config screen");
                 ModMenuApi.openConfigScreen();

@@ -332,7 +332,18 @@ public class ConfigScreen extends Screen {
         
         addRightWidget(new FloatConfigSlider(x, y, w, h, "exile_overlay.config.popup_height",
                 config.getPopupHeightRatio(), 0.0f, 1.0f, val -> config.setPopupHeightRatio(val)));
-        
+        y += sp;
+
+        y = addSection(y, "section.exile_overlay.damage_scale_settings", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.enable_damage_scale", config.isEnableDamageScale()), btn -> {
+                    config.setEnableDamageScale(!config.isEnableDamageScale());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.enable_damage_scale", config.isEnableDamageScale()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.enable_damage_scale.tooltip")))
+                        .build());
+
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
@@ -651,25 +662,25 @@ public class ConfigScreen extends Screen {
         config.setCancelMnsSpellHotbar(true);
         config.setCancelMnsCastBar(true);
         config.setCancelMnsStatusEffects(true);
-        config.setCancelDungeonRealmScoreboard(true);
+        config.setCancelDungeonRealmScoreboard(false);
         config.setAutoSortLootrChest(true);
         config.setLevelDisplayMode(EquipmentDisplayConfig.LevelDisplayMode.BOTH);
-        config.setShowTargetAffixStats(true);
+        config.setShowTargetAffixStats(false);
         config.setShowTargetMobEffects(true);
         config.save();
         
         MineAndSlashHelper.setNeatHpBarEnabled(false);
         
         DamagePopupConfig damageConfig = DamagePopupConfig.getInstance();
-        damageConfig.setShowDamage(true);
+        damageConfig.setShowDamage(false);
         damageConfig.setShowHealing(true);
         damageConfig.setShowPlayerDamage(false);
         damageConfig.setShowPlayerHealing(true);
-        damageConfig.setEnableShadow(true);
+        damageConfig.setEnableShadow(false);
         damageConfig.setFontPreset(FontPreset.LINESEED);
         damageConfig.setBaseScale(0.03f);
         damageConfig.setCriticalScale(0.04f);
-        damageConfig.setDisplayDuration(30);
+        damageConfig.setDisplayDuration(20);
         damageConfig.setFadeInDuration(5);
         damageConfig.setFadeOutDuration(10);
         damageConfig.setMaxDamageTexts(20);

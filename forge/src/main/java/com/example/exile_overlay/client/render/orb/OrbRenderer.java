@@ -104,7 +104,8 @@ public class OrbRenderer {
 
         float current = config.getDataProvider().getCurrentValue(player);
         float max = config.getDataProvider().getMaxValue(player);
-        float percent = max > 0 ? Math.min(current / max, 1.0f) : 0;
+        float targetPercent = max > 0 ? Math.min(current / max, 1.0f) : 0;
+        float percent = OrbSmoothedValue.getSmoothedPercent(config.getId(), targetPercent);
 
         int orbX = config.getCenterX();
         int orbY = config.getCenterY();
@@ -195,7 +196,8 @@ public class OrbRenderer {
 
         float currentOverlay = overlayProvider.getCurrentValue(player);
         float maxOverlay = overlayProvider.getMaxValue(player);
-        float overlayPercent = maxOverlay > 0 ? Math.min(currentOverlay / maxOverlay, 1.0f) : 0;
+        float targetOverlayPercent = maxOverlay > 0 ? Math.min(currentOverlay / maxOverlay, 1.0f) : 0;
+        float overlayPercent = OrbSmoothedValue.getSmoothedPercent(config.getId() + "_overlay", targetOverlayPercent);
 
         if (overlayPercent <= 0)
             return;
@@ -216,6 +218,7 @@ public class OrbRenderer {
         }
 
         float esPercent = Math.min(currentEs / maxEs, 1.0f);
+        esPercent = OrbSmoothedValue.getSmoothedPercent("orb_1_es", esPercent);
         if (esPercent <= 0) {
             return;
         }
