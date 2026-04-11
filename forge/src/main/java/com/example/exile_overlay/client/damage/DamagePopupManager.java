@@ -2,6 +2,7 @@ package com.example.exile_overlay.client.damage;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -228,16 +229,6 @@ public class DamagePopupManager {
         RenderSystem.enablePolygonOffset();
 
         for (DamageNumber dn : damageNumbers) {
-            Vec3 rel = dn.getPosition().subtract(camPos);
-            if (rel.lengthSqr() < 0.0001) {
-                continue;
-            }
-            org.joml.Vector3f camRel = new org.joml.Vector3f(
-                (float) rel.x, (float) rel.y, (float) rel.z);
-            mc.getEntityRenderDispatcher().cameraOrientation().transform(camRel);
-            if (camRel.z() >= 0) {
-                continue;
-            }
             renderDamageNumber(poseStack, bufferSource, dn, camPos, font, fontStyle);
         }
 
@@ -255,13 +246,12 @@ public class DamagePopupManager {
         poseStack.pushPose();
         try {
             Vec3 pos = dn.getPosition();
-            poseStack.translate(pos.x - camPos.x, pos.y - camPos.y, pos.z - camPos.z);
-
-            poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-
             float scale = dn.getScale();
 
-            poseStack.scale(-scale, -scale, scale);
+            poseStack.translate(pos.x - camPos.x, pos.y - camPos.y, pos.z - camPos.z);
+            poseStack.mulPose(Minecraft.getInstance().gameRenderer.getMainCamera().rotation());
+            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0f));
+            poseStack.scale(scale, scale, scale);
 
             int alpha = (int) (dn.getAlpha() * 255);
             int colorWithAlpha = (alpha << 24) | (dn.getDisplayColor() & 0xFFFFFF);
