@@ -61,7 +61,7 @@ public class ConfigScreen extends Screen {
         int rightPanelH = this.height - 40;
 
         int tabY = leftPanelY + 10;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             final int index = i;
             Button btn = Button.builder(getTabComponent(i), b -> switchTab(index))
                     .bounds(leftPanelX + 10, tabY, leftPanelW - 20, 20)
@@ -100,9 +100,10 @@ public class ConfigScreen extends Screen {
     private Component getTabComponent(int index) {
         return switch (index) {
             case 0 -> Component.translatable("exile_overlay.config.tab.general");
-            case 1 -> Component.translatable("exile_overlay.config.tab.damage_popup");
-            case 2 -> Component.translatable("exile_overlay.config.tab.hp_bar");
-            case 3 -> Component.translatable("exile_overlay.config.tab.equipment_orb");
+            case 1 -> Component.translatable("exile_overlay.config.tab.display");
+            case 2 -> Component.translatable("exile_overlay.config.tab.damage_popup");
+            case 3 -> Component.translatable("exile_overlay.config.tab.hp_bar");
+            case 4 -> Component.translatable("exile_overlay.config.tab.extensions");
             default -> Component.empty();
         };
     }
@@ -115,9 +116,10 @@ public class ConfigScreen extends Screen {
     private void buildTabContent(int tab, int colX, int y, int colW, int btnH, int spacing, int titleX) {
         switch (tab) {
             case 0 -> buildGeneralTab(colX, y, colW, btnH, spacing, titleX);
-            case 1 -> buildDamagePopupTab(colX, y, colW, btnH, spacing, titleX);
-            case 2 -> buildEntityHealthBarTab(colX, y, colW, btnH, spacing, titleX);
-            case 3 -> buildEquipmentOrbTab(colX, y, colW, btnH, spacing, titleX);
+            case 1 -> buildDisplayTab(colX, y, colW, btnH, spacing, titleX);
+            case 2 -> buildDamagePopupTab(colX, y, colW, btnH, spacing, titleX);
+            case 3 -> buildEntityHealthBarTab(colX, y, colW, btnH, spacing, titleX);
+            case 4 -> buildExtensionsTab(colX, y, colW, btnH, spacing, titleX);
         }
     }
 
@@ -198,29 +200,6 @@ public class ConfigScreen extends Screen {
                     dayCounterConfig.save();
                 }));
         y += sp;
-
-        y = addSection(y, "section.exile_overlay.target_info", tx);
-
-        EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()), btn -> {
-                    equipConfig.setShowTargetAffixStats(!equipConfig.isShowTargetAffixStats());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_affix_stats.tooltip")))
-                        .build());
-        y += sp;
-
-        addRightWidget(
-                Button.builder(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()), btn -> {
-                    equipConfig.setShowTargetMobEffects(!equipConfig.isShowTargetMobEffects());
-                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()));
-                }).bounds(x, y, w, h)
-                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_mob_effects.tooltip")))
-                        .build());
-        y += sp;
-
-        y = buildCompatibilitySection(x, y, w, h, sp, tx);
 
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
@@ -347,8 +326,28 @@ public class ConfigScreen extends Screen {
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
-    private void buildEquipmentOrbTab(int x, int y, int w, int h, int sp, int tx) {
+    private void buildDisplayTab(int x, int y, int w, int h, int sp, int tx) {
         EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+
+        y = addSection(y, "section.exile_overlay.target_info", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()), btn -> {
+                    equipConfig.setShowTargetAffixStats(!equipConfig.isShowTargetAffixStats());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_affix_stats", equipConfig.isShowTargetAffixStats()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_affix_stats.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()), btn -> {
+                    equipConfig.setShowTargetMobEffects(!equipConfig.isShowTargetMobEffects());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.show_target_mob_effects", equipConfig.isShowTargetMobEffects()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.show_target_mob_effects.tooltip")))
+                        .build());
+        y += sp;
 
         y = addSection(y, "section.exile_overlay.equipment_hud", tx);
 
@@ -425,9 +424,72 @@ public class ConfigScreen extends Screen {
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
+    private void buildExtensionsTab(int x, int y, int w, int h, int sp, int tx) {
+        int yBefore = y;
+        y = buildCompatibilitySection(x, y, w, h, sp, tx);
+
+        if (y == yBefore) {
+            sectionHeaders.add(new SectionHeader(tx, y + 10, Component.translatable("section.exile_overlay.no_mods")));
+            y += 30;
+        }
+
+        contentHeight = y - (30 - (int) scrollOffset) + sp;
+    }
+
     private int buildCompatibilitySection(int x, int y, int w, int h, int sp, int tx) {
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         boolean hasAnyCompat = false;
+
+        if (MineAndSlashHelper.isLoaded()) {
+            hasAnyCompat = true;
+            y = addSection(y, "section.exile_overlay.mns", tx);
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_rpg_bars", config.isCancelMnsRpgBars()), btn -> {
+                        config.setCancelMnsRpgBars(!config.isCancelMnsRpgBars());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_rpg_bars", config.isCancelMnsRpgBars()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_rpg_bars.tooltip")))
+                            .build());
+            y += sp;
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_spell_hotbar", config.isCancelMnsSpellHotbar()), btn -> {
+                        config.setCancelMnsSpellHotbar(!config.isCancelMnsSpellHotbar());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_spell_hotbar", config.isCancelMnsSpellHotbar()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_spell_hotbar.tooltip")))
+                            .build());
+            y += sp;
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_cast_bar", config.isCancelMnsCastBar()), btn -> {
+                        config.setCancelMnsCastBar(!config.isCancelMnsCastBar());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_cast_bar", config.isCancelMnsCastBar()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_cast_bar.tooltip")))
+                            .build());
+            y += sp;
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_status_effects", config.isCancelMnsStatusEffects()), btn -> {
+                        config.setCancelMnsStatusEffects(!config.isCancelMnsStatusEffects());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_status_effects", config.isCancelMnsStatusEffects()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_status_effects.tooltip")))
+                            .build());
+            y += sp;
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()), btn -> {
+                        config.setDisableMnsHpBar(!config.isDisableMnsHpBar());
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()));
+                        MineAndSlashHelper.setNeatHpBarEnabled(!config.isDisableMnsHpBar());
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.disable_mns_hpbar.tooltip")))
+                            .build());
+            y += sp;
+        }
 
         if (LootrHelper.isLoaded()) {
             hasAnyCompat = true;
@@ -485,60 +547,9 @@ public class ConfigScreen extends Screen {
             y += sp;
         }
 
-        if (MineAndSlashHelper.isLoaded()) {
-            hasAnyCompat = true;
-            y = addSection(y, "section.exile_overlay.mns_compat", tx);
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_rpg_bars", config.isCancelMnsRpgBars()), btn -> {
-                        config.setCancelMnsRpgBars(!config.isCancelMnsRpgBars());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_rpg_bars", config.isCancelMnsRpgBars()));
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_rpg_bars.tooltip")))
-                            .build());
-            y += sp;
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_spell_hotbar", config.isCancelMnsSpellHotbar()), btn -> {
-                        config.setCancelMnsSpellHotbar(!config.isCancelMnsSpellHotbar());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_spell_hotbar", config.isCancelMnsSpellHotbar()));
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_spell_hotbar.tooltip")))
-                            .build());
-            y += sp;
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_cast_bar", config.isCancelMnsCastBar()), btn -> {
-                        config.setCancelMnsCastBar(!config.isCancelMnsCastBar());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_cast_bar", config.isCancelMnsCastBar()));
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_cast_bar.tooltip")))
-                            .build());
-            y += sp;
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.cancel_mns_status_effects", config.isCancelMnsStatusEffects()), btn -> {
-                        config.setCancelMnsStatusEffects(!config.isCancelMnsStatusEffects());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.cancel_mns_status_effects", config.isCancelMnsStatusEffects()));
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.cancel_mns_status_effects.tooltip")))
-                            .build());
-            y += sp;
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()), btn -> {
-                        config.setDisableMnsHpBar(!config.isDisableMnsHpBar());
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.disable_mns_hpbar", config.isDisableMnsHpBar()));
-                        MineAndSlashHelper.setNeatHpBarEnabled(!config.isDisableMnsHpBar());
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.disable_mns_hpbar.tooltip")))
-                            .build());
-            y += sp;
-        }
-
         if (com.example.exile_overlay.api.DungeonRealmReflection.isAvailable()) {
             hasAnyCompat = true;
-            y = addSection(y, "section.exile_overlay.dungeon_realm_compat", tx);
+            y = addSection(y, "section.exile_overlay.dungeon_realm", tx);
 
             addRightWidget(
                     Button.builder(getOnOffComponent("exile_overlay.config.cancel_dungeon_scoreboard", config.isCancelDungeonRealmScoreboard()), btn -> {
@@ -652,12 +663,12 @@ public class ConfigScreen extends Screen {
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         config.setUsePercentage(false);
         config.setEnableShadow(true);
-        config.setQuickLootEnabled(true);
+        config.setQuickLootEnabled(false);
         config.setAutoQuickLootEnabled(false);
         config.setAutoQuickLootMode(EquipmentDisplayConfig.QuickLootMode.LOOT);
         config.setKeyQuickLootEnabled(true);
         config.setKeyQuickLootMode(EquipmentDisplayConfig.QuickLootMode.DROP);
-        config.setDisableMnsHpBar(true);
+        config.setDisableMnsHpBar(false);
         config.setCancelMnsRpgBars(true);
         config.setCancelMnsSpellHotbar(true);
         config.setCancelMnsCastBar(true);
@@ -693,7 +704,7 @@ public class ConfigScreen extends Screen {
         HudPositionManager.getInstance().saveToFile();
 
         EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
-        hpBarConfig.setEnabled(true);
+        hpBarConfig.setEnabled(false);
         hpBarConfig.setMaxDistance(24);
         hpBarConfig.setHeightAbove(0.5);
         hpBarConfig.setBarWidth(30);

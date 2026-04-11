@@ -48,7 +48,7 @@ public class EquipmentDisplayConfig {
     // 設定値
     private boolean usePercentage = false;
     private boolean enableShadow = true;
-    private boolean quickLootEnabled = true;
+    private boolean quickLootEnabled = false;
     private boolean autoQuickLootEnabled = false;
     private QuickLootMode autoQuickLootMode = QuickLootMode.LOOT;
     private boolean keyQuickLootEnabled = true;

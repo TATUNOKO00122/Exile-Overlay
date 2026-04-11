@@ -21,7 +21,7 @@ public final class EntityHealthBarConfig {
     private static volatile EntityHealthBarConfig instance;
     private static final Object LOCK = new Object();
 
-    private boolean enabled = true;
+    private boolean enabled = false;
     private int maxDistance = 24;
     private double heightAbove = 0.5;
     private int barWidth = 30;

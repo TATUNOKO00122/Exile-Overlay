@@ -46,9 +46,9 @@ public class OrbRenderer {
             return String.valueOf(value);
         }
         if (value < 1_000_000) {
-            return (value / 1000) + "k";
+            return String.format("%.1fk", value / 1000.0);
         }
-        return (value / 1_000_000) + "m";
+        return String.format("%.1fm", value / 1_000_000.0);
     }
 
     private static String formatValuePair(int current, int max, String separator, boolean compact) {
