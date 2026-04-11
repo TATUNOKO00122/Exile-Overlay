@@ -4,13 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.Team;
 
@@ -21,12 +19,7 @@ public final class EntityHealthBarRenderer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/EntityHealthBarRenderer");
 
-    private static final int BAR_WIDTH = 30;
-    private static final int BAR_HEIGHT = 2;
-    private static final float GLOBAL_SCALE = 0.0267F;
-
-    private static final int COLOR_HOSTILE = 0xFFFF4040;
-    private static final int COLOR_FRIENDLY = 0xFF40FF40;
+    private static final float BASE_SCALE = 0.0267F;
     private static final int COLOR_BACKGROUND = 0x7F401010;
 
     private EntityHealthBarRenderer() {}
@@ -35,7 +28,8 @@ public final class EntityHealthBarRenderer {
             Camera camera, EntityRenderer<? super Entity> entityRenderer,
             float partialTicks, double x, double y, double z) {
 
-        if (!EntityHealthBarConfig.enabled) {
+        EntityHealthBarConfig config = EntityHealthBarConfig.getInstance();
+        if (!config.isEnabled()) {
             return;
         }
 
@@ -43,18 +37,18 @@ public final class EntityHealthBarRenderer {
             return;
         }
 
-        if (!shouldShowBar(living, camera.getEntity())) {
+        if (!shouldShowBar(living, camera.getEntity(), config)) {
             return;
         }
 
         try {
-            renderHealthBar(living, poseStack, buffers, camera, entityRenderer, partialTicks, x, y, z);
+            renderHealthBar(living, poseStack, buffers, camera, entityRenderer, partialTicks, x, y, z, config);
         } catch (Exception e) {
             LOGGER.error("Failed to render health bar for {}", entity.getName().getString(), e);
         }
     }
 
-    private static boolean shouldShowBar(LivingEntity living, Entity cameraEntity) {
+    private static boolean shouldShowBar(LivingEntity living, Entity cameraEntity, EntityHealthBarConfig config) {
         if (living == cameraEntity) {
             return false;
         }
@@ -67,20 +61,17 @@ public final class EntityHealthBarRenderer {
             return false;
         }
 
-        float health = living.getHealth();
-        float maxHealth = living.getMaxHealth();
-
-        if (health >= maxHealth) {
+        if (!EntityHealthBarTimer.getInstance().shouldShow(living, config.getDisplayDuration())) {
             return false;
         }
 
         var id = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType());
-        if (EntityHealthBarConfig.instance.blacklist().contains(id.toString())) {
+        if (config.getBlacklist().contains(id.toString())) {
             return false;
         }
 
         float distance = living.distanceTo(cameraEntity);
-        if (distance > EntityHealthBarConfig.instance.maxDistance()) {
+        if (distance > config.getMaxDistance()) {
             return false;
         }
 
@@ -105,58 +96,50 @@ public final class EntityHealthBarRenderer {
     private static void renderHealthBar(LivingEntity living, PoseStack poseStack,
             MultiBufferSource buffers, Camera camera,
             EntityRenderer<? super Entity> entityRenderer,
-            float partialTicks, double x, double y, double z) {
-
-        final int light = 0xF000F0;
-        final double heightAbove = EntityHealthBarConfig.instance.heightAbove();
+            float partialTicks, double x, double y, double z,
+            EntityHealthBarConfig config) {
 
         var vec3 = entityRenderer.getRenderOffset(living, partialTicks);
         double d0 = x + vec3.x();
         double d1 = y + vec3.y();
         double d2 = z + vec3.z();
 
+        int barWidth = config.getBarWidth();
+        int barHeight = config.getBarHeight();
+        float scale = BASE_SCALE * config.getScale();
+        int colorHealth = config.getHealthBarColorHex();
+
         poseStack.pushPose();
         poseStack.translate(d0, d1, d2);
-        poseStack.translate(0, living.getBbHeight() + heightAbove, 0);
+        poseStack.translate(0, living.getBbHeight() + config.getHeightAbove(), 0);
         poseStack.mulPose(camera.rotation());
-        poseStack.scale(-GLOBAL_SCALE, -GLOBAL_SCALE, GLOBAL_SCALE);
+        poseStack.scale(-scale, -scale, scale);
 
         float hpRatio = living.getHealth() / living.getMaxHealth();
-        int barColor = getBarColor(living);
 
-        float halfWidth = BAR_WIDTH / 2.0F;
-        float filledWidth = BAR_WIDTH * hpRatio;
+        float halfWidth = barWidth / 2.0F;
+        float filledWidth = barWidth * hpRatio;
 
         VertexConsumer builder = buffers.getBuffer(HealthBarRenderType.BAR_TYPE);
 
         var pose = poseStack.last().pose();
+        int packedLight = 15728880;
 
-        builder.vertex(pose, -halfWidth, 0, -0.01F).color(COLOR_BACKGROUND).uv(0.0F, 0.0F).uv2(light).endVertex();
-        builder.vertex(pose, -halfWidth, BAR_HEIGHT, -0.01F).color(COLOR_BACKGROUND).uv(0.0F, 1.0F).uv2(light).endVertex();
-        builder.vertex(pose, halfWidth, BAR_HEIGHT, -0.01F).color(COLOR_BACKGROUND).uv(1.0F, 1.0F).uv2(light).endVertex();
-        builder.vertex(pose, halfWidth, 0, -0.01F).color(COLOR_BACKGROUND).uv(1.0F, 0.0F).uv2(light).endVertex();
+        if (filledWidth < barWidth) {
+            float bgStart = -halfWidth + filledWidth;
+            builder.vertex(pose, bgStart, 0, 0.0F).color(COLOR_BACKGROUND).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, bgStart, barHeight, 0.0F).color(COLOR_BACKGROUND).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, barHeight, 0.0F).color(COLOR_BACKGROUND).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, halfWidth, 0, 0.0F).color(COLOR_BACKGROUND).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
+        }
 
         if (filledWidth > 0) {
-            builder.vertex(pose, -halfWidth, 0, -0.02F).color(barColor).uv(0.0F, 0.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth, BAR_HEIGHT, -0.02F).color(barColor).uv(0.0F, 1.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, BAR_HEIGHT, -0.02F).color(barColor).uv(1.0F, 1.0F).uv2(light).endVertex();
-            builder.vertex(pose, -halfWidth + filledWidth, 0, -0.02F).color(barColor).uv(1.0F, 0.0F).uv2(light).endVertex();
+            builder.vertex(pose, -halfWidth, 0, 0.0F).color(colorHealth).uv(0.0F, 0.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth, barHeight, 0.0F).color(colorHealth).uv(0.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, barHeight, 0.0F).color(colorHealth).uv(1.0F, 1.0F).uv2(packedLight).endVertex();
+            builder.vertex(pose, -halfWidth + filledWidth, 0, 0.0F).color(colorHealth).uv(1.0F, 0.0F).uv2(packedLight).endVertex();
         }
 
         poseStack.popPose();
-    }
-
-    private static int getBarColor(LivingEntity entity) {
-        if (isHostile(entity)) {
-            return COLOR_HOSTILE;
-        }
-        return COLOR_FRIENDLY;
-    }
-
-    private static boolean isHostile(LivingEntity entity) {
-        if (entity instanceof Monster) {
-            return true;
-        }
-        return false;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.exile_overlay.forge.client;
 
 import com.example.exile_overlay.ExampleMod;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.vehicle.Boat;
@@ -59,10 +60,25 @@ public class ExileOverlayGui {
             }
         }
 
-        // Mine and Slash のオーバーレイをキャンセル
-        // Mod IDは "mine_and_slash" だが、内部では "mmorpg" も使用される
-        if (overlayId.startsWith("mine_and_slash:") || overlayId.contains("mmorpg")) {
-            LOGGER.debug("[ExileOverlay] Canceling Mine and Slash overlay: {}", overlayId);
+        // Mine and Slash のオーバーレイを要素ごとにキャンセル
+        EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
+        if (overlayId.endsWith("mmorpg.rpg_gui") && config.isCancelMnsRpgBars()) {
+            LOGGER.debug("[ExileOverlay] Canceling M&S RPG bars overlay: {}", overlayId);
+            event.setCanceled(true);
+            return;
+        }
+        if (overlayId.endsWith("mmorpg.spell_hotbar") && config.isCancelMnsSpellHotbar()) {
+            LOGGER.debug("[ExileOverlay] Canceling M&S spell hotbar overlay: {}", overlayId);
+            event.setCanceled(true);
+            return;
+        }
+        if (overlayId.endsWith("mmorpg.cast_bar") && config.isCancelMnsCastBar()) {
+            LOGGER.debug("[ExileOverlay] Canceling M&S cast bar overlay: {}", overlayId);
+            event.setCanceled(true);
+            return;
+        }
+        if (overlayId.endsWith("mmorpg.status_effects") && config.isCancelMnsStatusEffects()) {
+            LOGGER.debug("[ExileOverlay] Canceling M&S status effects overlay: {}", overlayId);
             event.setCanceled(true);
             return;
         }

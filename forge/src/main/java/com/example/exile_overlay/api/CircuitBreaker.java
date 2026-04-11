@@ -88,13 +88,13 @@ public class CircuitBreaker {
      * 失敗を記録
      */
     public void recordFailure() {
+        Instant now = Instant.now();
         StateSnapshot current;
         StateSnapshot updated;
         
         do {
             current = snapshot.get();
             int newFailureCount = current.failureCount() + 1;
-            Instant now = Instant.now();
             
             if (current.state() == State.HALF_OPEN) {
                 updated = new StateSnapshot(State.OPEN, newFailureCount, now);

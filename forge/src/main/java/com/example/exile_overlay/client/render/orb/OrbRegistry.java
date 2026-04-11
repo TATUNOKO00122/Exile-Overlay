@@ -27,6 +27,7 @@ public class OrbRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final List<OrbType> registeredOrbs = new ArrayList<>();
+    private static final List<OrbType> visibleOrbsCache = new ArrayList<>();
     private static boolean initialized = false;
 
     /**
@@ -128,17 +129,17 @@ public class OrbRegistry {
             return Collections.emptyList();
         }
 
-        List<OrbType> visible = new ArrayList<>();
+        visibleOrbsCache.clear();
         for (OrbType orb : registeredOrbs) {
             try {
                 if (orb.getConfig().isVisible(player)) {
-                    visible.add(orb);
+                    visibleOrbsCache.add(orb);
                 }
             } catch (Exception e) {
                 LOGGER.debug("Error checking visibility for orb {}: {}", orb.getId(), e.getMessage());
             }
         }
-        return visible;
+        return visibleOrbsCache;
     }
 
     /**

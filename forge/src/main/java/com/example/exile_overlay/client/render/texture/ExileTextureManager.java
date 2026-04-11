@@ -49,8 +49,7 @@ public class ExileTextureManager {
             }
         }
         
-        // シェーダーを初期化
-        OrbShaderRenderer.initializeShader();
+        // シェーダーはイベントハンドラーで初期化されるため、ここでは確認のみ
         boolean shaderAvailable = OrbShaderRenderer.isShaderAvailable();
         
         if (allTexturesAvailable) {
@@ -60,7 +59,7 @@ public class ExileTextureManager {
         }
         
         if (shaderAvailable) {
-            LOGGER.info("Custom shader (orb_liquid) loaded successfully");
+            LOGGER.info("Custom shader (orb_fill) loaded successfully");
         } else {
             LOGGER.info("Custom shader not available. Using texture-based fallback.");
         }

@@ -1,13 +1,19 @@
 package com.example.exile_overlay.util;
 
+import com.example.exile_overlay.api.MethodHandlesUtil;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mine and Slash (M&S) モッドとの連携を担当するヘルパークラス。
@@ -201,6 +207,26 @@ public class MineAndSlashHelper {
         }
     }
 
+    public static float getEntityHealth(LivingEntity entity) {
+        if (!isMnsLoaded())
+            return entity.getHealth();
+        try {
+            return MethodHandlesUtil.getCurrentHealth(entity);
+        } catch (Throwable e) {
+            return entity.getHealth();
+        }
+    }
+
+    public static float getEntityMaxHealth(LivingEntity entity) {
+        if (!isMnsLoaded())
+            return entity.getMaxHealth();
+        try {
+            return MethodHandlesUtil.getMaxHealth(entity);
+        } catch (Throwable e) {
+            return entity.getMaxHealth();
+        }
+    }
+
     public static float getExp(Player player) {
         if (!isMnsLoaded())
             return 0;
@@ -326,6 +352,7 @@ public class MineAndSlashHelper {
 
     /**
      * Get all active ExileEffects (Mine and Slash buffs/debuffs) on the player.
+     * Uses exileMap directly to access ticks_left, stacks, and is_infinite fields.
      */
     public static List<ExileEffectInfo> getExileEffects(Player player) {
         List<ExileEffectInfo> result = new ArrayList<>();
@@ -339,60 +366,64 @@ public class MineAndSlashHelper {
             Object statusData = getStatusEffectsData.invoke(data);
             if (statusData == null) return result;
 
-            var getEffects = statusData.getClass().getMethod("getEffects");
-            List<?> effects = (List<?>) getEffects.invoke(statusData);
-            if (effects == null || effects.isEmpty()) return result;
+            Field exileMapField = statusData.getClass().getField("exileMap");
+            ConcurrentHashMap<String, Object> exileMap = (ConcurrentHashMap<String, Object>) exileMapField.get(statusData);
+            if (exileMap == null || exileMap.isEmpty()) return result;
 
-            for (Object effect : effects) {
-                if (effect == null) continue;
+            Class<?> exileDBClass = Class.forName("com.robertx22.mine_and_slash.database.registry.ExileDB");
+            Method getExileEffectsMethod = exileDBClass.getMethod("ExileEffects");
+            Object registry = getExileEffectsMethod.invoke(null);
+            Method getMethod = registry.getClass().getMethod("get", String.class);
 
-                var getId = effect.getClass().getMethod("GUID");
-                String id = (String) getId.invoke(effect);
+            for (Map.Entry<String, Object> entry : exileMap.entrySet()) {
+                String effectId = entry.getKey();
+                Object instanceData = entry.getValue();
 
-                var getTexture = effect.getClass().getMethod("getTexture");
-                ResourceLocation texture = (ResourceLocation) getTexture.invoke(effect);
+                if (instanceData == null) continue;
 
-                var getType = effect.getClass().getMethod("getEffectType");
-                Object effectType = getType.invoke(effect);
+                try {
+                    Method shouldRemoveMethod = instanceData.getClass().getMethod("shouldRemove");
+                    boolean shouldRemove = (boolean) shouldRemoveMethod.invoke(instanceData);
+                    if (shouldRemove) continue;
 
-                boolean isBeneficial = false;
-                boolean isNegative = false;
-                if (effectType != null) {
-                    String typeName = effectType.toString();
-                    isBeneficial = typeName.contains("beneficial");
-                    isNegative = typeName.contains("negative");
-                }
+                    Field ticksLeftField = instanceData.getClass().getField("ticks_left");
+                    int ticksLeft = ticksLeftField.getInt(instanceData);
 
-                var getLocName = effect.getClass().getMethod("locName");
-                Object nameComponent = getLocName.invoke(effect);
-                String name = nameComponent != null ? nameComponent.toString() : id;
+                    Field stacksField = instanceData.getClass().getField("stacks");
+                    int stacks = stacksField.getInt(instanceData);
 
-                // Get instance data for duration and stacks
-                var getInstanceData = statusData.getClass().getMethod("get", effect.getClass());
-                Object instanceData = getInstanceData.invoke(statusData, effect);
+                    Field isInfiniteField = instanceData.getClass().getField("is_infinite");
+                    boolean isInfinite = isInfiniteField.getBoolean(instanceData);
 
-                int duration = 0;
-                int stacks = 1;
-                boolean isInfinite = false;
+                    Method getDurationStringMethod = instanceData.getClass().getMethod("getDurationString");
+                    String durationText = (String) getDurationStringMethod.invoke(instanceData);
 
-                if (instanceData != null) {
-                    try {
-                        var getDuration = instanceData.getClass().getMethod("getRemainingDurationInSeconds");
-                        duration = ((Number) getDuration.invoke(instanceData)).intValue() * 20;
-                        
-                        var getStacks = instanceData.getClass().getMethod("getStacks");
-                        stacks = ((Number) getStacks.invoke(instanceData)).intValue();
-                        
-                        isInfinite = duration <= 0 || duration > 1000000;
-                    } catch (Exception e) {
-                        // Duration method might not exist or return differently
+                    Object effect = getMethod.invoke(registry, effectId);
+                    if (effect == null) continue;
+
+                    Method getTextureMethod = effect.getClass().getMethod("getTexture");
+                    ResourceLocation texture = (ResourceLocation) getTextureMethod.invoke(effect);
+
+                    Method locNameMethod = effect.getClass().getMethod("locName");
+                    Object nameComponent = locNameMethod.invoke(effect);
+                    String name = nameComponent != null ? nameComponent.toString() : effectId;
+
+                    Field typeField = effect.getClass().getField("type");
+                    Object effectType = typeField.get(effect);
+
+                    boolean isBeneficial = true;
+                    boolean isNegative = false;
+                    if (effectType != null) {
+                        String typeName = effectType.toString();
+                        isNegative = typeName.contains("negative");
+                        isBeneficial = !isNegative;
                     }
+
+                    result.add(new ExileEffectInfo(effectId, name, texture, ticksLeft, stacks,
+                        isBeneficial, isNegative, isInfinite, durationText));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process effect {}: {}", effectId, inner.getMessage());
                 }
-
-                String durationText = formatDuration(duration / 20);
-
-                result.add(new ExileEffectInfo(id, name, texture, duration, stacks, 
-                    isBeneficial, isNegative, isInfinite, durationText));
             }
         } catch (Exception e) {
             LOGGER.error("Failed to get ExileEffects", e);
@@ -402,31 +433,18 @@ public class MineAndSlashHelper {
     }
 
     /**
-     * Get only beneficial ExileEffects (buffs)
+     * Get all ExileEffects (unified - buffs, debuffs, neutral)
+     * Returns all effects regardless of type since display is not split by beneficial/negative.
      */
     public static List<ExileEffectInfo> getExileBuffs(Player player) {
-        List<ExileEffectInfo> all = getExileEffects(player);
-        List<ExileEffectInfo> buffs = new ArrayList<>();
-        for (ExileEffectInfo info : all) {
-            if (info.isBeneficial) {
-                buffs.add(info);
-            }
-        }
-        return buffs;
+        return getExileEffects(player);
     }
 
     /**
-     * Get only negative ExileEffects (debuffs)
+     * Returns empty list - M&S effects are all returned via getExileBuffs() to avoid duplicates.
      */
     public static List<ExileEffectInfo> getExileDebuffs(Player player) {
-        List<ExileEffectInfo> all = getExileEffects(player);
-        List<ExileEffectInfo> debuffs = new ArrayList<>();
-        for (ExileEffectInfo info : all) {
-            if (info.isNegative) {
-                debuffs.add(info);
-            }
-        }
-        return debuffs;
+        return new ArrayList<>();
     }
 
     private static String formatDuration(int seconds) {
@@ -641,8 +659,58 @@ public class MineAndSlashHelper {
 
     private static net.minecraft.client.KeyMapping[] cachedSpellKeys = null;
 
+    private static boolean hotbarSwappingEnabled = false;
+    private static long hotbarSwapCheckTime = 0;
+    private static final long HOTBAR_SWAP_CHECK_INTERVAL_MS = 1000;
+    private static Field isOnSecondHotbarField = null;
+
+    public static boolean isHotbarSwappingEnabled() {
+        if (!isMnsLoaded()) return false;
+
+        long now = System.currentTimeMillis();
+        if (now - hotbarSwapCheckTime < HOTBAR_SWAP_CHECK_INTERVAL_MS) {
+            return hotbarSwappingEnabled;
+        }
+        hotbarSwapCheckTime = now;
+
+        try {
+            Class<?> clientConfigsClass = Class.forName("com.robertx22.mine_and_slash.config.forge.ClientConfigs");
+            java.lang.reflect.Method getConfig = clientConfigsClass.getMethod("getConfig");
+            Object config = getConfig.invoke(null);
+            Field swappingField = config.getClass().getField("HOTBAR_SWAPPING");
+            Object booleanValue = swappingField.get(config);
+            java.lang.reflect.Method getMethod = booleanValue.getClass().getMethod("get");
+            hotbarSwappingEnabled = (Boolean) getMethod.invoke(booleanValue);
+        } catch (Exception e) {
+            hotbarSwappingEnabled = false;
+        }
+        return hotbarSwappingEnabled;
+    }
+
+    public static boolean isOnSecondHotbar() {
+        if (!isMnsLoaded()) return false;
+        try {
+            if (isOnSecondHotbarField == null) {
+                Class<?> spellKeybindClass = Class.forName("com.robertx22.mine_and_slash.mmorpg.registers.client.SpellKeybind");
+                isOnSecondHotbarField = spellKeybindClass.getField("IS_ON_SECONd_HOTBAR");
+            }
+            return isOnSecondHotbarField.getBoolean(null);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean isUnbound(net.minecraft.client.KeyMapping key) {
+        if (key == null) return true;
+        var boundKey = key.getKey();
+        return boundKey.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                && boundKey.getValue() == -1;
+    }
+
     /**
      * Get the key name for a spell slot (0-7)
+     * HOTBAR_SWAPPING有効時はアクティブなホットバーのキーのみ表示
+     * 未割り当てキーの場合は空文字を返す
      */
     public static String getSpellKeyText(int slot) {
         if (cachedSpellKeys == null) {
@@ -651,6 +719,28 @@ public class MineAndSlashHelper {
 
         if (cachedSpellKeys != null && slot >= 0 && slot < cachedSpellKeys.length) {
             net.minecraft.client.KeyMapping key = cachedSpellKeys[slot];
+
+            if (isHotbarSwappingEnabled()) {
+                boolean onSecond = isOnSecondHotbar();
+                boolean isFirstHalf = slot < 4;
+
+                if (onSecond && isFirstHalf) {
+                    return "";
+                }
+                if (!onSecond && !isFirstHalf) {
+                    return "";
+                }
+
+                int keySlot = onSecond ? slot - 4 : slot;
+                if (keySlot >= 0 && keySlot < cachedSpellKeys.length) {
+                    key = cachedSpellKeys[keySlot];
+                }
+            }
+
+            if (isUnbound(key)) {
+                return "";
+            }
+
             if (key != null) {
                 return key.getTranslatedKeyMessage().getString().toUpperCase();
             }
@@ -702,6 +792,144 @@ public class MineAndSlashHelper {
         return isMnsLoaded();
     }
 
+    // ========== Summon Count API ==========
+
+    /**
+     * スキルスロットの召喚数を取得
+     * SummonedData.getSummonedAmount(spellGUID) を呼び出し
+     */
+    public static int getSummonCount(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+
+            var getGUID = spell.getClass().getMethod("GUID");
+            String guid = (String) getGUID.invoke(spell);
+            if (guid == null || guid.isEmpty()) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var getSummonedData = playerData.getClass().getMethod("getSummonedData");
+            Object summonedData = getSummonedData.invoke(playerData);
+            if (summonedData == null) return 0;
+
+            var getSummonedAmount = summonedData.getClass().getMethod("getSummonedAmount", String.class);
+            return (int) getSummonedAmount.invoke(summonedData, guid);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get summon count at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    // ========== Spell Charge API ==========
+
+    public static boolean getSpellUsesCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return false;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return false;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return false;
+            var chargesField = config.getClass().getField("charges");
+            return chargesField.getInt(config) > 0;
+        } catch (Exception e) {
+            LOGGER.debug("Failed to check spell uses charges at slot {}: {}", slot, e.getMessage());
+        }
+        return false;
+    }
+
+    public static int getSpellCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargeNameField = config.getClass().getField("charge_name");
+            String chargeName = (String) chargeNameField.get(config);
+            if (chargeName == null || chargeName.isEmpty()) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var spellCastingDataField = playerData.getClass().getField("spellCastingData");
+            Object spellCastingData = spellCastingDataField.get(playerData);
+            if (spellCastingData == null) return 0;
+
+            var chargesField = spellCastingData.getClass().getField("charges");
+            Object chargeData = chargesField.get(spellCastingData);
+            if (chargeData == null) return 0;
+
+            var getCharges = chargeData.getClass().getMethod("getCharges", String.class);
+            return (int) getCharges.invoke(chargeData, chargeName);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell charges at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    public static int getSpellMaxCharges(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargesField = config.getClass().getField("charges");
+            return chargesField.getInt(config);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell max charges at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
+    public static float getSpellChargeRegenPercent(Player player, int slot) {
+        if (!isMnsLoaded()) return 0;
+        try {
+            var spell = getHotbarSpell(player, slot);
+            if (spell == null) return 0;
+            var configField = spell.getClass().getField("config");
+            Object config = configField.get(spell);
+            if (config == null) return 0;
+            var chargeNameField = config.getClass().getField("charge_name");
+            String chargeName = (String) chargeNameField.get(config);
+            var chargeRegenField = config.getClass().getField("charge_regen");
+            int chargeRegen = chargeRegenField.getInt(config);
+            if (chargeName == null || chargeName.isEmpty() || chargeRegen <= 0) return 0;
+
+            Class<?> loadClass = Class.forName("com.robertx22.mine_and_slash.uncommon.datasaving.Load");
+            var playerMethod = loadClass.getMethod("player", Player.class);
+            Object playerData = playerMethod.invoke(null, player);
+            if (playerData == null) return 0;
+
+            var spellCastingDataField = playerData.getClass().getField("spellCastingData");
+            Object spellCastingData = spellCastingDataField.get(playerData);
+            if (spellCastingData == null) return 0;
+
+            var chargesField = spellCastingData.getClass().getField("charges");
+            Object chargeData = chargesField.get(spellCastingData);
+            if (chargeData == null) return 0;
+
+            var getCurrentTicksChargingOf = chargeData.getClass().getMethod("getCurrentTicksChargingOf", String.class);
+            int currentTicks = (int) getCurrentTicksChargingOf.invoke(chargeData, chargeName);
+
+            float remaining = chargeRegen - currentTicks;
+            return Math.max(0, Math.min(remaining / chargeRegen, 1.0f));
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get spell charge regen percent at slot {}: {}", slot, e.getMessage());
+        }
+        return 0;
+    }
+
     // ========== Entity Level API (Mob/Player) ==========
 
     private static Boolean entityDataHasGetLevel = null;
@@ -736,11 +964,11 @@ public class MineAndSlashHelper {
         return -1;
     }
 
-    /**
+/**
      * Mine and SlashのNeat HPバーの有効/無効を設定
      * 
      * @param enabled true: HPバーを表示, false: HPバーを非表示
-     * @return 設定が成功した場合true
+     * @return 定定が成功した場合true
      */
     public static boolean setNeatHpBarEnabled(boolean enabled) {
         try {
@@ -757,4 +985,340 @@ public class MineAndSlashHelper {
             return false;
         }
     }
+
+    // ========== Potion Detection API ==========
+
+    private static Class<?> slashPotionItemClass = null;
+    private static Class<?> potionTypeEnumClass = null;
+    private static Method getPotionTypeMethod = null;
+    private static Method getRarityMethod = null;
+    private static Object potionTypeHp = null;
+    private static Object potionTypeMana = null;
+    private static Boolean potionClassesInitialized = null;
+
+    private static void initializePotionClasses() {
+        if (potionClassesInitialized != null) return;
+        potionClassesInitialized = false;
+        
+        if (!isMnsLoaded()) return;
+
+        try {
+            slashPotionItemClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.items.SlashPotionItem");
+            potionTypeEnumClass = Class.forName("com.robertx22.mine_and_slash.vanilla_mc.items.SlashPotionItem$Type");
+            
+            getPotionTypeMethod = slashPotionItemClass.getMethod("getType");
+            getRarityMethod = slashPotionItemClass.getMethod("getRarity");
+            
+            potionTypeHp = potionTypeEnumClass.getField("HP").get(null);
+            potionTypeMana = potionTypeEnumClass.getField("MANA").get(null);
+            
+            potionClassesInitialized = true;
+            LOGGER.debug("Potion classes initialized successfully");
+        } catch (Exception e) {
+            LOGGER.debug("Failed to initialize potion classes: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * ItemStackがSlashPotionItemかどうか判定
+     */
+    public static boolean isSlashPotionItem(net.minecraft.world.item.ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        initializePotionClasses();
+        if (!potionClassesInitialized) return false;
+        return slashPotionItemClass.isInstance(stack.getItem());
+    }
+
+    /**
+     * ポーションタイプ取得（HP=true, MANA=false）
+     * @return HPポーションならtrue、MANAポーションならfalse、判定不可ならfalse
+     */
+    public static boolean isHpPotion(net.minecraft.world.item.ItemStack stack) {
+        if (!isSlashPotionItem(stack)) return false;
+        try {
+            Object type = getPotionTypeMethod.invoke(stack.getItem());
+            return type == potionTypeHp;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * ポーションのレアリティ優先度取得（高い数値=高レアリティ）
+     * @return レアリティ優先度（0-5）、取得失敗時は0
+     */
+    public static float getPotionRarityPriority(net.minecraft.world.item.ItemStack stack) {
+        if (!isSlashPotionItem(stack)) return 0;
+        try {
+            Object rarity = getRarityMethod.invoke(stack.getItem());
+            if (rarity != null) {
+                Field statPercentsField = rarity.getClass().getField("stat_percents");
+                Object statPercents = statPercentsField.get(rarity);
+                if (statPercents != null) {
+                    Field maxField = statPercents.getClass().getField("max");
+                    return ((Number) maxField.get(statPercents)).floatValue();
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get potion rarity: {}", e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * インベントリ内の最高レアリティポーション検索
+     * @param player プレイヤー
+     * @param isHp HPポーション検索=true、MANA=false
+     * @return 最高レアリティのItemStack、見つからない場合はempty
+     */
+    public static net.minecraft.world.item.ItemStack findBestPotion(Player player, boolean isHp) {
+        if (!isMnsLoaded() || player == null) return net.minecraft.world.item.ItemStack.EMPTY;
+        
+        net.minecraft.world.item.ItemStack bestStack = net.minecraft.world.item.ItemStack.EMPTY;
+        float bestPriority = -1;
+        
+        for (net.minecraft.world.inventory.Slot slot : player.inventoryMenu.slots) {
+            net.minecraft.world.item.ItemStack stack = slot.getItem();
+            if (isSlashPotionItem(stack) && isHpPotion(stack) == isHp) {
+                float priority = getPotionRarityPriority(stack);
+                if (priority > bestPriority) {
+                    bestPriority = priority;
+                    bestStack = stack.copy();
+                }
+            }
+        }
+        
+        return bestStack;
+    }
+
+/**
+     * ポーションがクールダウン中かどうか判定
+     * バニラのCooldownTrackerを使用
+     */
+    public static boolean isPotionOnCooldown(Player player, net.minecraft.world.item.ItemStack stack) {
+        if (player == null || stack.isEmpty()) return false;
+        return player.getCooldowns().isOnCooldown(stack.getItem());
+    }
+
+    // ========== Mob Info API ==========
+
+    public static class MobRarityInfo {
+        public final String id;
+        public final int color;
+        public final boolean isElite;
+        public final boolean isSpecial;
+
+        public MobRarityInfo(String id, int color, boolean isElite, boolean isSpecial) {
+            this.id = id;
+            this.color = color;
+            this.isElite = isElite;
+            this.isSpecial = isSpecial;
+        }
+    }
+
+    public static class AffixStatInfo {
+        public final float value;
+        public final String statName;
+        public final boolean isPercent;
+
+        public AffixStatInfo(float value, String statName, boolean isPercent) {
+            this.value = value;
+            this.statName = statName != null ? statName : "";
+            this.isPercent = isPercent;
+        }
+
+        public String getDisplayText() {
+            String sign = value >= 0 ? "+" : "";
+            String pct = isPercent ? "%" : "";
+            String val = (value == (int) value)
+                    ? String.valueOf((int) value)
+                    : String.format("%.1f", value);
+            return sign + val + pct + " " + statName;
+        }
+
+        public static final int DISPLAY_COLOR = 0xFFFFFFFF;
+    }
+
+    public static class MobAffixInfo {
+        public final String name;
+        public final String icon;
+        public final List<AffixStatInfo> stats;
+
+        public MobAffixInfo(String name, String icon, List<AffixStatInfo> stats) {
+            this.name = name;
+            this.icon = icon != null ? icon : "";
+            this.stats = stats != null ? stats : new ArrayList<>();
+        }
+    }
+
+    public static class MobEffectInfo {
+        public final String id;
+        public final String name;
+        public final ResourceLocation texture;
+        public final int stacks;
+        public final boolean isInfinite;
+        public final boolean isNegative;
+        private final int displayTicksLeft;
+
+        public MobEffectInfo(String id, String name, ResourceLocation texture, int ticksLeft,
+                             int stacks, boolean isInfinite, boolean isNegative) {
+            this.id = id;
+            this.name = name;
+            this.texture = texture;
+            this.stacks = stacks;
+            this.isInfinite = isInfinite;
+            this.isNegative = isNegative;
+            this.displayTicksLeft = ticksLeft;
+        }
+
+        public String getDurationText() {
+            if (isInfinite) return "";
+            int seconds = Math.max(0, displayTicksLeft / 20);
+            if (seconds <= 0) return "0s";
+            if (seconds >= 60) return (seconds / 60) + "m";
+            return seconds + "s";
+        }
+
+        public boolean isExpired() {
+            return !isInfinite && displayTicksLeft <= 0;
+        }
+    }
+
+    private static final ConcurrentHashMap<String, long[]> effectTimerCache = new ConcurrentHashMap<>();
+    private static long lastEffectCleanup = 0;
+
+    private static int calcDisplayTicks(String cacheKey, int syncedTicksLeft) {
+        long now = System.currentTimeMillis();
+        long[] entry = effectTimerCache.computeIfAbsent(cacheKey, k -> new long[]{syncedTicksLeft, now});
+        if (entry[0] != syncedTicksLeft) {
+            entry[0] = syncedTicksLeft;
+            entry[1] = now;
+        }
+        long elapsedTicks = (now - entry[1]) / 50;
+        return Math.max(0, (int) (syncedTicksLeft - elapsedTicks));
+    }
+
+    private static void cleanupEffectTimers() {
+        long now = System.currentTimeMillis();
+        if (now - lastEffectCleanup < 30000) return;
+        lastEffectCleanup = now;
+        effectTimerCache.entrySet().removeIf(e -> {
+            long elapsedTicks = (now - e.getValue()[1]) / 50;
+            return e.getValue()[0] - elapsedTicks <= 0;
+        });
+    }
+
+    public static MobRarityInfo getMobRarity(net.minecraft.world.entity.LivingEntity entity) {
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return null;
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return null;
+            Object mobRarity = MethodHandlesUtil.getMobRarityObj(entityData);
+            if (mobRarity == null) return null;
+            String rarityId = MethodHandlesUtil.getRarityString(entityData);
+            int color = MethodHandlesUtil.getRarityColor(mobRarity);
+            boolean elite = MethodHandlesUtil.isRarityElite(mobRarity);
+            boolean special = MethodHandlesUtil.isRaritySpecial(mobRarity);
+            return new MobRarityInfo(rarityId != null ? rarityId : "common", color, elite, special);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob rarity: {}", t.getMessage());
+            return null;
+        }
+    }
+
+    public static List<MobAffixInfo> getMobAffixes(net.minecraft.world.entity.LivingEntity entity) {
+        List<MobAffixInfo> result = new ArrayList<>();
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return result;
+            List<Object> affixObjs = MethodHandlesUtil.getMobAffixObjects(entityData);
+            for (Object affix : affixObjs) {
+                String locName = MethodHandlesUtil.getAffixLocName(affix);
+                String icon = MethodHandlesUtil.getAffixIcon(affix);
+                List<AffixStatInfo> statInfos = getAffixStatInfos(affix);
+                result.add(new MobAffixInfo(locName, icon, statInfos));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob affixes: {}", t.getMessage());
+        }
+        return result;
+    }
+
+    private static List<AffixStatInfo> getAffixStatInfos(Object affix) {
+        List<AffixStatInfo> result = new ArrayList<>();
+        try {
+            List<Object> statMods = MethodHandlesUtil.getAffixStatsList(affix);
+            for (Object statMod : statMods) {
+                try {
+                    float min = MethodHandlesUtil.getStatModMin(statMod);
+                    String statGuid = MethodHandlesUtil.getStatModStatGuid(statMod);
+                    String modTypeStr = MethodHandlesUtil.getStatModType(statMod);
+                    if (statGuid == null) continue;
+
+                    Object stat = MethodHandlesUtil.getStatFromRegistry(statGuid);
+                    String statName = stat != null ? MethodHandlesUtil.getStatLocName(stat) : statGuid;
+                    boolean statIsPercent = stat != null && MethodHandlesUtil.getStatIsPercent(stat);
+                    boolean modIsPercent = "PERCENT".equals(modTypeStr) || "MORE".equals(modTypeStr);
+                    boolean isPercent = statIsPercent || modIsPercent;
+
+                    result.add(new AffixStatInfo(min, statName, isPercent));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process affix stat: {}", inner.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get affix stat infos: {}", e.getMessage());
+        }
+        return result;
+    }
+
+    public static List<MobEffectInfo> getMobStatusEffects(net.minecraft.world.entity.LivingEntity entity) {
+        List<MobEffectInfo> result = new ArrayList<>();
+        if (!MethodHandlesUtil.isAvailable() || entity == null) return result;
+
+        cleanupEffectTimers();
+
+        try {
+            Object entityData = MethodHandlesUtil.getEntityData(entity);
+            if (entityData == null) return result;
+            Object statusData = MethodHandlesUtil.getStatusEffectsData(entityData);
+            if (statusData == null) return result;
+
+            Map<String, Object> exileMap = MethodHandlesUtil.getExileEffectMap(statusData);
+
+            for (Map.Entry<String, Object> entry : exileMap.entrySet()) {
+                String effectId = entry.getKey();
+                Object instanceData = entry.getValue();
+                if (instanceData == null) continue;
+                if (MethodHandlesUtil.shouldEffectRemove(instanceData)) continue;
+
+                try {
+                    int ticksLeft = MethodHandlesUtil.getEffectTicksLeft(instanceData);
+                    int stacks = MethodHandlesUtil.getEffectStacks(instanceData);
+                    boolean isInfinite = MethodHandlesUtil.isEffectInfinite(instanceData);
+
+                    Object exileEffect = MethodHandlesUtil.getExileEffectFromDB(effectId);
+                    if (exileEffect == null) continue;
+
+                    String name = MethodHandlesUtil.getExileEffectName(exileEffect);
+                    ResourceLocation texture = MethodHandlesUtil.getExileEffectTexture(exileEffect);
+                    boolean isNegative = MethodHandlesUtil.isEffectNegative(exileEffect);
+
+                    String cacheKey = entity.getUUID() + ":" + effectId;
+                    int displayTicks = isInfinite ? ticksLeft : calcDisplayTicks(cacheKey, ticksLeft);
+
+                    result.add(new MobEffectInfo(effectId, name, texture, displayTicks,
+                            stacks, isInfinite, isNegative));
+                } catch (Exception inner) {
+                    LOGGER.debug("Failed to process mob effect {}: {}", effectId, inner.getMessage());
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob status effects: {}", t.getMessage());
+        }
+        return result;
+    }
+
+
 }

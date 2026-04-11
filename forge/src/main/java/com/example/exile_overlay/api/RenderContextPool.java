@@ -1,10 +1,10 @@
 package com.example.exile_overlay.api;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.entity.player.Player;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * RenderContextのオブジェクトプール
@@ -52,7 +52,8 @@ public class RenderContextPool {
                                        int screenWidth, int screenHeight,
                                        float partialTick, long gameTick,
                                        String elementId) {
-        int startIdx = rotateIndex.getAndIncrement() % POOL_SIZE;
+        int rawIdx = rotateIndex.getAndIncrement();
+        int startIdx = Math.abs(rawIdx % POOL_SIZE);
         
         for (int i = 0; i < POOL_SIZE; i++) {
             int idx = (startIdx + i) % POOL_SIZE;

@@ -5,6 +5,7 @@ import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.render.HudFontHelper;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -19,15 +20,27 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillHotbarRenderer.class);
 
     public static final int SLOT_COUNT = 8;
-    public static final int SLOT_SIZE = 21;
+    public static final int SLOT_SIZE = 32;
     public static final int SLOT_SPACING = 1;
-    public static final int ICON_SIZE = 15;
-    public static final int ICON_OFFSET = 3;
+    public static final int ICON_SIZE = 30;
+    public static final int ICON_OFFSET = 1;
 
-    private static final ResourceLocation SLOT_FRAME_TEXTURE = ResourceLocation.tryParse(
-            "exile_overlay:textures/gui/skill_slot_frame.png");
+    private static final ResourceLocation BASE_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_base.png");
+    private static final ResourceLocation KEYBIND_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_keybind.png");
+    private static final ResourceLocation KEYBIND_MOD_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_keybind_mod.png");
+    private static final ResourceLocation SUMMON_BADGE_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_summon_badge.png");
+    private static final ResourceLocation CHARGE_BADGE_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/skill_slot_charge_badge.png");
 
     private static final int COOLDOWN_OVERLAY_COLOR = 0xAA000000;
+    private static final int SUMMON_TEXT_COLOR = 0xFFFF5555;
+    private static final int CHARGE_COLOR_FULL = 0xFF00FF00;
+    private static final int CHARGE_COLOR_PARTIAL = 0xFFFFFF00;
+    private static final int CHARGE_COLOR_EMPTY = 0xFFFF4444;
 
     @Override
     public String getId() {
@@ -118,22 +131,49 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
             RenderSystem.enableBlend();
             graphics.blit(icon, iconX, iconY, 0, 0, ICON_SIZE, ICON_SIZE, ICON_SIZE, ICON_SIZE);
 
-            float cdPercent = MineAndSlashHelper.getSpellCooldownPercent(player, slot);
-            if (cdPercent > 0) {
-                drawCooldownOverlay(graphics, iconX, iconY, cdPercent);
+            if (MineAndSlashHelper.getSpellUsesCharges(player, slot)) {
+                int charges = MineAndSlashHelper.getSpellCharges(player, slot);
 
-                int seconds = MineAndSlashHelper.getSpellCooldownSeconds(player, slot);
-                if (seconds > 0) {
-                    String text = String.valueOf(seconds);
-                    int textX = iconX + ICON_SIZE / 2 - mc.font.width(text) / 2 + 1;
-                    int textY = iconY + ICON_SIZE / 2 - 4;
-                    graphics.drawString(mc.font, text, textX + 1, textY + 1, 0xFF000000, false);
-                    graphics.drawString(mc.font, text, textX, textY, 0xFFFFFF00, false);
+                if (charges == 0) {
+                    float regenPercent = MineAndSlashHelper.getSpellChargeRegenPercent(player, slot);
+                    if (regenPercent > 0) {
+                        drawCooldownOverlay(graphics, iconX, iconY, regenPercent);
+                    }
+                }
+            } else {
+                float cdPercent = MineAndSlashHelper.getSpellCooldownPercent(player, slot);
+                if (cdPercent > 0) {
+                    drawCooldownOverlay(graphics, iconX, iconY, cdPercent);
+
+                    int seconds = MineAndSlashHelper.getSpellCooldownSeconds(player, slot);
+                    if (seconds > 0) {
+                        String text = String.valueOf(seconds);
+                        float cdTextScale = 1.5f;
+                        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+                        float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
+                        float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
+                        graphics.pose().pushPose();
+                        try {
+                            graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
+                        } finally {
+                            graphics.pose().popPose();
+                        }
+                    }
                 }
             }
 
+            String rawKeyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
+
             RenderSystem.enableBlend();
-            graphics.blit(SLOT_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+            graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+            if (!rawKeyText.isEmpty()) {
+                RenderSystem.enableBlend();
+                ResourceLocation keybindFrame = hasModifier(rawKeyText) ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
+                graphics.blit(keybindFrame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+            }
 
             int manaCost = MineAndSlashHelper.getSpellManaCost(player, slot);
             if (manaCost > 0) {
@@ -145,39 +185,112 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 float scaledSlotY = slotY / manaTextScale;
 
                 String manaText = String.valueOf(manaCost);
-                int textWidth = mc.font.width(manaText);
-                graphics.fill((int) scaledSlotX + 2, (int) scaledSlotY + 2,
-                        (int) scaledSlotX + textWidth + 4, (int) scaledSlotY + 12, 0xAA000066);
-                graphics.drawString(mc.font, manaText, (int) scaledSlotX + 3, (int) scaledSlotY + 3, 0xFF00CCFF, false);
+                int textWidth = HudFontHelper.getTextWidth(mc.font, manaText);
+                graphics.fill(Math.round(scaledSlotX) + 2, Math.round(scaledSlotY) + 2,
+                        Math.round(scaledSlotX) + textWidth + 4, Math.round(scaledSlotY) + 12, 0xAA000066);
+                HudFontHelper.drawString(graphics, mc.font, manaText, Math.round(scaledSlotX) + 3, Math.round(scaledSlotY) + 3, 0xFF00CCFF, false);
 
                 graphics.pose().popPose();
             }
 
-            String keyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
-            keyText = keyText.replace("LEFT SHIFT", "S").replace("RIGHT SHIFT", "S").replace("SHIFT", "S");
-            keyText = keyText.replace("LEFT CONTROL", "C").replace("RIGHT CONTROL", "C").replace("CONTROL", "C");
-            keyText = keyText.replace("LEFT ALT", "A").replace("RIGHT ALT", "A").replace("ALT", "A");
-            keyText = keyText.replace(" + ", "+");
-            keyText = keyText.replace(" ", "");
+            if (!rawKeyText.isEmpty()) {
+                String keyText = rawKeyText;
+                keyText = keyText.replace("LEFT SHIFT", "s").replace("RIGHT SHIFT", "s").replace("SHIFT", "s");
+                keyText = keyText.replace("LEFT CONTROL", "c").replace("RIGHT CONTROL", "c").replace("CONTROL", "c");
+                keyText = keyText.replace("LEFT ALT", "a").replace("RIGHT ALT", "a").replace("ALT", "a");
+                keyText = keyText.replace(" + ", "+");
+                keyText = keyText.replace(" ", "");
 
-            graphics.pose().pushPose();
-            float textScale = 0.4f;
-            graphics.pose().scale(textScale, textScale, 1.0f);
+                int fullTextWidth = HudFontHelper.getTextWidth(mc.font, keyText);
+                float textScale = 0.8f;
+                float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
+                float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
 
-            float scaledX = slotX / textScale;
-            float scaledY = slotY / textScale;
-            float scaledSlotSize = SLOT_SIZE / textScale;
+                graphics.pose().pushPose();
+                graphics.pose().translate(keyX, keyY, 0);
+                graphics.pose().scale(textScale, textScale, 1.0f);
 
-            int textWidth = mc.font.width(keyText);
-            float keyX = scaledX + scaledSlotSize - textWidth - 7;
-            float keyY = scaledY + scaledSlotSize - 14;
+                int plusIndex = keyText.lastIndexOf('+');
+                if (plusIndex >= 0) {
+                    String modKeyPart = keyText.substring(0, plusIndex);
+                    String mainKeyPart = keyText.substring(plusIndex + 1);
+                    int modKeyWidth = HudFontHelper.getTextWidth(mc.font, modKeyPart);
+                    int plusWidth = HudFontHelper.getTextWidth(mc.font, "+");
+                    HudFontHelper.drawString(graphics, mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
+                    HudFontHelper.drawString(graphics, mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
+                    HudFontHelper.drawString(graphics, mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
+                } else {
+                    HudFontHelper.drawString(graphics, mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+                }
 
-            graphics.drawString(mc.font, keyText, (int) keyX, (int) keyY, 0xFFFFFFFF, false);
+                graphics.pose().popPose();
+            }
 
-            graphics.pose().popPose();
+            int summonCount = MineAndSlashHelper.getSummonCount(player, slot);
+            if (summonCount > 0) {
+                drawSummonBadge(graphics, mc, slotX, slotY, summonCount);
+            }
+
+            if (MineAndSlashHelper.getSpellUsesCharges(player, slot)) {
+                int charges = MineAndSlashHelper.getSpellCharges(player, slot);
+                int maxCharges = MineAndSlashHelper.getSpellMaxCharges(player, slot);
+                drawChargeBadge(graphics, mc, slotX, slotY, charges, maxCharges);
+            }
         }
 
         graphics.pose().popPose();
+    }
+
+    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count) {
+        RenderSystem.enableBlend();
+        graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+        String text = String.valueOf(count);
+        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+        int textHeight = mc.font.lineHeight;
+
+        float s = 0.8f;
+        float textX = slotX + 2.0f + (8.0f - textWidth * s) / 2.0f + 0.5f + 1;
+        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(textX, textY, 0);
+        graphics.pose().scale(s, s, 1.0f);
+        HudFontHelper.drawString(graphics, mc.font, text, 0, 0, SUMMON_TEXT_COLOR, false);
+        graphics.pose().popPose();
+    }
+
+    private void drawChargeBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int charges, int maxCharges) {
+        RenderSystem.enableBlend();
+        graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+
+        String text = String.valueOf(charges);
+        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+        int textHeight = mc.font.lineHeight;
+
+        float s = 0.8f;
+        float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f - 1;
+        float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
+
+        int color;
+        if (charges <= 0) {
+            color = CHARGE_COLOR_EMPTY;
+        } else if (charges < maxCharges) {
+            color = CHARGE_COLOR_PARTIAL;
+        } else {
+            color = CHARGE_COLOR_FULL;
+        }
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(textX, textY, 0);
+        graphics.pose().scale(s, s, 1.0f);
+        HudFontHelper.drawString(graphics, mc.font, text, 0, 0, color, false);
+        graphics.pose().popPose();
+    }
+
+    private boolean hasModifier(String keyText) {
+        String upper = keyText.toUpperCase();
+        return upper.contains("SHIFT") || upper.contains("CONTROL") || upper.contains("ALT");
     }
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {

@@ -45,7 +45,8 @@ public class HudPositionManager {
     private final Map<String, HudPosition> positions;
     private final Map<String, HudPosition> defaults;
     private final Map<String, PositionListener> listeners;
-    private boolean initialized = false;
+    private volatile boolean initialized = false;
+    private final Object initLock = new Object();
     
     private HudPositionManager() {
         this.positions = new ConcurrentHashMap<>();
@@ -68,44 +69,44 @@ public class HudPositionManager {
         if (initialized) {
             return;
         }
-        
-        LOGGER.info("Initializing HudPositionManager...");
-        
-        registerDefaults();
-        loadFromFile();
-        
-        initialized = true;
-        LOGGER.info("HudPositionManager initialized with {} positions", positions.size());
+        synchronized (initLock) {
+            if (initialized) {
+                return;
+            }
+            LOGGER.info("Initializing HudPositionManager...");
+            
+            registerDefaults();
+            loadFromFile();
+            
+            initialized = true;
+            LOGGER.info("HudPositionManager initialized with {} positions", positions.size());
+        }
     }
     
     /**
      * デフォルト位置を登録
      */
     private void registerDefaults() {
-        // ホットバー: 画面下部中央
-        // Orb類はホットバーに連動して表示されるため、独立した位置設定は不要
-        defaults.put("hotbar", new HudPosition(Anchor.BOTTOM_CENTER, -1, 0));
+        defaults.put("hotbar", new HudPosition(Anchor.BOTTOM_CENTER, 4, 0, 0.9f, true, false));
 
-        // ダメージポップアップ: 中央付近
         defaults.put("damage_popup", new HudPosition(Anchor.CENTER, 0, -50));
 
-        // バフオーバーレイ: 左上
         defaults.put("buff_overlay", new HudPosition(Anchor.TOP_LEFT, 0, 0, 0.6f, true, false));
 
-        // バニラ酸素ゲージ: ホットバーの上、中央寄せ
-        defaults.put("vanilla_air", new HudPosition(Anchor.BOTTOM_CENTER, 17, -36, 0.6f, true, false));
+        defaults.put("vanilla_air", new HudPosition(Anchor.BOTTOM_RIGHT, -114, -15, 0.7f, true, false));
 
-        // バニラ食料ゲージ: ホットバーの上、中央寄せ
-        defaults.put("vanilla_food", new HudPosition(Anchor.BOTTOM_CENTER, 17, -31, 0.6f, true, false));
+        defaults.put("vanilla_food", new HudPosition(Anchor.BOTTOM_RIGHT, -114, -8, 0.7f, true, false));
 
-        // スキルホットバー: 画面中央やや下
-        defaults.put("skill_hotbar", new HudPosition(Anchor.CENTER, -73, 57, 0.7f, true, true));
+        defaults.put("skill_hotbar", new HudPosition(Anchor.CENTER, -65, 52, 0.4f, true, true));
 
-        // ターゲットMOB名: 画面上部中央
         defaults.put("target_mob_name", new HudPosition(Anchor.TOP_CENTER, -1, 44, 0.5f, true, false));
 
-        // 装備耐久: 画面下部中央、左寄せ
-        defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_CENTER, -141, 0, 0.5f, true, false));
+        defaults.put("armor_durability", new HudPosition(Anchor.BOTTOM_LEFT, 100, 0, 0.5f, true, false));
+
+        defaults.put("day_counter", new HudPosition(Anchor.BOTTOM_CENTER, 0, 0));
+
+        // TODO: Harvestマップ用HUD（現在使用しないためコメントアウト）
+        // defaults.put("dungeon_hud", new HudPosition(Anchor.CENTER, 140, -40, 0.8f, true, false));
 
         LOGGER.debug("Registered {} default positions", defaults.size());
     }

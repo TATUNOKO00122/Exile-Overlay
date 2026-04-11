@@ -3,19 +3,20 @@ package com.example.exile_overlay.client.render;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class DayCounterConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DayCounterConfig");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String CONFIG_FILE_NAME = "exile_overlay_day_counter.json";
-    private static DayCounterConfig instance;
+    private static volatile DayCounterConfig instance;
+    private static final Object LOCK = new Object();
 
     private int soundVolume = 5;
 
@@ -24,15 +25,19 @@ public class DayCounterConfig {
 
     public static DayCounterConfig getInstance() {
         if (instance == null) {
-            instance = new DayCounterConfig();
-            instance.load();
+            synchronized (LOCK) {
+                if (instance == null) {
+                    instance = new DayCounterConfig();
+                    instance.load();
+                }
+            }
         }
         return instance;
     }
 
     private Path getConfigPath() {
-        String gameDir = System.getProperty("user.dir");
-        return Paths.get(gameDir, "config", CONFIG_FILE_NAME);
+        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+        return gameDir.resolve("config").resolve(CONFIG_FILE_NAME);
     }
 
     public void load() {

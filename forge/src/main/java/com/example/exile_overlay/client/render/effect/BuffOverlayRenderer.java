@@ -6,6 +6,7 @@ import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.render.HudFontHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,11 +31,13 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             "textures/gui/effect_frame.png");
     private static final ResourceLocation EFFECT_FRAME_BACKGROUND = new ResourceLocation("exile_overlay",
             "textures/gui/effect_frame_background.png");
+    private static final ResourceLocation EFFECT_STACK_BADGE = new ResourceLocation("exile_overlay",
+            "textures/gui/effect_stack_badge.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
     private static final int FRAME_HEIGHT = 39;
-    private static final int ICON_SIZE = 20;
+    private static final int ICON_SIZE = 22;
 
     // 配置設定
     private static final boolean HORIZONTAL = true;
@@ -159,6 +162,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
         return false;
     }
 
+    // 無限 → 残り時間が短い順（短いものが右に配置）
     private static final java.util.Comparator<EffectRenderHelper.DisplayableEffect> EFFECT_COMPARATOR = (a, b) -> {
         boolean aInfinite = a.isInfinite();
         boolean bInfinite = b.isInfinite();
@@ -179,6 +183,8 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             double scale, float partialTick) {
         int spacing = horizontal ? (FRAME_WIDTH + 1) : (FRAME_HEIGHT + 1);
 
+        EffectRenderHelper.updateVisualStates(effects);
+
         graphics.pose().pushPose();
         try {
             graphics.pose().translate(listX, listY, 0);
@@ -187,28 +193,34 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             for (int i = 0; i < effects.size(); i++) {
                 EffectRenderHelper.DisplayableEffect effect = effects.get(i);
 
-                // ターゲット位置を計算
                 float targetX = horizontal ? i * spacing : 0;
                 float targetY = horizontal ? 0 : i * spacing;
 
-                // アニメーション状態を取得
                 EffectRenderHelper.VisualState state = EffectRenderHelper.getVisualState(effect.getId(),
                         horizontal ? targetX : targetY, effect.getDuration());
 
-                // 位置を更新（Lerp）
+                EffectRenderHelper.updateFadeIn(state);
+
                 float currentPos = horizontal
                         ? EffectRenderHelper.updatePosition(state, targetX, partialTick)
                         : targetY;
 
-                float renderX = horizontal ? currentPos : 0;
+                float renderX = horizontal ? currentPos + state.offsetX : 0;
                 float renderY = horizontal ? 0 : currentPos;
 
                 if (!horizontal) {
                     renderY = i * spacing;
                 }
 
-                // 効果を描画
-                renderSingleEffect(graphics, mc, effect, (int) renderX, (int) renderY, state);
+                if (state.alpha < 0.01f)
+                    continue;
+
+                RenderSystem.setShaderColor(1f, 1f, 1f, state.alpha);
+                try {
+                    renderSingleEffect(graphics, mc, effect, (int) renderX, (int) renderY, state);
+                } finally {
+                    RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+                }
             }
         } finally {
             graphics.pose().popPose();
@@ -218,43 +230,36 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
     private static void renderSingleEffect(GuiGraphics graphics, Minecraft mc,
             EffectRenderHelper.DisplayableEffect effect,
             int x, int y, EffectRenderHelper.VisualState state) {
-        // 1. 背景を描画
         RenderSystem.enableBlend();
         RenderSystem.setShaderTexture(0, EFFECT_FRAME_BACKGROUND);
         graphics.blit(EFFECT_FRAME_BACKGROUND, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-        // 2. アイコンを描画（中央揃え）
-        int iconOffset = (FRAME_WIDTH - ICON_SIZE) / 2;
+        int iconOffset = 3;
         int iconX = x + iconOffset;
         int iconY = y + iconOffset;
-        effect.renderIcon(graphics, iconX, iconY, ICON_SIZE);
+        graphics.pose().pushPose();
+        graphics.pose().translate(-1.0f, -1.0f, 0);
+        effect.renderIcon(graphics, iconX, iconY, ICON_SIZE + 4);
+        graphics.pose().popPose();
 
-        // 3. プログレスバー描画（フレームの前に描画して枠の後ろに配置）
-        int barMaxWidth = 20;
-        int barHeight = 8;
-        int barX = x + 5;
+        int barMaxWidth = 22;
+        int barHeight = 7;
+        int barX = x + 4;
         int barY = y + 28;
         int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
 
         if (!effect.isInfinite()) {
             int currentDuration = effect.getDuration();
             int maxDur = state.maxDuration;
-            
+
             if (maxDur <= 0 || currentDuration > maxDur) {
                 maxDur = currentDuration;
                 state.maxDuration = maxDur;
             }
-            
+
             float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
             progress = Math.max(0.0f, Math.min(1.0f, progress));
             int barWidth = (int) (barMaxWidth * progress);
-
-            // デバッグログは必要時のみ有効化（パフォーマンス影響を避けるためコメントアウト）
-            // long now = System.currentTimeMillis();
-            // if (now - lastLogTime > 1000) {
-            //     LOGGER.debug("[BUFF BAR] id={}, cur={}, max={}, progress={}, width={}", 
-            //         effect.getId(), currentDuration, maxDur, progress, barWidth);
-            // }
 
             graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
             if (barWidth > 0) {
@@ -264,15 +269,37 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
         }
 
-        // 4. フレームを描画
         RenderSystem.setShaderTexture(0, EFFECT_FRAME);
         graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-        // 5. 残り時間テキストを描画
+        int stacks = effect.getStacks();
+        if (stacks > 1) {
+            RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
+            graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+            String stackText = toRoman(stacks);
+            float stackScale = 0.7f;
+            int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
+
+            float badgeCenterX = x + FRAME_WIDTH - 5;
+            float badgeCenterY = y + 7;
+            float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
+            float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
+
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().scale(stackScale, stackScale, 1.0f);
+                graphics.pose().translate(0, 0, 201.0f);
+                HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
+            } finally {
+                graphics.pose().popPose();
+            }
+        }
+
         String durationText = effect.getDurationText();
         if (durationText != null && !durationText.isEmpty()) {
             float textScale = 0.5f;
-            int textWidth = mc.font.width(durationText);
+            int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
             graphics.pose().pushPose();
             try {
@@ -283,7 +310,7 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
                 graphics.pose().translate(0, 0, 201.0f);
 
                 int textColor = effect.isInfinite() ? 0xFF88FF88 : 0xFFFFFFFF;
-                graphics.drawString(mc.font, durationText, (int) textX, (int) textY, textColor, false);
+                HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, textColor, false);
             } finally {
                 graphics.pose().popPose();
             }
@@ -335,7 +362,8 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
             }
             // ユーザー設定のスケールを適用
             float userScale = getScale();
-            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE * userScale, ctx.getPartialTick());
+            renderUnifiedEffectList(graphics, mc, effectCache, pos[0], pos[1], HORIZONTAL, SCALE * userScale,
+                    ctx.getPartialTick());
         }
     }
 
@@ -415,6 +443,16 @@ public class BuffOverlayRenderer implements IHudRenderer, IRenderCommand {
     @Override
     public int getConfigHeight() {
         return FRAME_HEIGHT;
+    }
+
+    private static String toRoman(int num) {
+        if (num <= 0)
+            return String.valueOf(num);
+        String[] thousands = { "", "M", "MM", "MMM" };
+        String[] hundreds = { "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM" };
+        String[] tens = { "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC" };
+        String[] ones = { "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" };
+        return thousands[num / 1000] + hundreds[(num % 1000) / 100] + tens[(num % 100) / 10] + ones[num % 10];
     }
 
     @Override

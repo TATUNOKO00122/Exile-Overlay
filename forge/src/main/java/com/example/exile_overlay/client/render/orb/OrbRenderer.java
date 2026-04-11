@@ -1,19 +1,14 @@
 package com.example.exile_overlay.client.render.orb;
 
+import com.example.exile_overlay.client.config.OrbTextConfig;
+import com.example.exile_overlay.client.render.HudFontHelper;
 import com.example.exile_overlay.client.render.resource.ResourceSlotManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import org.joml.Matrix4f;
 
 /**
  * オーブ描画を担当するクラス
@@ -36,6 +31,7 @@ import org.joml.Matrix4f;
  * - 色: シアン/スカイブルー (0.0f, 0.9f, 1.0f, 0.7f)
  * - 描画順: 下から上へ溜まる方式
  * - Mine and SlashのMagic Shieldデータを使用
+ *
  */
 public class OrbRenderer {
 
@@ -43,34 +39,20 @@ public class OrbRenderer {
             "textures/gui/orb_reflection.png");
 
     // ES（エナジーシールド）の色設定（HJUD Mod方式）
-    private static final float ES_R = 0.0f;
-    private static final float ES_G = 0.9f;
-    private static final float ES_B = 1.0f;
-    private static final float ES_A = 0.7f;
-    
-    // 【最適化】ESオーバーレイのスライス数（パフォーマンスと画質のバランス）
-    private static final int ES_SLICES = 16;
-    
-    // 【最適化】sqrt結果キャッシュ（半径1.0基準）
-    // -1.0〜1.0を256段階でキャッシュ
-    private static final int SQRT_CACHE_SIZE = 256;
-    private static final float[] SQRT_CACHE = new float[SQRT_CACHE_SIZE];
-    
-    static {
-        // sqrt(1 - y^2)を事前計算（yは-1〜1の範囲）
-        for (int i = 0; i < SQRT_CACHE_SIZE; i++) {
-            float y = (i / (float)(SQRT_CACHE_SIZE - 1)) * 2.0f - 1.0f; // -1 to 1
-            float ySq = y * y;
-            SQRT_CACHE[i] = (float) Math.sqrt(Math.max(0, 1.0f - ySq));
+    private static final int ES_COLOR = 0x6600E6FF;
+
+    private static String formatValue(int value, boolean compact) {
+        if (!compact || value < 1000) {
+            return String.valueOf(value);
         }
+        if (value < 1_000_000) {
+            return String.format("%.1fk", value / 1000.0);
+        }
+        return String.format("%.1fm", value / 1_000_000.0);
     }
-    
-    // 【最適化】キャッシュからsqrt値を取得
-    private static float getSqrtFromCache(float normalizedY) {
-        // normalizedY: -1.0 〜 1.0
-        int index = (int) ((normalizedY + 1.0f) * 0.5f * (SQRT_CACHE_SIZE - 1));
-        index = Math.max(0, Math.min(SQRT_CACHE_SIZE - 1, index));
-        return SQRT_CACHE[index];
+
+    private static String formatValuePair(int current, int max, String separator, boolean compact) {
+        return formatValue(current, compact) + separator + formatValue(max, compact);
     }
 
     private static boolean shouldSkipRender(OrbConfig config, Player player) {
@@ -84,15 +66,14 @@ public class OrbRenderer {
     private static int getDynamicColor(OrbConfig config, Player player) {
         String orbId = config.getId();
         String slotId = mapOrbIdToSlotId(orbId);
-        
+
         if (slotId != null) {
             int dynamicColor = ResourceSlotManager.getInstance().getActiveColor(slotId, player);
-            // デフォルト色（グレー）でない場合は動的色を使用
             if (dynamicColor != 0x808080) {
                 return dynamicColor;
             }
         }
-        
+
         return config.getColor();
     }
 
@@ -123,13 +104,13 @@ public class OrbRenderer {
 
         float current = config.getDataProvider().getCurrentValue(player);
         float max = config.getDataProvider().getMaxValue(player);
-        float percent = max > 0 ? Math.min(current / max, 1.0f) : 0;
+        float targetPercent = max > 0 ? Math.min(current / max, 1.0f) : 0;
+        float percent = OrbSmoothedValue.getSmoothedPercent(config.getId(), targetPercent);
 
         int orbX = config.getCenterX();
         int orbY = config.getCenterY();
         int orbSize = config.getSize();
 
-        // 動的な色を取得（ResourceSlotManagerから）
         int color = getDynamicColor(config, player);
 
         OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, color);
@@ -145,8 +126,7 @@ public class OrbRenderer {
 
         if (config.shouldShowReflection()) {
             RenderSystem.enableBlend();
-            // 反射テクスチャを1px拡大、左に2pxずらす
-            graphics.blit(REFLECTION_TEXTURE, orbX - 2, orbY, 0, 0, 0, orbSize + 1, orbSize + 1, orbSize + 1, orbSize + 1);
+            graphics.blit(REFLECTION_TEXTURE, orbX - 2, orbY - 2, 0, 0, 0, orbSize + 2, orbSize + 2, orbSize + 2, orbSize + 2);
         }
     }
 
@@ -154,64 +134,59 @@ public class OrbRenderer {
         if (shouldSkipRender(config, player))
             return;
 
+        OrbTextConfig textConfig = OrbTextConfig.getInstance();
+        if (!textConfig.isShowOrbText()) {
+            return;
+        }
+
+        boolean compact = textConfig.isCompactNumbers();
+        boolean isEnergyOrb = "orb_3".equals(config.getId());
+        float scaleFactor = textConfig.getTextScale();
         int orbX = config.getCenterX();
         int orbY = config.getCenterY();
         int orbSize = config.getSize();
         float centerX = orbX + orbSize / 2f;
 
-        // ORB_1（HPオーブ）の場合、HPとESの両方を表示
         if ("orb_1".equals(config.getId())) {
-            renderHpEsValues(graphics, config, player, mc, orbX, orbY, orbSize, centerX);
+            renderHpEsValues(graphics, config, player, mc, orbX, orbY, orbSize, centerX, compact, scaleFactor);
         } else if (config.getDataProvider().shouldShowValue()) {
-            // 他のオーブは今まで通り
             float current = config.getDataProvider().getCurrentValue(player);
             float max = config.getDataProvider().getMaxValue(player);
-            String text = (int) current + " / " + (int) max;
-            float textScale = config.getDataProvider().getTextScale();
-            renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
+            boolean energyCompact = isEnergyOrb && textConfig.isEnergyCompact();
+            String text = formatValuePair((int) current, (int) max, "/", compact || energyCompact);
+            float effectiveScale = isEnergyOrb ? textConfig.getEnergyTextScale() : scaleFactor;
+            float textScale = config.getDataProvider().getTextScale() * effectiveScale;
+            float textCenterX = isEnergyOrb ? centerX - 0.5f : centerX;
+            renderCenteredScaledText(graphics, mc, text, textCenterX, orbY + orbSize / 2f, textScale, 0xFFFFFFFF);
         }
     }
 
-    /**
-     * HPとESの数値を表示（多い方を上、少ない方を下に小さく）
-     * - ラベルなし（HP/ES文字なし）
-     * - 白文字統一
-     * - 上下隙間最小限
-     */
     private static void renderHpEsValues(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc,
-            int orbX, int orbY, int orbSize, float centerX) {
-        // HP値はデータプロバイダーから取得（液面と同じ値）
+            int orbX, int orbY, int orbSize, float centerX, boolean compact, float scaleFactor) {
         float hpCurrent = config.getDataProvider().getCurrentValue(player);
         float hpMax = config.getDataProvider().getMaxValue(player);
-        // ES値はMineAndSlashHelperから取得
         float esCurrent = MineAndSlashHelper.getCurrentMagicShield(player);
         float esMax = MineAndSlashHelper.getMaxMagicShield(player);
 
-        int whiteColor = 0xFFFFFFFF; // 白文字統一
+        int whiteColor = 0xFFFFFFFF;
 
-        // ESがない場合は従来通り中央にHPのみ表示
         if (esMax <= 0) {
-            String text = (int) hpCurrent + "/" + (int) hpMax;
-            renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, 0.75f, whiteColor);
+            String text = formatValuePair((int) hpCurrent, (int) hpMax, "/", compact);
+            renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, 0.75f * scaleFactor, whiteColor);
             return;
         }
 
-        // ESがある場合：多い方を上、少ない方を下に表示
         boolean hpIsLarger = hpMax >= esMax;
         float largerCurrent = hpIsLarger ? hpCurrent : esCurrent;
         float largerMax = hpIsLarger ? hpMax : esMax;
         float smallerCurrent = hpIsLarger ? esCurrent : hpCurrent;
         float smallerMax = hpIsLarger ? esMax : hpMax;
 
-        // 上：多い方（通常サイズ）- 中心より少し上
-        String largerText = (int) largerCurrent + "/" + (int) largerMax;
-        float mainScale = 0.75f;
-        renderCenteredScaledText(graphics, mc, largerText, centerX, orbY + orbSize / 2f - 4, mainScale, whiteColor);
+        String largerText = formatValuePair((int) largerCurrent, (int) largerMax, "/", compact);
+        renderCenteredScaledText(graphics, mc, largerText, centerX, orbY + orbSize / 2f - 4, 0.75f * scaleFactor, whiteColor);
 
-        // 下：少ない方（少し小さいサイズ）- すぐ下に（隙間最小）
-        String smallerText = (int) smallerCurrent + "/" + (int) smallerMax;
-        float subScale = 0.55f;
-        renderCenteredScaledText(graphics, mc, smallerText, centerX, orbY + orbSize / 2f + 5, subScale, whiteColor);
+        String smallerText = formatValuePair((int) smallerCurrent, (int) smallerMax, "/", compact);
+        renderCenteredScaledText(graphics, mc, smallerText, centerX, orbY + orbSize / 2f + 5, 0.55f * scaleFactor, whiteColor);
     }
 
     private static void renderOverlayFillLayer(GuiGraphics graphics, OrbConfig config, Player player) {
@@ -221,125 +196,47 @@ public class OrbRenderer {
 
         float currentOverlay = overlayProvider.getCurrentValue(player);
         float maxOverlay = overlayProvider.getMaxValue(player);
-        float overlayPercent = maxOverlay > 0 ? Math.min(currentOverlay / maxOverlay, 1.0f) : 0;
+        float targetOverlayPercent = maxOverlay > 0 ? Math.min(currentOverlay / maxOverlay, 1.0f) : 0;
+        float overlayPercent = OrbSmoothedValue.getSmoothedPercent(config.getId() + "_overlay", targetOverlayPercent);
 
         if (overlayPercent <= 0)
             return;
 
-        RenderSystem.enableBlend();
-        RenderSystem.blendFunc(
-                com.mojang.blaze3d.platform.GlStateManager.SourceFactor.SRC_ALPHA,
-                com.mojang.blaze3d.platform.GlStateManager.DestFactor.ONE);
-
         OrbShaderRenderer.drawCircularFill(graphics, config.getCenterX(), config.getCenterY(), config.getSize(),
                 overlayPercent, config.getOverlayColor());
-
-        RenderSystem.defaultBlendFunc();
     }
 
     /**
      * エナジーシールド（ES）オーバーレイを描画（HJUD Mod方式）
-     * HPオーブ上にシアン色の半透明レイヤーを下から上に描画
-     *
-     * 【パフォーマンス最適化】
-     * - スライス数を16に削減（32→16）
-     * - Math.sqrt呼び出しを最小限に
-     *
-     * @param graphics GUIグラフィックス
-     * @param x        オーブ左上X座標
-     * @param y        オーブ左上Y座標
-     * @param size     オーブサイズ
-     * @param player   プレイヤー
      */
     private static void renderEsOverlay(GuiGraphics graphics, int x, int y, int size, Player player) {
-        // Mine and SlashからMagic Shield値を取得
         float currentEs = MineAndSlashHelper.getCurrentMagicShield(player);
         float maxEs = MineAndSlashHelper.getMaxMagicShield(player);
 
-        // ESが存在しない場合は描画しない
         if (maxEs <= 0 || currentEs <= 0) {
             return;
         }
 
         float esPercent = Math.min(currentEs / maxEs, 1.0f);
+        esPercent = OrbSmoothedValue.getSmoothedPercent("orb_1_es", esPercent);
         if (esPercent <= 0) {
             return;
         }
 
-        float radius = size / 2.0f;
-        float centerX = x + radius;
-        float centerY = y + radius;
-        float radiusSq = radius * radius; // 【最適化】事前計算
-
-        // ESは下から上に溜まる
-        float orbBottomY = centerY + radius;
-        float esTopY = orbBottomY - (esPercent * size);
-        float esHeight = orbBottomY - esTopY;
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.disableCull();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        buffer.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-
-        Matrix4f matrix = graphics.pose().last().pose();
-
-        // 【最適化】スライス数を削減（32→16）
-        for (int i = 0; i < ES_SLICES; i++) {
-            float t1 = (float) i / ES_SLICES;
-            float t2 = (float) (i + 1) / ES_SLICES;
-            
-            float y1 = esTopY + esHeight * t1;
-            float y2 = esTopY + esHeight * t2;
-
-            float dy1 = y1 - centerY;
-            float dy2 = y2 - centerY;
-
-            // 【最適化】sqrtをキャッシュから取得
-            float halfWidth1 = getSqrtFromCache(dy1 / radius) * radius;
-            float halfWidth2 = getSqrtFromCache(dy2 / radius) * radius;
-
-            float left1 = centerX - halfWidth1;
-            float right1 = centerX + halfWidth1;
-            float left2 = centerX - halfWidth2;
-            float right2 = centerX + halfWidth2;
-
-            buffer.vertex(matrix, left1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, right1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, left2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-
-            buffer.vertex(matrix, right1, y1, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, right2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-            buffer.vertex(matrix, left2, y2, 0).color(ES_R, ES_G, ES_B, ES_A).endVertex();
-        }
-
-        BufferUploader.drawWithShader(buffer.end());
-        RenderSystem.enableCull();
-        RenderSystem.enableDepthTest();
-        RenderSystem.disableBlend();
+        OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, ES_COLOR);
     }
 
     /**
      * 中央揃えのテキストを描画
-     * 
-     * @param graphics GuiGraphics
-     * @param mc       Minecraftインスタンス
-     * @param text     表示するテキスト
-     * @param centerX  中心X座標
-     * @param centerY  中心Y座標
-     * @param scale    スケール
-     * @param color    色
      */
     public static void renderCenteredScaledText(GuiGraphics graphics, Minecraft mc, String text,
             float centerX, float centerY, float scale, int color) {
-        int textWidth = mc.font.width(text);
+        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+
         graphics.pose().pushPose();
         graphics.pose().translate(centerX, centerY, 0);
         graphics.pose().scale(scale, scale, 1.0f);
-        graphics.drawString(mc.font, text, -textWidth / 2, -mc.font.lineHeight / 2, color, true);
+        HudFontHelper.drawString(graphics, mc.font, text, -textWidth / 2, -mc.font.lineHeight / 2, color, true);
         graphics.pose().popPose();
     }
 }

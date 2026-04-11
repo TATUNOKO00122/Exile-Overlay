@@ -37,7 +37,7 @@ public class HudRenderManager {
     private static final HudRenderManager INSTANCE = new HudRenderManager();
 
     private final IRenderPipeline pipeline;
-    private boolean initialized = false;
+    private volatile boolean initialized = false;
     
     private final Map<String, IHudRenderer> rendererIndex = new ConcurrentHashMap<>();
 
@@ -214,5 +214,21 @@ public class HudRenderManager {
             return null;
         }
         return rendererIndex.get(configKey);
+    }
+    
+    /**
+     * ワールド切り替え時にリセット
+     * 全てのキャッシュと状態をクリア
+     */
+    public void reset() {
+        pipeline.clear();
+        rendererIndex.clear();
+        
+        if (pipeline instanceof RenderPipelineImpl impl) {
+            impl.shutdown();
+        }
+        
+        initialized = false;
+        LOGGER.info("HudRenderManager reset completed");
     }
 }

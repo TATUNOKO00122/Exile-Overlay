@@ -4,9 +4,11 @@ import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.IHudRenderer;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.util.MineAndSlashHelper;
+import com.example.exile_overlay.util.TopDownViewHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -22,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
@@ -37,9 +41,25 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final ResourceLocation FRAME_TEXTURE = new ResourceLocation("exile_overlay",
             "textures/gui/target_hp_bar_frame.png");
+    private static final ResourceLocation EFFECT_FRAME_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/effect_icon_frame.png");
+    private static final ResourceLocation EFFECT_BACKGROUND_TEXTURE = ResourceLocation.tryParse(
+            "exile_overlay:textures/gui/effect_icon_background.png");
 
     private static final int TEX_WIDTH = 224;
     private static final int TEX_HEIGHT = 32;
+
+    private static final int EFFECT_ROW_HEIGHT = 20;
+    private static final int EFFECT_ICON_SIZE = 16;
+    private static final int EFFECT_FRAME_SIZE = 18;
+    private static final int EFFECT_FRAME_OFFSET = 1;
+    private static final int EFFECT_SPACING = 20;
+    private static final int EFFECT_PADDING_X = 5;
+    private static final int EFFECT_PADDING_Y = 2;
+    private static final int MAX_EFFECTS_PER_ROW = 11;
+    private static final int MAX_AFFIX_STATS_DISPLAY = 5;
+    private static final int AFFIX_STAT_LINE_HEIGHT = 6;
+    private static final float AFFIX_STAT_SCALE = 0.65f;
 
     private static final int BAR_X = 5;
     private static final int BAR_Y = 20;
@@ -48,6 +68,8 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final int HP_BAR_COLOR = 0xFFCC2020;
     private static final int HP_BG_COLOR = 0x80000000;
+    private static final int ELITE_BAR_COLOR = 0xFFFF4400;
+    private static final int BOSS_BAR_COLOR = 0xFFDD0000;
 
     private static final int NAME_Y = 22;
 
@@ -94,7 +116,9 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         long now = System.currentTimeMillis();
 
         if (target != null) {
-            lastTargetRef = new WeakReference<>(target);
+            if (target != lastTargetRef.get()) {
+                lastTargetRef = new WeakReference<>(target);
+            }
             lastTargetTime = now;
         } else {
             target = lastTargetRef.get();
@@ -103,21 +127,31 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             }
         }
 
-        String name = target.getDisplayName().getString();
-        if (name.isEmpty()) {
+        int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
+        float health = MineAndSlashHelper.getEntityHealth(target);
+        float maxHealth = MineAndSlashHelper.getEntityMaxHealth(target);
+
+        MineAndSlashHelper.MobRarityInfo rarity = MineAndSlashHelper.getMobRarity(target);
+        List<MineAndSlashHelper.MobAffixInfo> affixes = MineAndSlashHelper.getMobAffixes(target);
+        List<MineAndSlashHelper.MobEffectInfo> effects = MineAndSlashHelper.getMobStatusEffects(target);
+
+        String affixPrefix = buildAffixPrefix(affixes);
+        String vanillaName = target.getDisplayName().getString();
+        if (vanillaName.isEmpty()) {
             return;
         }
 
-        int mnsLevel = MineAndSlashHelper.getEntityLevel(target);
         String displayName;
         if (mnsLevel > 0) {
-            displayName = "Lv." + mnsLevel + " " + name;
+            displayName = affixPrefix + vanillaName;
         } else {
-            displayName = name;
+            displayName = affixPrefix + vanillaName;
         }
 
-        float health = target.getHealth();
-        float maxHealth = target.getMaxHealth();
+        String levelText = mnsLevel > 0 ? "Lv." + mnsLevel : "";
+
+        int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
+            int barColor = HP_BAR_COLOR;
         float hpRatio = Mth.clamp(health / maxHealth, 0.0f, 1.0f);
 
         int screenWidth = ctx.getScreenWidth();
@@ -138,24 +172,162 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1.0f);
             RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
 
-            graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
+            EquipmentDisplayConfig targetConfig = EquipmentDisplayConfig.getInstance();
 
-            int filledWidth = (int) (BAR_WIDTH * hpRatio);
-            if (filledWidth > 0) {
-                graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, HP_BAR_COLOR);
-            }
-
+            renderHpBar(graphics, hpRatio, barColor);
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-
-            int nameWidth = mc.font.width(displayName);
-            int textX = (TEX_WIDTH - nameWidth) / 2;
-
-            graphics.drawString(mc.font, displayName, textX, NAME_Y, 0xFFFFFFFF, true);
-
+            renderNameAndLevel(graphics, mc, displayName, levelText, nameColor);
+            renderHpText(graphics, mc, health, maxHealth);
+            if (targetConfig.isShowTargetMobEffects()) {
+                renderEffects(graphics, mc, effects);
+            }
+            if (targetConfig.isShowTargetAffixStats()) {
+                renderAffixStats(graphics, mc, affixes);
+            }
         } finally {
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.disableBlend();
             graphics.pose().popPose();
         }
+    }
+
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, int barColor) {
+        graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
+
+        int filledWidth = (int) (BAR_WIDTH * hpRatio);
+        if (filledWidth > 0) {
+            graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, barColor);
+        }
+    }
+
+    private static final float NAME_TEXT_SCALE = 0.945f;
+
+    private void renderNameAndLevel(GuiGraphics graphics, Minecraft mc, String displayName, String levelText, int nameColor) {
+        String combinedName;
+        if (!levelText.isEmpty()) {
+            combinedName = levelText + " " + displayName;
+        } else {
+            combinedName = displayName;
+        }
+        float nameWidth = mc.font.width(combinedName) * NAME_TEXT_SCALE;
+        float textX = (TEX_WIDTH - nameWidth) / 2.0f;
+        float textY = NAME_Y + (mc.font.lineHeight * (1.0f - NAME_TEXT_SCALE)) / 2.0f;
+        graphics.pose().pushPose();
+        graphics.pose().translate(textX, textY, 0);
+        graphics.pose().scale(NAME_TEXT_SCALE, NAME_TEXT_SCALE, 1.0f);
+        graphics.drawString(mc.font, combinedName, 0, 0, nameColor, true);
+        graphics.pose().popPose();
+    }
+
+    private void renderHpText(GuiGraphics graphics, Minecraft mc, float health, float maxHealth) {
+        String hpText = formatHpText(health, maxHealth);
+        float hpScale = 0.7f;
+        float textWidth = HudFontHelper.getTextWidth(mc.font, hpText) * hpScale;
+        int hpX = (int) (BAR_X + BAR_WIDTH - textWidth - 2);
+        int hpY = BAR_Y - (int) (mc.font.lineHeight * hpScale);
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(hpX, hpY - 1.0f, 0);
+        graphics.pose().scale(hpScale, hpScale, 1.0f);
+        HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, 0xFFFFFFFF, true);
+        graphics.pose().popPose();
+    }
+
+    private void renderEffects(GuiGraphics graphics, Minecraft mc, List<MineAndSlashHelper.MobEffectInfo> effects) {
+        if (effects.isEmpty()) return;
+
+        int drawX = EFFECT_PADDING_X;
+        int drawY = TEX_HEIGHT + EFFECT_PADDING_Y;
+
+        int count = Math.min(effects.size(), MAX_EFFECTS_PER_ROW);
+        for (int i = 0; i < count; i++) {
+            MineAndSlashHelper.MobEffectInfo effect = effects.get(i);
+            if (effect.isExpired()) continue;
+            int iconX = drawX + i * EFFECT_SPACING;
+
+            RenderSystem.enableBlend();
+            graphics.blit(EFFECT_BACKGROUND_TEXTURE,
+                    iconX - EFFECT_FRAME_OFFSET, drawY - EFFECT_FRAME_OFFSET,
+                    0, 0, EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE,
+                    EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE);
+
+            if (effect.texture != null) {
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                graphics.blit(effect.texture, iconX, drawY, 0, 0, EFFECT_ICON_SIZE, EFFECT_ICON_SIZE,
+                        EFFECT_ICON_SIZE, EFFECT_ICON_SIZE);
+            }
+
+            RenderSystem.enableBlend();
+            graphics.blit(EFFECT_FRAME_TEXTURE,
+                    iconX - EFFECT_FRAME_OFFSET, drawY - EFFECT_FRAME_OFFSET,
+                    0, 0, EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE,
+                    EFFECT_FRAME_SIZE, EFFECT_FRAME_SIZE);
+
+            if (effect.stacks > 1) {
+                String stackText = String.valueOf(effect.stacks);
+                int stackX = iconX + 1;
+                int stackY = drawY + 1;
+                HudFontHelper.drawString(graphics, mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
+            }
+
+            String durText = effect.getDurationText();
+            if (!durText.isEmpty()) {
+                int durWidth = HudFontHelper.getTextWidth(mc.font, durText);
+                int durX = iconX + (EFFECT_ICON_SIZE - durWidth) / 2;
+                int durY = drawY + EFFECT_ICON_SIZE + 1;
+                HudFontHelper.drawString(graphics, mc.font, durText, durX, durY, 0xFFAAAAAA, false);
+            }
+        }
+    }
+
+    private void renderAffixStats(GuiGraphics graphics, Minecraft mc,
+                                   List<MineAndSlashHelper.MobAffixInfo> affixes) {
+        List<MineAndSlashHelper.AffixStatInfo> allStats = new ArrayList<>();
+        for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
+            allStats.addAll(affix.stats);
+        }
+        if (allStats.isEmpty()) return;
+
+        int startY = TEX_HEIGHT + EFFECT_PADDING_Y;
+
+        int count = Math.min(allStats.size(), MAX_AFFIX_STATS_DISPLAY);
+        for (int i = 0; i < count; i++) {
+            MineAndSlashHelper.AffixStatInfo stat = allStats.get(i);
+            String text = stat.getDisplayText();
+            float textWidth = HudFontHelper.getTextWidth(mc.font, text) * AFFIX_STAT_SCALE;
+            int x = (int) (TEX_WIDTH - textWidth - 3);
+            int y = startY + (int) (i * AFFIX_STAT_LINE_HEIGHT / AFFIX_STAT_SCALE);
+            graphics.pose().pushPose();
+            graphics.pose().translate(x, y, 0);
+            graphics.pose().scale(AFFIX_STAT_SCALE, AFFIX_STAT_SCALE, 1.0f);
+            HudFontHelper.drawString(graphics, mc.font, text, 0, 0, MineAndSlashHelper.AffixStatInfo.DISPLAY_COLOR, true);
+            graphics.pose().popPose();
+        }
+    }
+
+    private String buildAffixPrefix(List<MineAndSlashHelper.MobAffixInfo> affixes) {
+        if (affixes.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (MineAndSlashHelper.MobAffixInfo affix : affixes) {
+            if (affix.name == null || affix.name.isEmpty()) continue;
+            if (!affix.icon.isEmpty()) {
+                sb.append(affix.icon);
+            }
+            sb.append(affix.name).append(" ");
+        }
+        return sb.toString();
+    }
+
+    private int resolveBarColor(MineAndSlashHelper.MobRarityInfo rarity, float health, float maxHealth) {
+        if (rarity != null) {
+            if (rarity.isSpecial) return BOSS_BAR_COLOR;
+            if (rarity.isElite) return ELITE_BAR_COLOR;
+            if ("uncommon".equals(rarity.id)) return 0xFF44CC44;
+        }
+        return HP_BAR_COLOR;
     }
 
     private String formatHpText(float health, float maxHealth) {
@@ -171,6 +343,11 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
     }
 
     private static LivingEntity getTargetEntity(Player player, double maxDistance) {
+        LivingEntity tdvTarget = TopDownViewHelper.getTarget();
+        if (tdvTarget != null && tdvTarget.isAlive()) {
+            return tdvTarget;
+        }
+
         try {
             Vec3 eyePos = player.getEyePosition(1.0f);
             Vec3 lookVec = player.getViewVector(1.0f);

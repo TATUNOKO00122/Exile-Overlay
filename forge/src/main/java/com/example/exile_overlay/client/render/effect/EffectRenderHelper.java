@@ -24,31 +24,31 @@ import java.util.*;
  */
 public class EffectRenderHelper {
 
-    // Animation constants
     private static final float ANIMATION_SPEED = 0.2f;
-    private static final int FLASH_DURATION = 10;
+    private static final float FADE_IN_SPEED = 0.06f;
+    private static final float SLIDE_DISTANCE = 30.0f;
+    private static final float SLIDE_SPEED = 0.08f;
 
     // Global state maps to track visual position across frames
     private static final Map<String, VisualState> displayStates = new HashMap<>();
     
-    // 【最適化】オブジェクトプール - 毎フレームのアロケーションを回避
-    // バフとデバフで別々のキャッシュを使用（同じ参照を返す問題を回避）
     private static final List<DisplayableEffect> cachedBuffs = new ArrayList<>(32);
     private static final List<DisplayableEffect> cachedDebuffs = new ArrayList<>(32);
     private static final Map<String, VanillaEffectWrapper> vanillaWrapperCache = new HashMap<>();
     private static final Map<String, MnSEffectWrapper> mnsWrapperCache = new HashMap<>();
+    private static final Set<String> currentIdsCache = new HashSet<>(32);
 
     public static class VisualState {
         public float currentX;
         public float currentY;
-        public boolean isNew;
-        public int flashTimer;
+        public float alpha;
+        public float offsetX;
         public int maxDuration;
 
         public VisualState(float startX) {
             this.currentX = startX;
-            this.isNew = true;
-            this.flashTimer = FLASH_DURATION;
+            this.alpha = 0.0f;
+            this.offsetX = SLIDE_DISTANCE;
             this.maxDuration = -1;
         }
     }
@@ -196,7 +196,7 @@ public class EffectRenderHelper {
         public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
             if (info.texture != null) {
                 RenderSystem.setShaderTexture(0, info.texture);
-                graphics.blit(info.texture, x, y, 0, 0, size, size, size, size);
+                graphics.blit(info.texture, x, y, size, size, 0, 0, 16, 16, 16, 16);
             }
         }
     }
@@ -242,7 +242,7 @@ public class EffectRenderHelper {
             cachedResult.add(wrapper);
         }
 
-        // 3. Sort: Infinite -> Longest -> Shortest
+        // 無限 → 残り時間が短い順（短いものが右に配置）
         cachedResult.sort((a, b) -> {
             boolean aInf = a.isInfinite();
             boolean bInf = b.isInfinite();
@@ -257,15 +257,6 @@ public class EffectRenderHelper {
         return cachedResult;
     }
 
-    private static void updateVisualStates(List<DisplayableEffect> currentEffects) {
-        Set<String> currentIds = new HashSet<>();
-        for (DisplayableEffect effect : currentEffects) {
-            currentIds.add(effect.getId());
-        }
-
-        displayStates.keySet().removeIf(id -> !currentIds.contains(id));
-    }
-
     public static VisualState getVisualState(String id, float targetX, int duration) {
         VisualState state = displayStates.get(id);
         if (state == null) {
@@ -278,18 +269,25 @@ public class EffectRenderHelper {
         return state;
     }
 
-    public static void tick() {
-        for (VisualState state : displayStates.values()) {
-            if (state.flashTimer > 0) {
-                state.flashTimer--;
-            }
+    public static void updateFadeIn(VisualState state) {
+        if (state.alpha < 1.0f) {
+            state.alpha = Math.min(1.0f, state.alpha + FADE_IN_SPEED);
+        }
+        if (state.offsetX > 0.5f) {
+            state.offsetX += (0.0f - state.offsetX) * SLIDE_SPEED;
+        } else {
+            state.offsetX = 0.0f;
         }
     }
-    
-    /**
-     * ワールド切り替え時などにキャッシュをクリア
-     * メモリリーク防止用
-     */
+
+    public static void updateVisualStates(List<DisplayableEffect> currentEffects) {
+        currentIdsCache.clear();
+        for (DisplayableEffect effect : currentEffects) {
+            currentIdsCache.add(effect.getId());
+        }
+        displayStates.keySet().removeIf(id -> !currentIdsCache.contains(id));
+    }
+
     public static void clearCache() {
         vanillaWrapperCache.clear();
         mnsWrapperCache.clear();

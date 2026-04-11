@@ -1,0 +1,12 @@
+{
+    "providers": [
+        {
+            "type": "ttf",
+            "file": "exile_overlay:jersey_10_regular.ttf",
+            "shift": [0, 0],
+            "size": 20.0,
+            "oversample": 3.0,
+            "skip": ""
+        }
+    ]
+}

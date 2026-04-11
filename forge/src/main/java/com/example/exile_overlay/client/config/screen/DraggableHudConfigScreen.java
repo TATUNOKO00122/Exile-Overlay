@@ -40,7 +40,7 @@ public class DraggableHudConfigScreen extends Screen {
     private static final int SNAP_GUIDE_ALPHA = 0x66;
     private static final int SNAP_DISTANCE = 10;
     private static final float MIN_SCALE = 0.3f;
-    private static final float MAX_SCALE = 2.0f;
+    private static final float MAX_SCALE = 4.0f;
     private static final float SCALE_STEP = 0.1f;
     private static final int TOGGLE_BUTTON_MIN_SIZE = 5;
     private static final int TOGGLE_BUTTON_MAX_SIZE = 7;
@@ -752,7 +752,7 @@ public class DraggableHudConfigScreen extends Screen {
             int right = left + scaledWidth + scaledExpansionH;
             int bottom = top + scaledHeight + scaledExpansionV;
 
-            return mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom;
+            return mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
         }
 
         IHudRenderer.HudRenderMetadata getRenderMetadata() {
