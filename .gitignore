@@ -34,3 +34,25 @@ gradle.properties
 Thumbs.db
 nul
 net/
+
+# AI / Dev tools
+.claude/
+.opencode/
+opencode.json
+AGENTS.md
+**/AGENTS.md
+context.md
+skills/
+tasks/
+
+# Dev docs & scripts
+docs/
+compare.py
+compare_output.txt
+
+# Build artifacts
+META-INF/
+.architectury-transformer/
+
+# Unused common module resources
+common/
