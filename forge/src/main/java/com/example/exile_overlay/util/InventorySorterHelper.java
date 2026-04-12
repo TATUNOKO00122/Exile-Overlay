@@ -36,7 +36,6 @@ public class InventorySorterHelper {
     
     private static void initialize() {
         if (initialized || !isLoaded()) return;
-        initialized = true;
         
         try {
             Class<?> actionClass = Class.forName("cpw.mods.inventorysorter.Action");
@@ -60,6 +59,7 @@ public class InventorySorterHelper {
             
             messageMethod = actionClass.getMethod("message", Slot.class);
             
+            initialized = true;
             LOGGER.info("Inventory Sorter integration initialized successfully");
         } catch (ClassNotFoundException e) {
             LOGGER.debug("Inventory Sorter classes not found");

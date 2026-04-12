@@ -4,39 +4,31 @@ import com.example.exile_overlay.ExampleMod;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.util.LootrHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Mod.EventBusSubscriber(modid = ExampleMod.MOD_ID, value = Dist.CLIENT)
 public class AutoQuickLootHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/AutoQuickLoot");
     private static final long COOLDOWN_MS = 1000;
-    private static final long AUTO_DELAY_MS = 500;
-    private static final int MAX_WAIT_FRAMES = 30;
     private static final Map<BlockPos, Long> cooldownTracker = new ConcurrentHashMap<>();
-    
-    private static BlockPos cachedTargetPos = null;
-    private static int waitFrames = 0;
-    private static EquipmentDisplayConfig.QuickLootMode pendingMode = null;
-    private static boolean triggeredByKey = false;
-    private static long screenOpenTime = 0;
-    private static boolean keyTriggerFired = false;
-    
+
     private static final Set<String> LOOTR_BLOCKS = Set.of(
         "lootr:lootr_chest",
         "lootr:lootr_trapped_chest",
@@ -44,17 +36,28 @@ public class AutoQuickLootHandler {
         "lootr:lootr_shulker"
     );
 
-    private static boolean initialized = false;
-    private static Class<?> lootMenuPacketClass = null;
-    private static Class<?> modeClass = null;
-    private static Object lootMode = null;
-    private static Object dropMode = null;
-    private static Method sendToServerMethod = null;
-    private static Field renderablesField = null;
+    // ========== Reflection Cache ==========
 
-    private static void initializeReflection() {
-        if (initialized) return;
-        initialized = true;
+    private static boolean reflectionInitialized = false;
+    private static boolean reflectionAvailable = false;
+    private static Class<?> lootMenuPacketClass;
+    private static Class<?> modeClass;
+    private static Object lootMode;
+    private static Object dropMode;
+    private static Method sendToServerMethod;
+
+    // ========== Per-Screen State ==========
+
+    private static BlockPos cachedTargetPos = null;
+    private static boolean autoTriggerPending = false;
+    private static EquipmentDisplayConfig.QuickLootMode pendingAutoMode = null;
+    private static boolean keyTriggerFired = false;
+
+    // ========== Reflection Init ==========
+
+    private static synchronized void ensureReflectionInitialized() {
+        if (reflectionInitialized) return;
+        reflectionInitialized = true;
 
         try {
             Class<?> packetsClass = Class.forName("com.robertx22.library_of_exile.main.Packets");
@@ -63,199 +66,148 @@ public class AutoQuickLootHandler {
 
             for (Object constant : modeClass.getEnumConstants()) {
                 String name = constant.toString();
-                if (name.equals("LOOT")) {
-                    lootMode = constant;
-                } else if (name.equals("DROP")) {
-                    dropMode = constant;
-                }
+                if ("LOOT".equals(name)) lootMode = constant;
+                else if ("DROP".equals(name)) dropMode = constant;
             }
 
             for (Method m : packetsClass.getMethods()) {
-                if (m.getName().equals("sendToServer") && m.getParameterCount() == 1) {
+                if ("sendToServer".equals(m.getName()) && m.getParameterCount() == 1) {
                     sendToServerMethod = m;
                     break;
                 }
             }
 
-            renderablesField = findRenderablesField();
-
-            if (sendToServerMethod != null && renderablesField != null && lootMode != null && dropMode != null) {
-                LOGGER.info("Auto Quick Loot initialized successfully (LOOT + DROP modes)");
+            reflectionAvailable = sendToServerMethod != null && lootMode != null && dropMode != null;
+            if (reflectionAvailable) {
+                LOGGER.info("Quick Loot: M&S reflection initialized");
             } else {
-                LOGGER.warn("Auto Quick Loot partial init: sendToServer={}, renderables={}, lootMode={}, dropMode={}",
-                    sendToServerMethod != null, renderablesField != null, lootMode != null, dropMode != null);
+                LOGGER.warn("Quick Loot: partial init, sendToServer={}, lootMode={}, dropMode={}",
+                    sendToServerMethod != null, lootMode != null, dropMode != null);
             }
         } catch (ClassNotFoundException e) {
-            LOGGER.debug("Mine and Slash not found, Auto Quick Loot disabled");
+            LOGGER.debug("Quick Loot: M&S not found, disabled");
         } catch (Exception e) {
-            LOGGER.error("Failed to initialize Auto Quick Loot", e);
+            LOGGER.error("Quick Loot: reflection init failed", e);
         }
     }
 
-    private static Field findRenderablesField() {
-        for (Field f : Screen.class.getDeclaredFields()) {
-            if (List.class.isAssignableFrom(f.getType())) {
-                f.setAccessible(true);
-                return f;
-            }
+    // ========== Utility ==========
+
+    private static BlockPos resolveTargetBlock(Minecraft mc) {
+        if (mc.hitResult instanceof BlockHitResult blockHit) {
+            return blockHit.getBlockPos();
+        }
+        var lookResult = mc.player.pick(mc.player.getBlockReach(), 0, false);
+        if (lookResult instanceof BlockHitResult lookHit) {
+            return lookHit.getBlockPos();
         }
         return null;
     }
 
-    @SubscribeEvent
-    public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (!LootrHelper.isLoaded()) return;
-        
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
-        
-        BlockPos pos = blockHit.getBlockPos();
+    private static boolean isLootrBlock(Minecraft mc, BlockPos pos) {
+        if (mc.level == null || pos == null) return false;
         BlockState state = mc.level.getBlockState(pos);
         String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-        
-        if (LOOTR_BLOCKS.contains(blockId)) {
-            cachedTargetPos = pos;
-            waitFrames = 0;
-            screenOpenTime = System.currentTimeMillis();
-            keyTriggerFired = false;
-            triggeredByKey = false;
-            
-            EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
-            
-            if (config.isAutoQuickLootEnabled()) {
-                pendingMode = config.getAutoQuickLootMode();
-                LOGGER.debug("Auto quick loot scheduled after delay, mode: {}", pendingMode);
-            } else {
-                pendingMode = null;
-            }
-            
-            LOGGER.debug("Cached target block: {} at {}", blockId, pos);
+        return LOOTR_BLOCKS.contains(blockId);
+    }
+
+    private static boolean isOnCooldown(BlockPos pos) {
+        Long last = cooldownTracker.get(pos);
+        return last != null && (System.currentTimeMillis() - last) < COOLDOWN_MS;
+    }
+
+    private static void resetState() {
+        cachedTargetPos = null;
+        autoTriggerPending = false;
+        pendingAutoMode = null;
+        keyTriggerFired = false;
+    }
+
+    // ========== Events ==========
+
+    @SubscribeEvent
+    public static void onScreenOpening(ScreenEvent.Opening event) {
+        resetState();
+        if (!LootrHelper.isLoaded()) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+
+        ensureReflectionInitialized();
+        if (!reflectionAvailable) return;
+
+        EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
+        if (!config.isQuickLootEnabled()) return;
+
+        BlockPos pos = resolveTargetBlock(mc);
+        if (pos == null || !isLootrBlock(mc, pos)) return;
+        if (isOnCooldown(pos)) return;
+
+        cachedTargetPos = pos;
+        keyTriggerFired = false;
+
+        if (config.isAutoQuickLootEnabled()) {
+            autoTriggerPending = true;
+            pendingAutoMode = config.getAutoQuickLootMode();
         }
     }
 
     @SubscribeEvent
     public static void onScreenClosing(ScreenEvent.Closing event) {
-        cachedTargetPos = null;
-        waitFrames = 0;
-        pendingMode = null;
-        triggeredByKey = false;
-        keyTriggerFired = false;
-        screenOpenTime = 0;
+        resetState();
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onScreenRender(ScreenEvent.Render.Post event) {
-        if (!LootrHelper.isLoaded()) return;
-        
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
         if (cachedTargetPos == null) return;
-        if (isOnCooldown(cachedTargetPos)) return;
-        
+
         EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
         if (!config.isQuickLootEnabled()) {
             resetState();
             return;
         }
-        
-        initializeReflection();
-        if (!isReflectionReady()) return;
-        
-        Screen screen = event.getScreen();
-        if (!hasQuickLootButton(screen)) {
-            waitFrames++;
-            if (waitFrames > MAX_WAIT_FRAMES) {
-                LOGGER.debug("Quick loot button not found after {} frames, giving up", MAX_WAIT_FRAMES);
-                resetState();
-            }
-            return;
-        }
-        
-        long elapsed = System.currentTimeMillis() - screenOpenTime;
-        
-        if (config.isKeyQuickLootEnabled() && !keyTriggerFired && isKeyPressed(mc)) {
-            keyTriggerFired = true;
-            triggeredByKey = true;
-            pendingMode = config.getKeyQuickLootMode();
-            LOGGER.debug("Quick loot triggered by Ctrl key, mode: {}", pendingMode);
-            
-            BlockState state = mc.level.getBlockState(cachedTargetPos);
-            String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-            executeQuickLoot(mc, cachedTargetPos, blockId, pendingMode);
-            resetState();
-            return;
-        }
-        
-        if (config.isAutoQuickLootEnabled() && pendingMode != null && !triggeredByKey) {
-            if (elapsed >= AUTO_DELAY_MS) {
-                BlockState state = mc.level.getBlockState(cachedTargetPos);
-                String blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
-                executeQuickLoot(mc, cachedTargetPos, blockId, pendingMode);
-                resetState();
-            }
-        }
-    }
-    
-    private static void resetState() {
-        cachedTargetPos = null;
-        waitFrames = 0;
-        pendingMode = null;
-        triggeredByKey = false;
-        keyTriggerFired = false;
-        screenOpenTime = 0;
-    }
 
-    private static boolean isReflectionReady() {
-        return lootMenuPacketClass != null && modeClass != null &&
-               lootMode != null && dropMode != null && 
-               sendToServerMethod != null && renderablesField != null;
-    }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
 
-    private static boolean isKeyPressed(Minecraft mc) {
-        long window = mc.getWindow().getWindow();
-        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS;
-    }
-
-    private static boolean isOnCooldown(BlockPos pos) {
-        Long lastTrigger = cooldownTracker.get(pos);
-        if (lastTrigger == null) return false;
-        return (System.currentTimeMillis() - lastTrigger) < COOLDOWN_MS;
-    }
-
-    private static boolean hasQuickLootButton(Screen screen) {
-        if (renderablesField == null) return false;
-
-        try {
-            List<?> renderables = (List<?>) renderablesField.get(screen);
-            if (renderables == null) return false;
-
-            for (Object obj : renderables) {
-                String className = obj.getClass().getName();
-                if (className.contains("BackpackQuickLootButton")) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Failed to check screen buttons", e);
-        }
-        return false;
-    }
-
-    private static void executeQuickLoot(Minecraft mc, BlockPos pos, String blockId, EquipmentDisplayConfig.QuickLootMode mode) {
-        try {
-            Object mnsMode = (mode == EquipmentDisplayConfig.QuickLootMode.DROP) ? dropMode : lootMode;
-            
-            Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(mnsMode);
-            sendToServerMethod.invoke(null, packet);
-
+        if (autoTriggerPending && pendingAutoMode != null) {
+            autoTriggerPending = false;
+            EquipmentDisplayConfig.QuickLootMode mode = pendingAutoMode;
+            sendQuickLoot(mc, cachedTargetPos, mode);
             if (mode == EquipmentDisplayConfig.QuickLootMode.DROP) {
                 mc.setScreen(null);
             }
-            cooldownTracker.put(pos, System.currentTimeMillis());
-            LOGGER.info("Quick loot executed for {} with mode {}", blockId, mode);
-        } catch (Exception e) {
-            LOGGER.error("Failed to execute quick loot", e);
+            resetState();
+            return;
         }
+
+        if (config.isKeyQuickLootEnabled() && !keyTriggerFired && isCtrlPressed(mc)) {
+            keyTriggerFired = true;
+            EquipmentDisplayConfig.QuickLootMode mode = config.getKeyQuickLootMode();
+            sendQuickLoot(mc, cachedTargetPos, mode);
+            if (mode == EquipmentDisplayConfig.QuickLootMode.DROP) {
+                mc.setScreen(null);
+            }
+            resetState();
+        }
+    }
+
+    // ========== Packet Send ==========
+
+    private static void sendQuickLoot(Minecraft mc, BlockPos pos, EquipmentDisplayConfig.QuickLootMode mode) {
+        try {
+            Object mnsMode = (mode == EquipmentDisplayConfig.QuickLootMode.DROP) ? dropMode : lootMode;
+            Object packet = lootMenuPacketClass.getConstructor(modeClass).newInstance(mnsMode);
+            sendToServerMethod.invoke(null, packet);
+            cooldownTracker.put(pos, System.currentTimeMillis());
+            LOGGER.info("Quick Loot: {} at {}", mode, pos);
+        } catch (Exception e) {
+            LOGGER.error("Quick Loot: send failed", e);
+        }
+    }
+
+    private static boolean isCtrlPressed(Minecraft mc) {
+        long window = mc.getWindow().getWindow();
+        return GLFW.glfwGetKey(window, GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS;
     }
 }

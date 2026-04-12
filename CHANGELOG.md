@@ -1,3 +1,13 @@
+[1.7.1] - 2026-04-11
+
+### Damage Popup (ダメージポップアップ)
+- Fixed billboard rotation to display correctly from all camera angles
+- Removed back-face culling that caused popups to disappear when viewed from behind
+
+### Other
+- Added MIT LICENSE
+- Cleaned up dev-only files from repository
+
 [1.7.0] - 2026-04-11
 
 ### Target Info (ターゲット情報HUD)
