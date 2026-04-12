@@ -15,6 +15,8 @@ import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Locale;
+
 public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SkillHotbarRenderer.class);
@@ -164,14 +166,16 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 }
             }
 
-            String rawKeyText = MineAndSlashHelper.getSpellKeyText(slot).toUpperCase();
+            String rawKeyText = MineAndSlashHelper.getSpellKeyText(slot);
+            String displayKey = abbreviateKeyText(rawKeyText);
 
             RenderSystem.enableBlend();
             graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
-            if (!rawKeyText.isEmpty()) {
+            if (!displayKey.isEmpty()) {
                 RenderSystem.enableBlend();
-                ResourceLocation keybindFrame = hasModifier(rawKeyText) ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
+                ResourceLocation keybindFrame = displayKey.length() >= 2
+                        ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
                 graphics.blit(keybindFrame, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
             }
 
@@ -193,34 +197,28 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
                 graphics.pose().popPose();
             }
 
-            if (!rawKeyText.isEmpty()) {
-                String keyText = rawKeyText;
-                keyText = keyText.replace("LEFT SHIFT", "s").replace("RIGHT SHIFT", "s").replace("SHIFT", "s");
-                keyText = keyText.replace("LEFT CONTROL", "c").replace("RIGHT CONTROL", "c").replace("CONTROL", "c");
-                keyText = keyText.replace("LEFT ALT", "a").replace("RIGHT ALT", "a").replace("ALT", "a");
-                keyText = keyText.replace(" + ", "+");
-                keyText = keyText.replace(" ", "");
-
-                int fullTextWidth = HudFontHelper.getTextWidth(mc.font, keyText);
+            if (!displayKey.isEmpty()) {
+                int fullTextWidth = HudFontHelper.getTextWidth(mc.font, displayKey);
                 float textScale = 0.8f;
-                float keyX = slotX + SLOT_SIZE - fullTextWidth * textScale - 5.0f;
-                float keyY = slotY + SLOT_SIZE - mc.font.lineHeight * textScale - 3.5f;
+                float frameCenterX = displayKey.length() >= 2 ? 20.5f : 24.5f;
+                float keyX = slotX + frameCenterX - fullTextWidth * textScale / 2.0f;
+                float keyY = slotY + 25.0f - mc.font.lineHeight * textScale / 2.0f;
 
                 graphics.pose().pushPose();
                 graphics.pose().translate(keyX, keyY, 0);
                 graphics.pose().scale(textScale, textScale, 1.0f);
 
-                int plusIndex = keyText.lastIndexOf('+');
+                int plusIndex = displayKey.lastIndexOf('+');
                 if (plusIndex >= 0) {
-                    String modKeyPart = keyText.substring(0, plusIndex);
-                    String mainKeyPart = keyText.substring(plusIndex + 1);
+                    String modKeyPart = displayKey.substring(0, plusIndex);
+                    String mainKeyPart = displayKey.substring(plusIndex + 1);
                     int modKeyWidth = HudFontHelper.getTextWidth(mc.font, modKeyPart);
                     int plusWidth = HudFontHelper.getTextWidth(mc.font, "+");
                     HudFontHelper.drawString(graphics, mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
                     HudFontHelper.drawString(graphics, mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
                     HudFontHelper.drawString(graphics, mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
                 } else {
-                    HudFontHelper.drawString(graphics, mc.font, keyText, 0, 0, 0xFFFFFFFF, false);
+                    HudFontHelper.drawString(graphics, mc.font, displayKey, 0, 0, 0xFFFFFFFF, false);
                 }
 
                 graphics.pose().popPose();
@@ -288,9 +286,65 @@ public class SkillHotbarRenderer implements IRenderCommand, IHudRenderer {
         graphics.pose().popPose();
     }
 
-    private boolean hasModifier(String keyText) {
-        String upper = keyText.toUpperCase();
-        return upper.contains("SHIFT") || upper.contains("CONTROL") || upper.contains("ALT");
+    private String abbreviateKeyText(String raw) {
+        if (raw.isEmpty()) return "";
+
+        String text = raw;
+        String upper = text.toUpperCase(Locale.ROOT);
+
+        String[] modifiers = {"LEFT SHIFT", "RIGHT SHIFT", "SHIFT",
+                "左SHIFT", "右SHIFT", "シフト",
+                "LEFT CONTROL", "RIGHT CONTROL", "CONTROL", "LEFT CTRL", "RIGHT CTRL", "CTRL",
+                "左CTRL", "右CTRL", "左CONTROL", "右CONTROL", "コントロール",
+                "LEFT ALT", "RIGHT ALT", "ALT",
+                "左ALT", "右ALT", "オルト"};
+        String[] modReplacements = {"s", "s", "s", "s", "s", "s",
+                "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c",
+                "a", "a", "a", "a", "a", "a"};
+
+        for (int i = 0; i < modifiers.length; i++) {
+            int idx = upper.indexOf(modifiers[i].toUpperCase(Locale.ROOT));
+            if (idx >= 0) {
+                text = text.substring(0, idx) + modReplacements[i] + text.substring(idx + modifiers[i].length());
+                upper = text.toUpperCase(Locale.ROOT);
+            }
+        }
+
+        String[][] mappings = {
+                {"MOUSE BUTTON", "M"}, {"マウスボタン", "M"}, {"マウス", "M"},
+                {"BUTTON", "M"}, {"ボタン", "M"},
+                {"CAPS LOCK", "Caps"}, {"キャプスロック", "Caps"},
+                {"BACKSPACE", "Bksp"}, {"バックスペース", "Bksp"},
+                {"ESCAPE", "Esc"}, {"エスケープ", "Esc"},
+                {"PAGE UP", "PgUp"}, {"ページアップ", "PgUp"},
+                {"PAGE DOWN", "PgDn"}, {"ページダウン", "PgDn"},
+                {"PRINT SCREEN", "PSc"},
+                {"SCROLL LOCK", "SLk"},
+                {"NUM LOCK", "NLk"},
+                {"ARROW UP", "↑"}, {"ARROW DOWN", "↓"},
+                {"ARROW LEFT", "←"}, {"ARROW RIGHT", "→"},
+                {"INSERT", "Ins"}, {"インサート", "Ins"},
+                {"DELETE", "Del"}, {"デリート", "Del"},
+                {"ENTER", "Ent"},
+                {"PAUSE", "Pau"},
+                {"SPACE", "Sp"}, {"スペース", "Sp"},
+                {"NUMPAD", "N"},
+                {"DIGIT", ""},
+                {"WORLD", "W"},
+        };
+
+        for (String[] mapping : mappings) {
+            int idx = upper.indexOf(mapping[0].toUpperCase(Locale.ROOT));
+            if (idx >= 0) {
+                text = text.substring(0, idx) + mapping[1] + text.substring(idx + mapping[0].length());
+                upper = text.toUpperCase(Locale.ROOT);
+            }
+        }
+
+        text = text.replace(" + ", "+");
+        text = text.replace(" ", "");
+
+        return text;
     }
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {
