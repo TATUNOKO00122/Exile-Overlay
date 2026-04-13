@@ -190,5 +190,7 @@
   "exile_overlay.config.buff_filter_song": "歌: %s",
   "exile_overlay.config.buff_filter_golem": "ゴーレムバフ: %s",
   "exile_overlay.config.buff_filter_other": "その他: %s",
-  "hud.exile_overlay.skill_buff_overlay": "スキルバフオーバーレイ"
+  "hud.exile_overlay.skill_buff_overlay": "スキルバフオーバーレイ",
+  "exile_overlay.config.filter_settings": "フィルター設定",
+  "exile_overlay.config.filter_settings.tooltip": "クリックで展開/折りたたみ"
 }

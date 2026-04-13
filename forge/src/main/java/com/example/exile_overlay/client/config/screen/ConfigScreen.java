@@ -22,7 +22,9 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ConfigScreen extends Screen {
     private static final String DAY_COUNTER_KEY = "day_counter";
@@ -38,6 +40,7 @@ public class ConfigScreen extends Screen {
     private final List<net.minecraft.client.gui.components.AbstractWidget> leftWidgets = new ArrayList<>();
     private final List<net.minecraft.client.gui.components.AbstractWidget> rightWidgets = new ArrayList<>();
     private final List<SectionHeader> sectionHeaders = new ArrayList<>();
+    private final Map<String, Boolean> collapsedSections = new HashMap<>();
 
     public ConfigScreen(Screen lastScreen) {
         super(Component.translatable("screen.exile_overlay.config.title"));
@@ -133,6 +136,11 @@ public class ConfigScreen extends Screen {
     private Component getOnOffComponent(String key, boolean enabled) {
         return Component.translatable(key,
                 Component.translatable(enabled ? "exile_overlay.config.on" : "exile_overlay.config.off"));
+    }
+
+    private Component getCollapseToggleComponent(boolean collapsed) {
+        String arrow = collapsed ? "\u25B6 " : "\u25BC ";
+        return Component.literal(arrow).append(Component.translatable("exile_overlay.config.filter_settings"));
     }
 
     private Component getModeOnlyComponent(EquipmentDisplayConfig.QuickLootMode mode) {
@@ -517,12 +525,41 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
 
-            y = addOverlayFilterButtons(x, y, w, h, sp, "skill_buff_overlay",
-                    BuffOverlayFilterConfig.getInstance().getSkillBuffOverlay());
+            String skillBuffFilterKey = "collapse.skill_buff_overlay.filters";
+            boolean skillBuffCollapsed = collapsedSections.getOrDefault(skillBuffFilterKey, true);
+            addRightWidget(
+                    Button.builder(getCollapseToggleComponent(skillBuffCollapsed), btn -> {
+                        boolean current = collapsedSections.getOrDefault(skillBuffFilterKey, true);
+                        collapsedSections.put(skillBuffFilterKey, !current);
+                        this.init();
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
+                            .build());
+            y += sp;
+
+            if (!skillBuffCollapsed) {
+                y = addOverlayFilterButtons(x, y, w, h, sp, "skill_buff_overlay",
+                        BuffOverlayFilterConfig.getInstance().getSkillBuffOverlay());
+            }
 
             y = addSection(y, "section.exile_overlay.buff_overlay_filters", tx);
-            y = addOverlayFilterButtons(x, y, w, h, sp, "buff_overlay",
-                    BuffOverlayFilterConfig.getInstance().getBuffOverlay());
+
+            String buffFilterKey = "collapse.buff_overlay.filters";
+            boolean buffCollapsed = collapsedSections.getOrDefault(buffFilterKey, true);
+            addRightWidget(
+                    Button.builder(getCollapseToggleComponent(buffCollapsed), btn -> {
+                        boolean current = collapsedSections.getOrDefault(buffFilterKey, true);
+                        collapsedSections.put(buffFilterKey, !current);
+                        this.init();
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
+                            .build());
+            y += sp;
+
+            if (!buffCollapsed) {
+                y = addOverlayFilterButtons(x, y, w, h, sp, "buff_overlay",
+                        BuffOverlayFilterConfig.getInstance().getBuffOverlay());
+            }
         }
 
         if (LootrHelper.isLoaded()) {

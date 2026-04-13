@@ -190,5 +190,7 @@
   "exile_overlay.config.buff_filter_song": "Song: %s",
   "exile_overlay.config.buff_filter_golem": "Golem Buff: %s",
   "exile_overlay.config.buff_filter_other": "Other: %s",
-  "hud.exile_overlay.skill_buff_overlay": "Skill Buff Overlay"
+  "hud.exile_overlay.skill_buff_overlay": "Skill Buff Overlay",
+  "exile_overlay.config.filter_settings": "Filter Settings",
+  "exile_overlay.config.filter_settings.tooltip": "Click to expand/collapse"
 }
