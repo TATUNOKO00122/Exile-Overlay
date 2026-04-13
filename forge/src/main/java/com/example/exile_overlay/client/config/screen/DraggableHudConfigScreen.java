@@ -125,28 +125,27 @@ public class DraggableHudConfigScreen extends Screen {
     private void registerDraggableElements() {
         draggableElements.clear();
 
-        // 位置マネージャーに登録されている全てのキーに対応する要素を作成
         for (String key : positionManager.getDefaultPositions().keySet()) {
-            // ダメージポップアップと日数カウンターはHUD設定画面から除外
-            // 日数カウンターは一時的なアニメーション表示のみで位置変更不要
             if ("damage_popup".equals(key) || "day_counter".equals(key)) {
                 continue;
             }
 
+            if ("skill_buff_overlay".equals(key)) {
+                HudPosition pos = positionManager.getPosition(key);
+                if (!pos.isVisible()) continue;
+            }
+
             HudPosition position = positionManager.getPosition(key);
 
-            // 実際のレンダラーからサイズを取得
             IHudRenderer renderer = HudRenderManager.getInstance().getHudRenderer(key);
             int width;
             int height;
 
             if (renderer != null) {
-                // 設定画面用のサイズを優先的に使用（動的サイズ対応）
                 width = renderer.getConfigWidth();
                 height = renderer.getConfigHeight();
                 LOGGER.debug("Got size for '{}': {}x{} from renderer (config)", key, width, height);
             } else {
-                // レンダラーが見つからない場合はIHudRendererのデフォルトフォールバックサイズを使用
                 int[] fallbackSize = new int[]{80, 40};
                 width = fallbackSize[0];
                 height = fallbackSize[1];
@@ -186,6 +185,9 @@ public class DraggableHudConfigScreen extends Screen {
         graphics.drawCenteredString(this.font,
                 Component.translatable("screen.exile_overlay.hud_config.help_scale"),
                 this.width / 2, 38, 0xAAAAAA);
+
+        // 非表示要素ボタン
+        renderHiddenElementButtons(graphics);
 
         // 選択中要素の情報
         if (selectedElement != null) {
@@ -345,6 +347,15 @@ public class DraggableHudConfigScreen extends Screen {
         for (int i = 0; i < info.length; i++) {
             graphics.drawString(this.font, info[i].getString(), infoX, infoY + i * 12, 0xFFFFFF);
         }
+    }
+
+    private void updateAddHiddenElementButton() {
+    }
+
+    private void renderHiddenElementButtons(GuiGraphics graphics) {
+    }
+
+    private void activateFirstHiddenElement() {
     }
 
     @Override

@@ -327,15 +327,20 @@ public class MineAndSlashHelper {
         public final String id;
         public final String name;
         public final ResourceLocation texture;
-        public final int duration; // in ticks
+        public final int duration;
         public final int stacks;
         public final boolean isBeneficial;
         public final boolean isNegative;
         public final boolean isInfinite;
         public final String durationText;
+        public final String spellId;
+        public final boolean selfCast;
+        public final String casterUuid;
+        public final java.util.Set<String> tags;
 
         public ExileEffectInfo(String id, String name, ResourceLocation texture, int duration, int stacks,
-                              boolean isBeneficial, boolean isNegative, boolean isInfinite, String durationText) {
+                              boolean isBeneficial, boolean isNegative, boolean isInfinite, String durationText,
+                              String spellId, boolean selfCast, String casterUuid, java.util.Set<String> tags) {
             this.id = id;
             this.name = name;
             this.texture = texture;
@@ -345,6 +350,14 @@ public class MineAndSlashHelper {
             this.isNegative = isNegative;
             this.isInfinite = isInfinite;
             this.durationText = durationText;
+            this.spellId = spellId;
+            this.selfCast = selfCast;
+            this.casterUuid = casterUuid;
+            this.tags = tags != null ? tags : java.util.Collections.emptySet();
+        }
+
+        public boolean hasTag(String tag) {
+            return tags.contains(tag);
         }
     }
 
@@ -398,6 +411,15 @@ public class MineAndSlashHelper {
                     Method getDurationStringMethod = instanceData.getClass().getMethod("getDurationString");
                     String durationText = (String) getDurationStringMethod.invoke(instanceData);
 
+                    Field spellIdField = instanceData.getClass().getField("spell_id");
+                    String spellId = (String) spellIdField.get(instanceData);
+
+                    Field selfCastField = instanceData.getClass().getField("self_cast");
+                    boolean selfCast = selfCastField.getBoolean(instanceData);
+
+                    Field casterUuidField = instanceData.getClass().getField("caster_uuid");
+                    String casterUuid = (String) casterUuidField.get(instanceData);
+
                     Object effect = getMethod.invoke(registry, effectId);
                     if (effect == null) continue;
 
@@ -419,8 +441,24 @@ public class MineAndSlashHelper {
                         isBeneficial = !isNegative;
                     }
 
+                    java.util.Set<String> effectTags = java.util.Collections.emptySet();
+                    try {
+                        Field tagsField = effect.getClass().getField("tags");
+                        Object tagList = tagsField.get(effect);
+                        if (tagList != null) {
+                            Field tagsSetField = tagList.getClass().getField("tags");
+                            @SuppressWarnings("unchecked")
+                            java.util.Set<String> rawTags = (java.util.Set<String>) tagsSetField.get(tagList);
+                            if (rawTags != null) {
+                                effectTags = java.util.Collections.unmodifiableSet(new java.util.HashSet<>(rawTags));
+                            }
+                        }
+                    } catch (Exception tagEx) {
+                        LOGGER.debug("Could not read tags for effect {}: {}", effectId, tagEx.getMessage());
+                    }
+
                     result.add(new ExileEffectInfo(effectId, name, texture, ticksLeft, stacks,
-                        isBeneficial, isNegative, isInfinite, durationText));
+                        isBeneficial, isNegative, isInfinite, durationText, spellId, selfCast, casterUuid, effectTags));
                 } catch (Exception inner) {
                     LOGGER.debug("Failed to process effect {}: {}", effectId, inner.getMessage());
                 }

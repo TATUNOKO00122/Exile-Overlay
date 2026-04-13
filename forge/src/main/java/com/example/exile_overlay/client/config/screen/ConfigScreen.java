@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.config.screen;
 
+import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.OrbTextConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
@@ -489,6 +490,28 @@ public class ConfigScreen extends Screen {
                             .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.disable_mns_hpbar.tooltip")))
                             .build());
             y += sp;
+
+            y = addSection(y, "section.exile_overlay.skill_buff_overlay", tx);
+
+            String skillBuffKey = "skill_buff_overlay";
+            HudPosition skillBuffPos = HudPositionManager.getInstance().getPosition(skillBuffKey);
+
+            addRightWidget(
+                    Button.builder(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", skillBuffPos.isVisible()), btn -> {
+                        HudPosition pos = HudPositionManager.getInstance().getPosition(skillBuffKey);
+                        HudPositionManager.getInstance().setPosition(skillBuffKey, pos.withVisible(!pos.isVisible()));
+                        btn.setMessage(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", HudPositionManager.getInstance().getPosition(skillBuffKey).isVisible()));
+                    }).bounds(x, y, w, h)
+                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.skill_buff_overlay_enabled.tooltip")))
+                            .build());
+            y += sp;
+
+            y = addOverlayFilterButtons(x, y, w, h, sp, "skill_buff_overlay",
+                    BuffOverlayFilterConfig.getInstance().getSkillBuffOverlay());
+
+            y = addSection(y, "section.exile_overlay.buff_overlay_filters", tx);
+            y = addOverlayFilterButtons(x, y, w, h, sp, "buff_overlay",
+                    BuffOverlayFilterConfig.getInstance().getBuffOverlay());
         }
 
         if (LootrHelper.isLoaded()) {
@@ -625,6 +648,91 @@ public class ConfigScreen extends Screen {
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
+    private int addOverlayFilterButtons(int x, int y, int w, int h, int sp,
+            String overlayId, BuffOverlayFilterConfig.OverlayFilter filter) {
+
+        String prefix = overlayId.equals("skill_buff_overlay") ? "skill_buff" : "buff";
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_vanilla_buffs", filter.isShowVanillaBuffs()), btn -> {
+                    filter.setShowVanillaBuffs(!filter.isShowVanillaBuffs());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_vanilla_buffs", filter.isShowVanillaBuffs()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_vanilla_debuffs", filter.isShowVanillaDebuffs()), btn -> {
+                    filter.setShowVanillaDebuffs(!filter.isShowVanillaDebuffs());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_vanilla_debuffs", filter.isShowVanillaDebuffs()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_mns_buffs", filter.isShowMnsBuffs()), btn -> {
+                    filter.setShowMnsBuffs(!filter.isShowMnsBuffs());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_mns_buffs", filter.isShowMnsBuffs()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_mns_debuffs", filter.isShowMnsDebuffs()), btn -> {
+                    filter.setShowMnsDebuffs(!filter.isShowMnsDebuffs());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_mns_debuffs", filter.isShowMnsDebuffs()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_aura", filter.isShowAura()), btn -> {
+                    filter.setShowAura(!filter.isShowAura());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_aura", filter.isShowAura()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_self_skill", filter.isShowSelfSkill()), btn -> {
+                    filter.setShowSelfSkill(!filter.isShowSelfSkill());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_self_skill", filter.isShowSelfSkill()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_food", filter.isShowFood()), btn -> {
+                    filter.setShowFood(!filter.isShowFood());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_food", filter.isShowFood()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_charge", filter.isShowCharge()), btn -> {
+                    filter.setShowCharge(!filter.isShowCharge());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_charge", filter.isShowCharge()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_song", filter.isShowSong()), btn -> {
+                    filter.setShowSong(!filter.isShowSong());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_song", filter.isShowSong()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_golem", filter.isShowGolem()), btn -> {
+                    filter.setShowGolem(!filter.isShowGolem());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_golem", filter.isShowGolem()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config." + prefix + "_filter_other", filter.isShowOther()), btn -> {
+                    filter.setShowOther(!filter.isShowOther());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config." + prefix + "_filter_other", filter.isShowOther()));
+                }).bounds(x, y, w, h).build());
+        y += sp;
+
+        return y;
+    }
+
     private Component getFontPresetComponent(FontPreset preset) {
         return Component.translatable("exile_overlay.config.font_preset", preset.getDisplayName());
     }
@@ -656,6 +764,7 @@ public class ConfigScreen extends Screen {
         DamagePopupConfig.getInstance().save();
         EntityHealthBarConfig.getInstance().save();
         OrbTextConfig.getInstance().save();
+        BuffOverlayFilterConfig.getInstance().save();
         HudPositionManager.getInstance().saveToFile();
     }
 

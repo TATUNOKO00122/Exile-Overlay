@@ -7,6 +7,7 @@ import com.example.exile_overlay.api.PooledRenderContext;
 import com.example.exile_overlay.api.RenderContextPool;
 import com.example.exile_overlay.api.UnifiedCache;
 import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
+import com.example.exile_overlay.client.render.effect.SkillBuffOverlayRenderer;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.skill.SkillHotbarRenderer;
 import com.example.exile_overlay.client.render.vanilla.VanillaAirRenderer;
@@ -83,6 +84,9 @@ public class HudRenderManager {
 
         // バフオーバーレイ
         this.registerCommand(new BuffOverlayRenderer(), 50);
+
+        // スキルバフオーバーレイ（デフォルト非表示）
+        this.registerCommand(new SkillBuffOverlayRenderer(), 49);
 
         // スキルホットバー
         this.registerCommand(new SkillHotbarRenderer(), 95);
