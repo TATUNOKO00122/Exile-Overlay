@@ -25,6 +25,7 @@ public class OrbTextConfig {
     private boolean energyCompact = true;
     private float textScale = 1.25f;
     private float energyTextScale = 1.6f;
+    private boolean splitOrb1 = false;
 
     private OrbTextConfig() {
     }
@@ -80,8 +81,11 @@ public class OrbTextConfig {
             if (obj.has("energyTextScale")) {
                 energyTextScale = obj.get("energyTextScale").getAsFloat();
             }
+            if (obj.has("splitOrb1")) {
+                splitOrb1 = obj.get("splitOrb1").getAsBoolean();
+            }
 
-            LOGGER.info("Loaded orb text config: showOrbText={}, compactNumbers={}, energyCompact={}, textScale={}, energyTextScale={}", showOrbText, compactNumbers, energyCompact, textScale, energyTextScale);
+            LOGGER.info("Loaded orb text config: showOrbText={}, compactNumbers={}, energyCompact={}, textScale={}, energyTextScale={}, splitOrb1={}", showOrbText, compactNumbers, energyCompact, textScale, energyTextScale, splitOrb1);
         } catch (IOException e) {
             LOGGER.error("Failed to load orb text config: {}", e.getMessage());
         }
@@ -102,6 +106,7 @@ public class OrbTextConfig {
         obj.addProperty("energyCompact", energyCompact);
         obj.addProperty("textScale", textScale);
         obj.addProperty("energyTextScale", energyTextScale);
+        obj.addProperty("splitOrb1", splitOrb1);
 
         try {
             Files.writeString(configPath, GSON.toJson(obj));
@@ -171,5 +176,13 @@ public class OrbTextConfig {
 
     public void setEnergyCompact(boolean compact) {
         this.energyCompact = compact;
+    }
+
+    public boolean isSplitOrb1() {
+        return splitOrb1;
+    }
+
+    public void setSplitOrb1(boolean split) {
+        this.splitOrb1 = split;
     }
 }

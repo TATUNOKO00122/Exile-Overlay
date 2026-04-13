@@ -50,6 +50,11 @@ public class OrbShaderRenderer {
 
     public static void drawCircularFill(GuiGraphics graphics, int x, int y, int size,
             float fillPercent, int color) {
+        drawCircularFill(graphics, x, y, size, fillPercent, color, 0);
+    }
+
+    public static void drawCircularFill(GuiGraphics graphics, int x, int y, int size,
+            float fillPercent, int color, int halfMode) {
         if (fillPercent <= 0) {
             return;
         }
@@ -70,6 +75,9 @@ public class OrbShaderRenderer {
 
         if (orbFillShader.getUniform("FillPercent") != null) {
             orbFillShader.getUniform("FillPercent").set(fillPercent);
+        }
+        if (orbFillShader.getUniform("HalfMode") != null) {
+            orbFillShader.getUniform("HalfMode").set(halfMode);
         }
 
         RenderSystem.setShader(() -> orbFillShader);

@@ -422,6 +422,17 @@ public class ConfigScreen extends Screen {
                 orbConfig.getEnergyTextScale(), 0.5f, 2.0f, null, orbConfig::setEnergyTextScale));
         y += sp;
 
+        y = addSection(y, "section.exile_overlay.orb_split", tx);
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.split_orb1", orbConfig.isSplitOrb1()), btn -> {
+                    orbConfig.setSplitOrb1(!orbConfig.isSplitOrb1());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.split_orb1", orbConfig.isSplitOrb1()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.split_orb1.tooltip")))
+                        .build());
+        y += sp;
+
         contentHeight = y - (30 - (int) scrollOffset) + sp;
     }
 
@@ -827,6 +838,7 @@ public class ConfigScreen extends Screen {
         orbTextConfig.setEnergyCompact(true);
         orbTextConfig.setTextScale(1.25f);
         orbTextConfig.setEnergyTextScale(1.6f);
+        orbTextConfig.setSplitOrb1(false);
         orbTextConfig.save();
 
         this.init();
