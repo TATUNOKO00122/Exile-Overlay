@@ -15,6 +15,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.phys.AABB;
@@ -68,8 +71,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
 
     private static final int HP_BAR_COLOR = 0xFFCC2020;
     private static final int HP_BG_COLOR = 0x80000000;
-    private static final int ELITE_BAR_COLOR = 0xFFFF4400;
-    private static final int BOSS_BAR_COLOR = 0xFFDD0000;
+    private static final int FRIENDLY_BAR_COLOR = 0xFF2D8B2D;
 
     private static final int NAME_Y = 22;
 
@@ -151,7 +153,7 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         String levelText = mnsLevel > 0 ? "Lv." + mnsLevel : "";
 
         int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
-            int barColor = HP_BAR_COLOR;
+        int barColor = resolveBarColor(rarity, target);
         float hpRatio = Mth.clamp(health / maxHealth, 0.0f, 1.0f);
 
         int screenWidth = ctx.getScreenWidth();
@@ -321,13 +323,18 @@ public class TargetInfoRenderer implements IRenderCommand, IHudRenderer {
         return sb.toString();
     }
 
-    private int resolveBarColor(MineAndSlashHelper.MobRarityInfo rarity, float health, float maxHealth) {
-        if (rarity != null) {
-            if (rarity.isSpecial) return BOSS_BAR_COLOR;
-            if (rarity.isElite) return ELITE_BAR_COLOR;
-            if ("uncommon".equals(rarity.id)) return 0xFF44CC44;
+    private int resolveBarColor(MineAndSlashHelper.MobRarityInfo rarity, LivingEntity target) {
+        if (!isHostile(target)) {
+            return FRIENDLY_BAR_COLOR;
         }
         return HP_BAR_COLOR;
+    }
+
+    private static boolean isHostile(LivingEntity entity) {
+        if (entity instanceof Enemy) return true;
+        if (entity instanceof WitherBoss) return true;
+        if (entity instanceof EnderDragon) return true;
+        return false;
     }
 
     private String formatHpText(float health, float maxHealth) {
