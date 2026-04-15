@@ -173,12 +173,13 @@ public class AutoQuickLootHandler {
         if (autoTriggerPending && pendingAutoMode != null) {
             autoTriggerPending = false;
             EquipmentDisplayConfig.QuickLootMode mode = pendingAutoMode;
+            pendingAutoMode = null;
             sendQuickLoot(mc, cachedTargetPos, mode);
             if (mode == EquipmentDisplayConfig.QuickLootMode.DROP) {
                 mc.setScreen(null);
+                resetState();
+                return;
             }
-            resetState();
-            return;
         }
 
         if (config.isKeyQuickLootEnabled() && !keyTriggerFired && isCtrlPressed(mc)) {
