@@ -510,56 +510,58 @@ public class ConfigScreen extends Screen {
                             .build());
             y += sp;
 
-            y = addSection(y, "section.exile_overlay.skill_buff_overlay", tx);
+            // // スキルバフオーバーレイ設定 - 一旦無効化、後で使うかも
+            // y = addSection(y, "section.exile_overlay.skill_buff_overlay", tx);
+            //
+            // String skillBuffKey = "skill_buff_overlay";
+            // HudPosition skillBuffPos = HudPositionManager.getInstance().getPosition(skillBuffKey);
+            //
+            // addRightWidget(
+            //         Button.builder(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", skillBuffPos.isVisible()), btn -> {
+            //             HudPosition pos = HudPositionManager.getInstance().getPosition(skillBuffKey);
+            //             HudPositionManager.getInstance().setPosition(skillBuffKey, pos.withVisible(!pos.isVisible()));
+            //             btn.setMessage(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", HudPositionManager.getInstance().getPosition(skillBuffKey).isVisible()));
+            //         }).bounds(x, y, w, h)
+            //                 .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.skill_buff_overlay_enabled.tooltip")))
+            //                 .build());
+            // y += sp;
+            //
+            // String skillBuffFilterKey = "collapse.skill_buff_overlay.filters";
+            // boolean skillBuffCollapsed = collapsedSections.getOrDefault(skillBuffFilterKey, true);
+            // addRightWidget(
+            //         Button.builder(getCollapseToggleComponent(skillBuffCollapsed), btn -> {
+            //             boolean current = collapsedSections.getOrDefault(skillBuffFilterKey, true);
+            //             collapsedSections.put(skillBuffFilterKey, !current);
+            //             this.init();
+            //         }).bounds(x, y, w, h)
+            //                 .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
+            //                 .build());
+            // y += sp;
+            //
+            // if (!skillBuffCollapsed) {
+            //     y = addOverlayFilterButtons(x, y, w, h, sp, "skill_buff_overlay",
+            //             BuffOverlayFilterConfig.getInstance().getSkillBuffOverlay());
+            // }
 
-            String skillBuffKey = "skill_buff_overlay";
-            HudPosition skillBuffPos = HudPositionManager.getInstance().getPosition(skillBuffKey);
-
-            addRightWidget(
-                    Button.builder(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", skillBuffPos.isVisible()), btn -> {
-                        HudPosition pos = HudPositionManager.getInstance().getPosition(skillBuffKey);
-                        HudPositionManager.getInstance().setPosition(skillBuffKey, pos.withVisible(!pos.isVisible()));
-                        btn.setMessage(getOnOffComponent("exile_overlay.config.skill_buff_overlay_enabled", HudPositionManager.getInstance().getPosition(skillBuffKey).isVisible()));
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.skill_buff_overlay_enabled.tooltip")))
-                            .build());
-            y += sp;
-
-            String skillBuffFilterKey = "collapse.skill_buff_overlay.filters";
-            boolean skillBuffCollapsed = collapsedSections.getOrDefault(skillBuffFilterKey, true);
-            addRightWidget(
-                    Button.builder(getCollapseToggleComponent(skillBuffCollapsed), btn -> {
-                        boolean current = collapsedSections.getOrDefault(skillBuffFilterKey, true);
-                        collapsedSections.put(skillBuffFilterKey, !current);
-                        this.init();
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
-                            .build());
-            y += sp;
-
-            if (!skillBuffCollapsed) {
-                y = addOverlayFilterButtons(x, y, w, h, sp, "skill_buff_overlay",
-                        BuffOverlayFilterConfig.getInstance().getSkillBuffOverlay());
-            }
-
-            y = addSection(y, "section.exile_overlay.buff_overlay_filters", tx);
-
-            String buffFilterKey = "collapse.buff_overlay.filters";
-            boolean buffCollapsed = collapsedSections.getOrDefault(buffFilterKey, true);
-            addRightWidget(
-                    Button.builder(getCollapseToggleComponent(buffCollapsed), btn -> {
-                        boolean current = collapsedSections.getOrDefault(buffFilterKey, true);
-                        collapsedSections.put(buffFilterKey, !current);
-                        this.init();
-                    }).bounds(x, y, w, h)
-                            .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
-                            .build());
-            y += sp;
-
-            if (!buffCollapsed) {
-                y = addOverlayFilterButtons(x, y, w, h, sp, "buff_overlay",
-                        BuffOverlayFilterConfig.getInstance().getBuffOverlay());
-            }
+            // // バフオーバーレイフィルター設定 - 一旦無効化、後で使うかも
+            // y = addSection(y, "section.exile_overlay.buff_overlay_filters", tx);
+            //
+            // String buffFilterKey = "collapse.buff_overlay.filters";
+            // boolean buffCollapsed = collapsedSections.getOrDefault(buffFilterKey, true);
+            // addRightWidget(
+            //         Button.builder(getCollapseToggleComponent(buffCollapsed), btn -> {
+            //             boolean current = collapsedSections.getOrDefault(buffFilterKey, true);
+            //             collapsedSections.put(buffFilterKey, !current);
+            //             this.init();
+            //         }).bounds(x, y, w, h)
+            //                 .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.filter_settings.tooltip")))
+            //                 .build());
+            // y += sp;
+            //
+            // if (!buffCollapsed) {
+            //     y = addOverlayFilterButtons(x, y, w, h, sp, "buff_overlay",
+            //             BuffOverlayFilterConfig.getInstance().getBuffOverlay());
+            // }
         }
 
         if (LootrHelper.isLoaded()) {
