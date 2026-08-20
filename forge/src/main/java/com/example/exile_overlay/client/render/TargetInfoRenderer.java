@@ -268,6 +268,7 @@ public class TargetInfoRenderer implements IRenderCommand {
 
         int drawX = EFFECT_PADDING_X;
         int drawY = TEX_HEIGHT + EFFECT_PADDING_Y;
+        float textScale = 0.7f;
 
         int count = Math.min(effects.size(), MAX_EFFECTS_PER_ROW);
         for (int i = 0; i < count; i++) {
@@ -295,21 +296,23 @@ public class TargetInfoRenderer implements IRenderCommand {
 
             if (effect.stacks > 1) {
                 String stackText = String.valueOf(effect.stacks);
-                float stackScale = 0.75f;
-                int stackX = (int) ((iconX + 1) / stackScale);
-                int stackY = (int) ((drawY + 1) / stackScale);
                 graphics.pose().pushPose();
-                graphics.pose().scale(stackScale, stackScale, 1.0f);
-                HudFontHelper.drawString(graphics, mc.font, stackText, stackX, stackY, 0xFFFFFFFF, true);
+                graphics.pose().translate(iconX + 1, drawY + 1, 0);
+                graphics.pose().scale(textScale, textScale, 1.0f);
+                HudFontHelper.drawString(graphics, mc.font, stackText, 0, 0, 0xFFFFFFFF, true);
                 graphics.pose().popPose();
             }
 
             String durText = effect.getDurationText();
             if (!durText.isEmpty()) {
-                int durWidth = HudFontHelper.getTextWidth(mc.font, durText);
+                int durWidth = (int) (HudFontHelper.getTextWidth(mc.font, durText) * textScale);
                 int durX = iconX + (EFFECT_ICON_SIZE - durWidth) / 2;
                 int durY = drawY + EFFECT_ICON_SIZE + 1;
-                HudFontHelper.drawString(graphics, mc.font, durText, durX, durY, 0xFFAAAAAA, false);
+                graphics.pose().pushPose();
+                graphics.pose().translate(durX, durY, 0);
+                graphics.pose().scale(textScale, textScale, 1.0f);
+                HudFontHelper.drawString(graphics, mc.font, durText, 0, 0, 0xFFAAAAAA, false);
+                graphics.pose().popPose();
             }
         }
     }
