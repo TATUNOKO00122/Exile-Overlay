@@ -318,5 +318,12 @@
   "section.exile_overlay.kill_counter": "Счетчик убийств",
   "exile_overlay.config.kill_counter_enabled": "Отображение: %s",
   "exile_overlay.config.kill_counter_enabled.tooltip": "Переключить отображение счетчика убийств",
-  "exile_overlay.config.kill_counter_timeout": "Время автосброса: %sс"
+  "exile_overlay.config.kill_counter_timeout": "Время автосброса: %sс",
+  "section.exile_overlay.orb_smooth": "Сглаживание",
+  "exile_overlay.config.smooth_increase": "Сглаживание при увеличении: %s",
+  "exile_overlay.config.smooth_increase.tooltip": "Сглаживать визуальные изменения при увеличении значений (например, при лечении)",
+  "exile_overlay.config.increase_speed": "Скорость увеличения: %.1f",
+  "exile_overlay.config.smooth_decrease": "Сглаживание при уменьшении: %s",
+  "exile_overlay.config.smooth_decrease.tooltip": "Сглаживать визуальные изменения при уменьшении значений (например, при получении урона или использовании навыков)",
+  "exile_overlay.config.decrease_speed": "Скорость уменьшения: %.1f"
 }

@@ -321,7 +321,7 @@
   "exile_overlay.config.kill_counter_timeout": "Auto-reset Time: %ss",
   "section.exile_overlay.orb_smooth": "Smoothing",
   "exile_overlay.config.smooth_increase": "Smooth Increase: %s",
-  "exile_overlay.config.smooth_increase.tooltip": "Smooth the visual change when values increase (e.g. natural regeneration or potions)",
+  "exile_overlay.config.smooth_increase.tooltip": "Smooth the visual change when values increase (e.g. during recovery)",
   "exile_overlay.config.increase_speed": "Increase Speed: %.1f",
   "exile_overlay.config.smooth_decrease": "Smooth Decrease: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "Smooth the visual change when values decrease (e.g. taking damage or casting skills)",

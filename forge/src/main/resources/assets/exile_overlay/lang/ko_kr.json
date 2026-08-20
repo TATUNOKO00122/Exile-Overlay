@@ -318,5 +318,12 @@
   "section.exile_overlay.kill_counter": "처치 카운터",
   "exile_overlay.config.kill_counter_enabled": "표시: %s",
   "exile_overlay.config.kill_counter_enabled.tooltip": "처치 카운터의 HUD 표시 전환",
-  "exile_overlay.config.kill_counter_timeout": "자동 초기화 시간: %s초"
+  "exile_overlay.config.kill_counter_timeout": "자동 초기화 시간: %s초",
+  "section.exile_overlay.orb_smooth": "스무딩 (부드러운 변화)",
+  "exile_overlay.config.smooth_increase": "증가 시 스무딩: %s",
+  "exile_overlay.config.smooth_increase.tooltip": "수치가 증가할 때(예: 회복 시) 시각적 변화를 부드럽게 합니다",
+  "exile_overlay.config.increase_speed": "증가 속도: %.1f",
+  "exile_overlay.config.smooth_decrease": "감소 시 스무딩: %s",
+  "exile_overlay.config.smooth_decrease.tooltip": "수치가 감소할 때(예: 피해를 입거나 스킬 사용 시) 시각적 변화를 부드럽게 합니다",
+  "exile_overlay.config.decrease_speed": "감소 속도: %.1f"
 }

@@ -321,7 +321,7 @@
   "exile_overlay.config.kill_counter_timeout": "自動リセット時間: %s秒",
   "section.exile_overlay.orb_smooth": "スムージング",
   "exile_overlay.config.smooth_increase": "増加時スムージング: %s",
-  "exile_overlay.config.smooth_increase.tooltip": "自然回復やポーションなどで数値が増加する際の変化を滑らかにします",
+  "exile_overlay.config.smooth_increase.tooltip": "回復時などに数値が増加する際の変化を滑らかにします",
   "exile_overlay.config.increase_speed": "増加速度: %.1f",
   "exile_overlay.config.smooth_decrease": "減少時スムージング: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "被ダメージやスキル使用などで数値が減少する際の変化を滑らかにします",
