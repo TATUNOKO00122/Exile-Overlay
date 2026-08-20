@@ -10,6 +10,8 @@ import com.example.exile_overlay.api.data.MobRarityInfo;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
+import com.example.exile_overlay.client.render.ailment.ClientAilmentTracker;
+import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.mixin.AccessorBossHealthOverlay;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -68,7 +70,6 @@ public class BossHpBarRenderer implements IRenderCommand {
     private static final int BAR_WIDTH = 406;
     private static final int BAR_HEIGHT = 20;
 
-    private static final int HP_BAR_COLOR = 0xFFB02020;
     private static final int HP_BG_COLOR = 0x80000000;
     private static final int DEFAULT_BOSS_NAME_COLOR = 0xFFFFAA00;
     private static final int HP_TEXT_COLOR = 0xFFFFFFFF;
@@ -92,6 +93,7 @@ public class BossHpBarRenderer implements IRenderCommand {
     private static final double CLOSE_COMBAT_RANGE_SQ = 144.0; // 12ブロック以内は近接交戦として背後でも認識
 
     private final EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+    private final EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
 
     private static WeakReference<LivingEntity> combatMsBoss = new WeakReference<>(null);
     private static WeakReference<LivingEntity> combatVanillaBoss = new WeakReference<>(null);
@@ -195,7 +197,7 @@ public class BossHpBarRenderer implements IRenderCommand {
 
         float targetRatio = maxHealth > 0 ? Mth.clamp(health / maxHealth, 0.0f, 1.0f) : progress;
         renderBossBar(graphics, ctx, mc, bossName, mnsLevel, health, maxHealth, targetRatio, DEFAULT_BOSS_NAME_COLOR,
-                bossEntity != null ? MethodHandlesUtil.getMobStatusEffectsInfo(bossEntity) : List.of());
+                bossEntity != null ? MethodHandlesUtil.getMobStatusEffectsInfo(bossEntity) : List.of(), bossEntity);
     }
 
     private void renderMsBoss(GuiGraphics graphics, RenderContext ctx, Minecraft mc) {
@@ -234,12 +236,13 @@ public class BossHpBarRenderer implements IRenderCommand {
 
         MobRarityInfo rarity = MethodHandlesUtil.getMobRarityInfo(bossEntity);
         List<MobEffectInfo> effects = MethodHandlesUtil.getMobStatusEffectsInfo(bossEntity);
-        renderBossBar(graphics, ctx, mc, displayName, mnsLevel, health, maxHealth, progress, DEFAULT_BOSS_NAME_COLOR, effects);
+        renderBossBar(graphics, ctx, mc, displayName, mnsLevel, health, maxHealth, progress, DEFAULT_BOSS_NAME_COLOR, effects, bossEntity);
     }
 
     private void renderBossBar(GuiGraphics graphics, RenderContext ctx, Minecraft mc,
                                 String bossName, int mnsLevel, float health, float maxHealth,
-                                float progress, int nameColor, List<MobEffectInfo> effects) {
+                                float progress, int nameColor, List<MobEffectInfo> effects,
+                                LivingEntity bossEntity) {
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
 
@@ -253,6 +256,12 @@ public class BossHpBarRenderer implements IRenderCommand {
         int x = pos[0] - scaledWidth / 2;
         int y = pos[1] - scaledHeight / 2;
 
+        boolean isPoisoned = hpBarConfig.isShowPoison() && bossEntity != null && ClientAilmentTracker.getInstance().isPoisoned(bossEntity);
+        int barColor = isPoisoned ? hpBarConfig.getPoisonBarColorHex() : hpBarConfig.getHostileBarColorHex();
+
+        float bloodLoss = (hpBarConfig.isShowBleed() && bossEntity != null) ? ClientAilmentTracker.getInstance().getBloodLoss(bossEntity) : 0.0f;
+        float bloodLossRatio = (maxHealth > 0.0f && bloodLoss > 0.0f) ? Mth.clamp(bloodLoss / maxHealth, 0.0f, 1.0f) : 0.0f;
+
         graphics.pose().pushPose();
         try {
             graphics.pose().translate(x, y, 0);
@@ -261,7 +270,7 @@ public class BossHpBarRenderer implements IRenderCommand {
             RenderSystem.defaultBlendFunc();
 
             graphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-            renderHpBar(graphics, progress);
+            renderHpBar(graphics, progress, bloodLossRatio, barColor);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             graphics.blit(FROST_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
@@ -279,11 +288,20 @@ public class BossHpBarRenderer implements IRenderCommand {
         }
     }
 
-    private void renderHpBar(GuiGraphics graphics, float hpRatio) {
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossRatio, int barColor) {
         graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
-        int filledWidth = (int) (BAR_WIDTH * hpRatio);
-        if (filledWidth > 0) {
-            graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, HP_BAR_COLOR);
+        int currentHpWidth = (int) (BAR_WIDTH * hpRatio);
+        int bloodLossWidth = (int) (BAR_WIDTH * bloodLossRatio);
+        int bloodEndWidth = Math.min(BAR_WIDTH, currentHpWidth + bloodLossWidth);
+
+        // 出血（失血）蓄積バー
+        if (bloodEndWidth > currentHpWidth) {
+            graphics.fill(BAR_X + currentHpWidth, BAR_Y, BAR_X + bloodEndWidth, BAR_Y + BAR_HEIGHT, hpBarConfig.getBleedBarColorHex());
+        }
+
+        // 現在HPバー (通常赤 / 毒時深緑)
+        if (currentHpWidth > 0) {
+            graphics.fill(BAR_X, BAR_Y, BAR_X + currentHpWidth, BAR_Y + BAR_HEIGHT, barColor);
         }
     }
 

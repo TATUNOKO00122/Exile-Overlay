@@ -101,6 +101,10 @@ public class DamageInformationMixin {
 
                         if (damage > 0.01f) {
                             DamageType damageType = exileOverlay$getDamageTypeForElement(elementName);
+                            if (damageType == DamageType.POISON) {
+                                com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
+                                        .recordPoisonDamage(living);
+                            }
                             float heightRatio = config.getPopupHeightRatio();
                             var position = living.position().add(0, living.getBbHeight() * heightRatio, 0);
                             DamagePopupManager.getInstance().addDamageNumber(

@@ -1049,6 +1049,33 @@ public class ConfigScreen extends Screen {
                         .build());
         y += sp;
 
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.hp_bar_show_poison", config.isShowPoison()), btn -> {
+                    config.setShowPoison(!config.isShowPoison());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.hp_bar_show_poison", config.isShowPoison()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.hp_bar_show_poison.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.hp_bar_show_bleed", config.isShowBleed()), btn -> {
+                    config.setShowBleed(!config.isShowBleed());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.hp_bar_show_bleed", config.isShowBleed()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.hp_bar_show_bleed.tooltip")))
+                        .build());
+        y += sp;
+
+        addRightWidget(
+                Button.builder(getOnOffComponent("exile_overlay.config.hp_bar_show_friendly", config.isShowFriendlyColor()), btn -> {
+                    config.setShowFriendlyColor(!config.isShowFriendlyColor());
+                    btn.setMessage(getOnOffComponent("exile_overlay.config.hp_bar_show_friendly", config.isShowFriendlyColor()));
+                }).bounds(x, y, w, h)
+                        .tooltip(Tooltip.create(Component.translatable("exile_overlay.config.hp_bar_show_friendly.tooltip")))
+                        .build());
+        y += sp;
+
         y = addSection(y, "section.exile_overlay.numeric_settings", tx);
 
         addRightWidget(new IntConfigSlider(x, y, w, h, "exile_overlay.config.max_distance",
@@ -1196,6 +1223,9 @@ public class ConfigScreen extends Screen {
 
         EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
         hpBarConfig.setEnabled(false);
+        hpBarConfig.setShowPoison(true);
+        hpBarConfig.setShowBleed(true);
+        hpBarConfig.setShowFriendlyColor(true);
         hpBarConfig.setMaxDistance(24);
         hpBarConfig.setHeightAbove(0.5);
         hpBarConfig.setBarWidth(30);
@@ -1203,6 +1233,9 @@ public class ConfigScreen extends Screen {
         hpBarConfig.setScale(1.0f);
         hpBarConfig.setDisplayDuration(5);
         hpBarConfig.setHealthBarColor("8B0000");
+        hpBarConfig.setPoisonBarColor("246E07");
+        hpBarConfig.setBleedBarColor("540606");
+        hpBarConfig.setFriendlyBarColor("2D8B2D");
         hpBarConfig.setBlacklist(new ArrayList<>(EntityHealthBarConfig.DEFAULT_BLACKLIST));
         hpBarConfig.save();
 

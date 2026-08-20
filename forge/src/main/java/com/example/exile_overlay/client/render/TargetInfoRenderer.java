@@ -8,10 +8,12 @@ import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
+import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.api.data.AffixStatInfo;
 import com.example.exile_overlay.api.data.MobAffixInfo;
 import com.example.exile_overlay.api.data.MobEffectInfo;
 import com.example.exile_overlay.api.data.MobRarityInfo;
+import com.example.exile_overlay.client.render.ailment.ClientAilmentTracker;
 import com.example.exile_overlay.util.TopDownViewHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -77,13 +79,12 @@ public class TargetInfoRenderer implements IRenderCommand {
     private static final int BAR_WIDTH = 213;
     private static final int BAR_HEIGHT = 10;
 
-    private static final int HP_BAR_COLOR = 0xFFB02020;
     private static final int HP_BG_COLOR = 0x80000000;
-    private static final int FRIENDLY_BAR_COLOR = 0xFF2D8B2D;
 
     private static final int NAME_Y = 22;
 
     private final EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
+    private final EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
 
     public TargetInfoRenderer() {
     }
@@ -180,6 +181,8 @@ public class TargetInfoRenderer implements IRenderCommand {
         int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
         int barColor = resolveBarColor(rarity, target);
         float hpRatio = (maxHealth > 0.0f && !Float.isNaN(health) && !Float.isNaN(maxHealth)) ? Mth.clamp(health / maxHealth, 0.0f, 1.0f) : 0.0f;
+        float bloodLoss = hpBarConfig.isShowBleed() ? ClientAilmentTracker.getInstance().getBloodLoss(target) : 0.0f;
+        float bloodLossRatio = (maxHealth > 0.0f && bloodLoss > 0.0f) ? Mth.clamp(bloodLoss / maxHealth, 0.0f, 1.0f) : 0.0f;
 
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
@@ -201,7 +204,7 @@ public class TargetInfoRenderer implements IRenderCommand {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
 
-            renderHpBar(graphics, hpRatio, barColor);
+            renderHpBar(graphics, hpRatio, bloodLossRatio, barColor);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
@@ -221,12 +224,21 @@ public class TargetInfoRenderer implements IRenderCommand {
         }
     }
 
-    private void renderHpBar(GuiGraphics graphics, float hpRatio, int barColor) {
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossRatio, int barColor) {
         graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
 
-        int filledWidth = (int) (BAR_WIDTH * hpRatio);
-        if (filledWidth > 0) {
-            graphics.fill(BAR_X, BAR_Y, BAR_X + filledWidth, BAR_Y + BAR_HEIGHT, barColor);
+        int currentHpWidth = (int) (BAR_WIDTH * hpRatio);
+        int bloodLossWidth = (int) (BAR_WIDTH * bloodLossRatio);
+        int bloodEndWidth = Math.min(BAR_WIDTH, currentHpWidth + bloodLossWidth);
+
+        // 出血（失血）蓄積バー: 現在HPの終端から削れた累積量までを暗赤色で描画
+        if (bloodEndWidth > currentHpWidth) {
+            graphics.fill(BAR_X + currentHpWidth, BAR_Y, BAR_X + bloodEndWidth, BAR_Y + BAR_HEIGHT, hpBarConfig.getBleedBarColorHex());
+        }
+
+        // 現在HPバー (通常時は赤、毒状態時は深緑)
+        if (currentHpWidth > 0) {
+            graphics.fill(BAR_X, BAR_Y, BAR_X + currentHpWidth, BAR_Y + BAR_HEIGHT, barColor);
         }
     }
 
@@ -392,10 +404,13 @@ public class TargetInfoRenderer implements IRenderCommand {
     }
 
     private int resolveBarColor(MobRarityInfo rarity, LivingEntity target) {
-        if (!isHostile(target)) {
-            return FRIENDLY_BAR_COLOR;
+        if (hpBarConfig.isShowPoison() && ClientAilmentTracker.getInstance().isPoisoned(target)) {
+            return hpBarConfig.getPoisonBarColorHex();
         }
-        return HP_BAR_COLOR;
+        if (hpBarConfig.isShowFriendlyColor() && !isHostile(target)) {
+            return hpBarConfig.getFriendlyBarColorHex();
+        }
+        return hpBarConfig.getHostileBarColorHex();
     }
 
     private static boolean isHostile(LivingEntity entity) {

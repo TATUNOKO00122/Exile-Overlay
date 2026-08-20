@@ -114,6 +114,10 @@ public class MethodHandlesUtil {
     private static MethodHandle GET_EFFECT_TYPE = null;
     private static MethodHandle GET_DURATION_STRING = null;
 
+    // === Ailment MethodHandles ===
+    private static MethodHandle GET_AILMENT_DATA = null;
+    private static MethodHandle GET_DOT_MAP = null;
+
     // === ResourceType enum values ===
     private static Object MANA_TYPE = null;
     private static Object MAGIC_SHIELD_TYPE = null;
@@ -330,9 +334,18 @@ public class MethodHandlesUtil {
             GET_EFFECT_TYPE = lookupFieldGetter(exileEffectClass, "type");
             GET_DURATION_STRING = lookupMethod(exileEffectInstanceDataClass, "getDurationString");
 
-            LOGGER.debug("Mob info MethodHandles initialized: rarity={}, affix={}, status={}, effects={}",
+            // Ailment Handles
+            try {
+                GET_AILMENT_DATA = lookupFieldGetter(entityDataClass, "ailments");
+                Class<?> ailmentDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityAilmentData");
+                GET_DOT_MAP = lookupFieldGetter(ailmentDataClass, "datas");
+            } catch (Exception e) {
+                LOGGER.debug("Ailment handles not available: {}", e.getMessage());
+            }
+
+            LOGGER.debug("Mob info MethodHandles initialized: rarity={}, affix={}, status={}, effects={}, ailment={}",
                     GET_MOB_RARITY != null, GET_AFFIX_DATA != null, GET_STATUS_EFFECTS_DATA != null,
-                    GET_EXILE_MAP != null);
+                    GET_EXILE_MAP != null, GET_AILMENT_DATA != null);
         } catch (Exception e) {
             LOGGER.warn("Failed to initialize mob info handles (non-critical): {}", e.getMessage());
         }
@@ -2005,5 +2018,75 @@ public class MethodHandlesUtil {
         } catch (Throwable t) {
             return 1;
         }
+    }
+
+    /**
+     * エンティティがMine and Slashの毒(Ailments.POISON)にかかっているかを判定
+     */
+    public static boolean isEntityPoisoned(LivingEntity entity) {
+        if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
+            return false;
+        }
+        try {
+            Object entityData = getEntityData(entity);
+            if (entityData == null) return false;
+            Object ailmentData = GET_AILMENT_DATA.invoke(entityData);
+            if (ailmentData == null) return false;
+            Object datasObj = GET_DOT_MAP.invoke(ailmentData);
+            if (datasObj instanceof Map<?, ?> datasMap) {
+                for (Object oneData : datasMap.values()) {
+                    if (oneData != null) {
+                        try {
+                            java.lang.reflect.Field dotMapField = oneData.getClass().getField("dotMap");
+                            Object dotMapObj = dotMapField.get(oneData);
+                            if (dotMapObj instanceof Map<?, ?> dotMap) {
+                                Object poisonList = dotMap.get("poison");
+                                if (poisonList instanceof List<?> list && !list.isEmpty()) {
+                                    return true;
+                                }
+                            }
+                        } catch (Throwable ignore) {}
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            // non-critical
+        }
+        return false;
+    }
+
+    /**
+     * エンティティがMine and Slashの出血(Ailments.BLEED)にかかっているかを判定
+     */
+    public static boolean isEntityBleeding(LivingEntity entity) {
+        if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
+            return false;
+        }
+        try {
+            Object entityData = getEntityData(entity);
+            if (entityData == null) return false;
+            Object ailmentData = GET_AILMENT_DATA.invoke(entityData);
+            if (ailmentData == null) return false;
+            Object datasObj = GET_DOT_MAP.invoke(ailmentData);
+            if (datasObj instanceof Map<?, ?> datasMap) {
+                for (Object oneData : datasMap.values()) {
+                    if (oneData != null) {
+                        try {
+                            java.lang.reflect.Field dotMapField = oneData.getClass().getField("dotMap");
+                            Object dotMapObj = dotMapField.get(oneData);
+                            if (dotMapObj instanceof Map<?, ?> dotMap) {
+                                Object bleedList = dotMap.get("bleed");
+                                if (bleedList instanceof List<?> list && !list.isEmpty()) {
+                                    return true;
+                                }
+                            }
+                        } catch (Throwable ignore) {}
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            // non-critical
+        }
+        return false;
     }
 }

@@ -36,13 +36,29 @@ public class DamageEventMixin implements IDamageEventAccessor {
     @Inject(method = "activate", at = @At("RETURN"))
     private void exileOverlay$onActivateReturn(CallbackInfo ci) {
         DamageEvent event = (DamageEvent) (Object) this;
-        // 攻撃がキャンセルされておらず、かつ攻撃者がプレイヤーである場合のみ記録
-        if (!event.data.isCanceled() && event.source instanceof ServerPlayer player) {
+        if (!event.data.isCanceled()) {
             try {
-                DamageTrackerManager.recordDamage(player, event);
-            } catch (Exception e) {
-                // 例外が発生してもゲームをクラッシュさせない
-                org.slf4j.LoggerFactory.getLogger("exile_overlay/DamageEventMixin").error("Error tracking damage", e);
+                if (event.target != null) {
+                    String ailmentId = event.data.getString(com.robertx22.mine_and_slash.uncommon.effectdatas.rework.EventData.AILMENT);
+                    if ("bleed".equalsIgnoreCase(ailmentId)) {
+                        com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
+                                .recordBleedDamage(event.target, event.data.getNumber());
+                    } else if ("poison".equalsIgnoreCase(ailmentId)) {
+                        com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
+                                .recordPoisonDamage(event.target);
+                    }
+                }
+            } catch (Throwable t) {
+                // non-critical
+            }
+
+            // 攻撃者がプレイヤーである場合のみダメージトラッカーに記録
+            if (event.source instanceof ServerPlayer player) {
+                try {
+                    DamageTrackerManager.recordDamage(player, event);
+                } catch (Exception e) {
+                    org.slf4j.LoggerFactory.getLogger("exile_overlay/DamageEventMixin").error("Error tracking damage", e);
+                }
             }
         }
     }
