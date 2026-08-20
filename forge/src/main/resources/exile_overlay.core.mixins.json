@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "package": "com.example.exile_overlay.mixin",
+  "refmap": "exile_overlay-forge-forge-refmap.json",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "AccessorBossHealthOverlay",
+    "AccessorRenderType",
+    "DamageMixin",
+    "LevelRendererMixin",
+    "ScoreboardMixin",
+    "ItemEntityMixin",
+    "GuiMixin"
+  ],
+  "mixins": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,12 @@
+{
+    "providers": [
+        {
+            "type": "ttf",
+            "file": "exile_overlay:lineseedjp_a_ttf_eb.ttf",
+            "shift": [0, 0],
+            "size": 20.0,
+            "oversample": 3.0,
+            "skip": ""
+        }
+    ]
+}

@@ -1,0 +1,28 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha"
+    },
+    "vertex": "exile_overlay:orb_fill",
+    "fragment": "exile_overlay:orb_fill",
+    "attributes": [
+        "Position",
+        "Color",
+        "UV0"
+    ],
+    "samplers": [
+        { "name": "Sampler0" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "FillPercent", "type": "float", "count": 1, "values": [ 0.5 ] },
+        { "name": "HalfMode", "type": "int", "count": 1, "values": [ 0 ] },
+        { "name": "OverlapWidth", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "UseTexture", "type": "int", "count": 1, "values": [ 0 ] },
+        { "name": "EnableNoise", "type": "int", "count": 1, "values": [ 0 ] },
+        { "name": "EnableLiquidShadow", "type": "int", "count": 1, "values": [ 0 ] },
+        { "name": "EnableOrbInnerShadow", "type": "int", "count": 1, "values": [ 0 ] }
+    ]
+}

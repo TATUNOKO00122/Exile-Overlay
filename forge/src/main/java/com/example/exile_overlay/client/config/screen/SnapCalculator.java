@@ -1,0 +1,135 @@
+package com.example.exile_overlay.client.config.screen;
+
+import com.example.exile_overlay.api.IRenderCommand;
+
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * HUD要素の境界制限計算を行うクラス
+ *
+ * - 画面端を超えないよう座標を制限
+ * - 座標系（中心基準/左上基準/底辺中心基準）を考慮した計算
+ */
+public class SnapCalculator {
+
+    private final int screenWidth;
+    private final int screenHeight;
+
+    public SnapCalculator(int snapDistance, int screenWidth, int screenHeight) {
+        // snapDistanceは互換性のために残すが使用しない
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+    }
+
+    /**
+     * X座標を画面境界内に制限
+     *
+     * @param rawX 生のX座標
+     * @param elementWidth 要素の幅
+     * @param isCenterBased trueの場合Xは中心、falseの場合Xは左端
+     * @param expansionLeft 左方向の拡張領域
+     * @param expansionRight 右方向の拡張領域
+     * @return 境界制限後のX座標
+     */
+    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased, int expansionLeft, int expansionRight) {
+        if (isCenterBased) {
+            int minX = elementWidth / 2 + expansionLeft;
+            int maxX = screenWidth - elementWidth / 2 - expansionRight;
+            if (minX > maxX) return screenWidth / 2;
+            return Math.max(minX, Math.min(rawX, maxX));
+        } else {
+            int minX = expansionLeft;
+            int maxX = screenWidth - elementWidth - expansionRight;
+            if (minX > maxX) return screenWidth / 2 - elementWidth / 2;
+            return Math.max(minX, Math.min(rawX, maxX));
+        }
+    }
+
+    /**
+     * Y座標を画面境界内に制限
+     *
+     * @param rawY 生のY座標
+     * @param elementHeight 要素の高さ
+     * @param isBottomBased trueの場合Yは底辺
+     * @param isCenterBased trueの場合Yは中心
+     * @param expansionTop 上方向の拡張領域
+     * @param expansionBottom 下方向の拡張領域
+     * @return 境界制限後のY座標
+     */
+    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased, boolean isCenterBased,
+                          int expansionTop, int expansionBottom) {
+        if (isBottomBased) {
+            int minY = elementHeight + expansionTop;
+            int maxY = screenHeight - expansionBottom;
+            if (minY > maxY) return screenHeight / 2;
+            return Math.max(minY, Math.min(rawY, maxY));
+        } else if (isCenterBased) {
+            int minY = elementHeight / 2 + expansionTop;
+            int maxY = screenHeight - elementHeight / 2 - expansionBottom;
+            if (minY > maxY) return screenHeight / 2;
+            return Math.max(minY, Math.min(rawY, maxY));
+        } else {
+            int minY = expansionTop;
+            int maxY = screenHeight - elementHeight - expansionBottom;
+            if (minY > maxY) return screenHeight / 2 - elementHeight / 2;
+            return Math.max(minY, Math.min(rawY, maxY));
+        }
+    }
+
+    /**
+     * アクティブなX方向スナップガイドを取得（常に空リスト）
+     * 互換性のために残す
+     */
+    public List<Integer> getActiveSnapGuidesX() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * アクティブなY方向スナップガイドを取得（常に空リスト）
+     * 互換性のために残す
+     */
+    public List<Integer> getActiveSnapGuidesY() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * スナップガイドをクリア（何もしない）
+     * 互換性のために残す
+     */
+    public void clearGuides() {
+        // スナップ機能が削除されたため何もしない
+    }
+    
+    /**
+     * スナップ結果を保持するレコード（互換性のために残す）
+     */
+    public record SnapResult(int x, int y, List<Integer> guidesX, List<Integer> guidesY) {
+    }
+
+    /**
+     * 一括で境界制限計算を実行
+     *
+     * @param rawX 生のX座標
+     * @param rawY 生のY座標
+     * @param elementWidth 要素の幅
+     * @param elementHeight 要素の高さ
+     * @param metadata レンダリングメタデータ
+     * @return 境界制限後の結果
+     */
+    public SnapResult calculateSnap(int rawX, int rawY, int elementWidth, int elementHeight,
+                                    IRenderCommand.HudRenderMetadata metadata) {
+        boolean isCenterX = !metadata.isTopLeftBased();
+        boolean isBottomY = metadata.isBottomCenterBased();
+        boolean isCenterY = metadata.isCenterBased();
+
+        IRenderCommand.Insets expansion = metadata.getExpansion();
+
+        int clampedX = applySnapX(rawX, elementWidth, isCenterX, expansion.left, expansion.right);
+        int clampedY = applySnapY(rawY, elementHeight, isBottomY, isCenterY, expansion.top, expansion.bottom);
+
+        return new SnapResult(clampedX, clampedY,
+                              Collections.emptyList(),
+                              Collections.emptyList());
+    }
+}

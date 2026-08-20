@@ -1,0 +1,48 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "exile_overlay"
+version = "${version}"
+displayName = "Exile Overlay"
+authors = "me"
+description = '''
+An add-on for Mine and Slash that replaces the default HUD with an ARPG-style interface inspired by Diablo and Path of Exile (PoE).
+'''
+
+[[dependencies.exile_overlay]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.exile_overlay]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
+ordering = "NONE"
+side = "CLIENT"
+
+# Mine and Slash: 本MODの前提MOD。Mixin対象クラスを含むためロード順序を保証。
+[[dependencies.exile_overlay]]
+modId = "mmorpg"
+mandatory = false
+versionRange = "[6.3,)"
+ordering = "AFTER"
+side = "BOTH"
+
+# Gateways to Eternity: 連携対象（オプション）。
+[[dependencies.exile_overlay]]
+modId = "gateways"
+mandatory = false
+versionRange = "[4.2,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "exile_overlay.core.mixins.json"
+
+[[mixins]]
+config = "exile_overlay.compat.mixins.json"

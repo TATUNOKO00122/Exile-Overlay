@@ -1,0 +1,29 @@
+plugins {
+    id 'dev.architectury.loom' version '1.11-SNAPSHOT'
+}
+
+loom {
+    forge {
+        mixinConfig "exile_overlay.core.mixins.json"
+        mixinConfig "exile_overlay.compat.mixins.json"
+    }
+    accessWidenerPath = file("src/main/resources/exile_overlay.accesswidener")
+}
+
+dependencies {
+    forge "net.minecraftforge:forge:$rootProject.forge_version"
+    
+    modCompileOnly files(rootProject.file(rootProject.mine_and_slash_jar))
+    modCompileOnly files(rootProject.file(rootProject.gateways_jar))
+    modCompileOnly files(rootProject.file(rootProject.placebo_jar))
+    modCompileOnly files(rootProject.file(rootProject.library_of_exile_jar))
+    modCompileOnly files(rootProject.file(rootProject.irons_spellbooks_jar))
+}
+
+processResources {
+    inputs.property 'version', project.version
+
+    filesMatching('META-INF/mods.toml') {
+        expand version: inputs.properties.version
+    }
+}
