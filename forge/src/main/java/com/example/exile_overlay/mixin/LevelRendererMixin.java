@@ -35,6 +35,8 @@ public abstract class LevelRendererMixin {
     )
     private void exileOverlay$renderHealthBar(Entity entity, double camX, double camY, double camZ,
             float partialTick, PoseStack poseStack, MultiBufferSource buffers, CallbackInfo ci) {
+        // 3D HPBar無効化のためコメントアウト
+        /*
         try {
             if (entityRenderDispatcher == null || entityRenderDispatcher.camera == null) {
                 return;
@@ -58,5 +60,6 @@ public abstract class LevelRendererMixin {
         } catch (Exception e) {
             LOGGER.error("Failed to render health bar", e);
         }
+        */
     }
 }

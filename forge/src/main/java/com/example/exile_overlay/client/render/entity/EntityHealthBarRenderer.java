@@ -33,7 +33,8 @@ public final class EntityHealthBarRenderer {
     public static void hookRender(Entity entity, PoseStack poseStack, MultiBufferSource buffers,
             Camera camera, EntityRenderer<? super Entity> entityRenderer,
             float partialTicks, double x, double y, double z) {
-
+        // 3D HPBar無効化のためコメントアウト
+        /*
         EntityHealthBarConfig config = CONFIG;
         if (!config.isEnabled() || camera == null || camera.getEntity() == null || entityRenderer == null) {
             return;
@@ -52,6 +53,7 @@ public final class EntityHealthBarRenderer {
         } catch (Exception e) {
             LOGGER.error("Failed to render health bar for {}", entity.getName().getString(), e);
         }
+        */
     }
 
     private static boolean isHostile(LivingEntity entity) {
