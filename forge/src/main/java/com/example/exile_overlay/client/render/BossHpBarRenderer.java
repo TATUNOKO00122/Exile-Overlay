@@ -24,7 +24,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -88,16 +87,15 @@ public class BossHpBarRenderer implements IRenderCommand {
     private static final int BOSS_EFFECT_PADDING_Y = 2;
     private static final int BOSS_MAX_EFFECTS_PER_ROW = 20;
 
-    private static final double MS_BOSS_SCAN_RANGE = 128.0;
-    private static final long SCAN_INTERVAL_MS = 500;
+    private static final double BOSS_SCAN_RANGE = 40.0;
+    private static final double BOSS_SCAN_RANGE_SQ = BOSS_SCAN_RANGE * BOSS_SCAN_RANGE;
+    private static final double CLOSE_COMBAT_RANGE_SQ = 144.0; // 12ブロック以内は近接交戦として背後でも認識
 
     private final EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
 
     private static WeakReference<LivingEntity> combatMsBoss = new WeakReference<>(null);
     private static WeakReference<LivingEntity> combatVanillaBoss = new WeakReference<>(null);
     private static UUID lastTrackedBossEventId = null;
-    private static long lastMsScanTime = 0;
-    private static long lastVanillaScanTime = 0;
 
     @Override
     public String getId() {
@@ -134,7 +132,7 @@ public class BossHpBarRenderer implements IRenderCommand {
         if (mc.player == null || mc.level == null) {
             return false;
         }
-        return !hasActiveBossEvent(mc) && findNearbyMsBoss(mc) != null;
+        return !isVanillaBossVisible(mc) && findNearbyMsBoss(mc) != null;
     }
 
     @Override
@@ -144,7 +142,7 @@ public class BossHpBarRenderer implements IRenderCommand {
             return;
         }
 
-        if (hasActiveBossEvent(mc)) {
+        if (isVanillaBossVisible(mc)) {
             renderVanillaBoss(graphics, ctx, mc);
         } else {
             renderMsBoss(graphics, ctx, mc);
@@ -404,20 +402,11 @@ public class BossHpBarRenderer implements IRenderCommand {
         if (mc.level == null || mc.player == null || bossEvent == null) return null;
 
         float targetProgress = Mth.clamp(bossEvent.getProgress(), 0.0f, 1.0f);
-
-        AABB searchBox = new AABB(
-                mc.player.getX() - MS_BOSS_SCAN_RANGE, mc.player.getY() - MS_BOSS_SCAN_RANGE, mc.player.getZ() - MS_BOSS_SCAN_RANGE,
-                mc.player.getX() + MS_BOSS_SCAN_RANGE, mc.player.getY() + MS_BOSS_SCAN_RANGE, mc.player.getZ() + MS_BOSS_SCAN_RANGE);
+        AABB searchBox = mc.player.getBoundingBox().inflate(BOSS_SCAN_RANGE);
 
         List<LivingEntity> bossCandidates = mc.level.getEntitiesOfClass(
                 LivingEntity.class, searchBox,
-                e -> e != null && e.isAlive() && isAnyBoss(e));
-
-        if (bossCandidates.isEmpty()) {
-            bossCandidates = mc.level.getEntitiesOfClass(
-                    LivingEntity.class, searchBox,
-                    e -> e != null && e.isAlive() && !(e instanceof Player));
-        }
+                e -> e != null && e.isAlive() && isAnyBoss(e) && e.distanceToSqr(mc.player) <= BOSS_SCAN_RANGE_SQ);
 
         if (bossCandidates.isEmpty()) {
             return null;
@@ -460,44 +449,26 @@ public class BossHpBarRenderer implements IRenderCommand {
         }
 
         LivingEntity active = combatMsBoss.get();
-        if (active != null && active.isAlive() && active.level() == mc.level) {
-            double distSq = active.distanceToSqr(mc.player);
-            if (distSq <= MS_BOSS_SCAN_RANGE * MS_BOSS_SCAN_RANGE) {
+        if (active != null) {
+            if (isInRange(mc, active)) {
                 return active;
             }
             combatMsBoss = new WeakReference<>(null);
-            return null;
-        }
-        if (active != null) {
-            combatMsBoss = new WeakReference<>(null);
         }
 
-        long now = System.currentTimeMillis();
-        if (now - lastMsScanTime < SCAN_INTERVAL_MS) {
-            return null;
-        }
-        lastMsScanTime = now;
-
-        AABB searchBox = new AABB(
-                mc.player.getX() - MS_BOSS_SCAN_RANGE, mc.player.getY() - MS_BOSS_SCAN_RANGE, mc.player.getZ() - MS_BOSS_SCAN_RANGE,
-                mc.player.getX() + MS_BOSS_SCAN_RANGE, mc.player.getY() + MS_BOSS_SCAN_RANGE, mc.player.getZ() + MS_BOSS_SCAN_RANGE);
+        AABB searchBox = mc.player.getBoundingBox().inflate(BOSS_SCAN_RANGE);
         List<LivingEntity> bosses = mc.level.getEntitiesOfClass(
                 LivingEntity.class, searchBox,
-                BossHpBarRenderer::isAnyBoss);
+                e -> e != null && isAnyBoss(e) && canAcquireBoss(mc, e));
 
         if (bosses.isEmpty()) {
             return null;
         }
 
         bosses.sort(Comparator.comparingDouble(b -> b.distanceToSqr(mc.player)));
-        for (LivingEntity boss : bosses) {
-            if (boss.isAlive() && hasLineOfSight(mc, boss)) {
-                combatMsBoss = new WeakReference<>(boss);
-                return boss;
-            }
-        }
-
-        return null;
+        LivingEntity nearest = bosses.get(0);
+        combatMsBoss = new WeakReference<>(nearest);
+        return nearest;
     }
 
     static boolean isAnyBoss(LivingEntity entity) {
@@ -594,13 +565,36 @@ public class BossHpBarRenderer implements IRenderCommand {
         return name.startsWith("GATEWAY_ID");
     }
 
-    // ========== Line of Sight & Combat State ==========
+    // ========== Line of Sight & Visibility ==========
 
-    /**
-     * プレイヤーからターゲットまで壁がないかレイキャストで確認
-     */
+    private static boolean isInRange(Minecraft mc, LivingEntity boss) {
+        if (boss == null || !boss.isAlive() || boss.level() != mc.level || mc.player == null) {
+            return false;
+        }
+        return boss.distanceToSqr(mc.player) <= BOSS_SCAN_RANGE_SQ;
+    }
+
+    private static boolean canAcquireBoss(Minecraft mc, LivingEntity boss) {
+        if (!isInRange(mc, boss)) {
+            return false;
+        }
+        if (!hasLineOfSight(mc, boss)) {
+            return false;
+        }
+        double distSq = boss.distanceToSqr(mc.player);
+        if (distSq <= CLOSE_COMBAT_RANGE_SQ) {
+            return true;
+        }
+        Vec3 lookVec = mc.player.getViewVector(1.0f);
+        Vec3 toBoss = boss.getEyePosition(1.0f).subtract(mc.player.getEyePosition(1.0f));
+        if (toBoss.lengthSqr() < 1.0e-4) {
+            return true;
+        }
+        return lookVec.dot(toBoss.normalize()) > 0.0;
+    }
+
     private static boolean hasLineOfSight(Minecraft mc, LivingEntity target) {
-        if (mc.player == null || mc.level == null) return false;
+        if (mc.player == null || mc.level == null || target == null) return false;
         Vec3 playerEye = mc.player.getEyePosition(1.0f);
         Vec3 targetEye = target.getEyePosition(1.0f);
         ClipContext context = new ClipContext(
@@ -613,45 +607,34 @@ public class BossHpBarRenderer implements IRenderCommand {
         return result.getType() == HitResult.Type.MISS;
     }
 
-    /**
-     * Vanilla BOSSイベントの視線ベース戦闘状態管理。
-     * 初回はレイキャストで視線確認 → 以降はBOSS死亡/範囲外まで表示継続。
-     */
     public static boolean isVanillaBossVisible(Minecraft mc) {
-        if (!hasActiveBossEvent(mc)) {
+        if (!hasActiveBossEvent(mc) || mc.player == null || mc.level == null) {
             combatVanillaBoss = new WeakReference<>(null);
             lastTrackedBossEventId = null;
             return false;
         }
 
         LivingEntity active = combatVanillaBoss.get();
-        if (active != null && active.isAlive() && active.level() == mc.level) {
-            double distSq = active.distanceToSqr(mc.player);
-            if (distSq <= MS_BOSS_SCAN_RANGE * MS_BOSS_SCAN_RANGE) {
+        if (active != null) {
+            if (isInRange(mc, active)) {
                 return true;
             }
             combatVanillaBoss = new WeakReference<>(null);
-            return false;
         }
-        if (active != null) {
-            combatVanillaBoss = new WeakReference<>(null);
-        }
-
-        long now = System.currentTimeMillis();
-        if (now - lastVanillaScanTime < SCAN_INTERVAL_MS) {
-            return false;
-        }
-        lastVanillaScanTime = now;
 
         LerpingBossEvent event = getFirstBossEvent(mc);
-        if (event == null) return false;
+        if (event == null) {
+            combatVanillaBoss = new WeakReference<>(null);
+            return false;
+        }
 
         LivingEntity entity = findBossEntity(mc, event);
-        if (entity != null && entity.isAlive() && hasLineOfSight(mc, entity)) {
+        if (entity != null && canAcquireBoss(mc, entity)) {
             combatVanillaBoss = new WeakReference<>(entity);
             return true;
         }
 
+        combatVanillaBoss = new WeakReference<>(null);
         return false;
     }
 
