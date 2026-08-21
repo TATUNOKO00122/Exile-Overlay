@@ -15,8 +15,8 @@ public final class EntityHealthBarConfig extends AbstractConfigSection {
     private static final Object LOCK = new Object();
 
     private boolean enabled = false;
-    private boolean showPoison = true;
-    private boolean showBleed = true;
+    private boolean showPoison = false;
+    private boolean showBleed = false;
     private boolean showFriendlyColor = true;
     private int maxDistance = 24;
     private double heightAbove = 0.5;
@@ -24,7 +24,7 @@ public final class EntityHealthBarConfig extends AbstractConfigSection {
     private int barHeight = 2;
     private float scale = 1.0f;
     private int displayDuration = 5;
-    private String healthBarColor = "8B0000";
+    private String healthBarColor = "B02020";
     private String poisonBarColor = "246E07";
     private String bleedBarColor = "540606";
     private String friendlyBarColor = "2D8B2D";
@@ -181,7 +181,7 @@ public final class EntityHealthBarConfig extends AbstractConfigSection {
     }
 
     public int getHealthBarColorHex(int alpha) {
-        return parseColorHex(healthBarColor, 0x8B0000, alpha);
+        return parseColorHex(healthBarColor, 0xB02020, alpha);
     }
 
     public int getHostileBarColorHex() {
