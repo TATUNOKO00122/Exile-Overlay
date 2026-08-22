@@ -7,7 +7,7 @@
   "exile_overlay.config.tab.hud": "HUD",
   "exile_overlay.config.tab.orb": "宝珠",
   "exile_overlay.config.tab.extensions": "扩展",
-  "exile_overlay.config.tab.damage_popup": "伤害弹出",
+  "exile_overlay.config.tab.damage_popup": "伤害",
   "exile_overlay.config.tab.display": "界面",
   "exile_overlay.config.search.placeholder": "搜索设置...",
   "exile_overlay.config.search.no_results": "未找到匹配的设置",

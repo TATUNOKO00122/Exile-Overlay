@@ -7,7 +7,7 @@
   "exile_overlay.config.tab.hud": "HUD",
   "exile_overlay.config.tab.orb": "Orbs",
   "exile_overlay.config.tab.extensions": "Extensions",
-  "exile_overlay.config.tab.damage_popup": "Damage Popup",
+  "exile_overlay.config.tab.damage_popup": "Damage",
   "exile_overlay.config.tab.display": "UI",
   "exile_overlay.config.search.placeholder": "Search settings...",
   "exile_overlay.config.search.no_results": "No matching settings found",

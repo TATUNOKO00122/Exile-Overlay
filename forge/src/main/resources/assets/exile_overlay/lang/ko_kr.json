@@ -7,7 +7,7 @@
   "exile_overlay.config.tab.hud": "HUD",
   "exile_overlay.config.tab.orb": "오브",
   "exile_overlay.config.tab.extensions": "확장",
-  "exile_overlay.config.tab.damage_popup": "데미지 팝업",
+  "exile_overlay.config.tab.damage_popup": "데미지",
   "exile_overlay.config.tab.display": "UI",
   "exile_overlay.config.search.placeholder": "설정 검색...",
   "exile_overlay.config.search.no_results": "일치하는 설정이 없습니다",

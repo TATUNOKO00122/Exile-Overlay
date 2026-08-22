@@ -7,7 +7,7 @@
   "exile_overlay.config.tab.hud": "HUD",
   "exile_overlay.config.tab.orb": "オーブ",
   "exile_overlay.config.tab.extensions": "拡張",
-  "exile_overlay.config.tab.damage_popup": "ダメージポップアップ",
+  "exile_overlay.config.tab.damage_popup": "ダメージ",
   "exile_overlay.config.tab.display": "UI",
   "exile_overlay.config.search.placeholder": "設定を検索...",
   "exile_overlay.config.search.no_results": "該当する設定が見つかりません",
