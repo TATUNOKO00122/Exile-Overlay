@@ -148,6 +148,11 @@ public class SkillHotbarRenderer implements IRenderCommand {
         int offsetX = -totalWidth / 2;
         int offsetY = -totalHeight / 2;
 
+        float gcdPercent = MethodHandlesUtil.getGlobalCooldownPercent(player);
+        int gcdNeededTicks = MethodHandlesUtil.getGlobalCooldownNeededTicks(player);
+        float smoothedGcd = CooldownSmoothedValue.getSmoothedGcd(gcdPercent, gcdNeededTicks);
+        boolean showGcd = EquipmentDisplayConfig.getInstance().isShowGlobalCooldown();
+
         int visibleIndex = 0;
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
             ResourceLocation icon = MethodHandlesUtil.getSpellIcon(player, slot);
@@ -187,6 +192,9 @@ public class SkillHotbarRenderer implements IRenderCommand {
                         }
                     } else {
                         CooldownSmoothedValue.getSmoothedChargeRegen(slot, 0.0f);
+                        if (showGcd && smoothedGcd > 0) {
+                            drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
+                        }
                     }
                 } else {
                     float cdPercent = MethodHandlesUtil.getSpellCooldownPercent(player, slot);
@@ -213,6 +221,8 @@ public class SkillHotbarRenderer implements IRenderCommand {
                                 }
                             }
                         }
+                    } else if (showGcd && smoothedGcd > 0) {
+                        drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
                     }
                 }
             }

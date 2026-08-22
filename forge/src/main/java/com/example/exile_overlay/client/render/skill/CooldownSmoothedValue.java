@@ -12,6 +12,7 @@ public final class CooldownSmoothedValue {
 
     private static final SlotState[] CD_STATES = new SlotState[SLOT_COUNT];
     private static final SlotState[] REGEN_STATES = new SlotState[SLOT_COUNT];
+    private static final SlotState GCD_STATE = new SlotState();
 
     static {
         for (int i = 0; i < SLOT_COUNT; i++) {
@@ -51,6 +52,13 @@ public final class CooldownSmoothedValue {
     }
 
     /**
+     * グローバルクールダウン（GCD）の割合を滑らかに補間して取得
+     */
+    public static float getSmoothedGcd(float targetPercent, int neededTicks) {
+        return computeSmoothed(GCD_STATE, targetPercent, neededTicks);
+    }
+
+    /**
      * ワールド退出時やセッションリセット時に呼び出し
      */
     public static void reset() {
@@ -58,6 +66,7 @@ public final class CooldownSmoothedValue {
             resetState(CD_STATES[i]);
             resetState(REGEN_STATES[i]);
         }
+        resetState(GCD_STATE);
     }
 
     private static void resetState(SlotState state) {

@@ -1271,6 +1271,41 @@ public class MethodHandlesUtil {
         return 0;
     }
 
+    public static float getGlobalCooldownPercent(Player player) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            int current = (int) GET_COOLDOWN_TICKS.invoke(cds, "global_cooldown");
+            int needed = (int) GET_NEEDED_TICKS.invoke(cds, "global_cooldown");
+
+            if (needed > 0 && current > 0) {
+                return Math.min((float) current / needed, 1.0f);
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get global cooldown: {}", t.getMessage());
+        }
+        return 0;
+    }
+
+    public static int getGlobalCooldownNeededTicks(Player player) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            return (int) GET_NEEDED_TICKS.invoke(cds, "global_cooldown");
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get global cooldown needed ticks: {}", t.getMessage());
+        }
+        return 0;
+    }
+
     public static int getSpellManaCost(Player player, int slot) {
         try {
             Object spell = getSpell(player, slot);
