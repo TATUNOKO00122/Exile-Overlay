@@ -100,6 +100,13 @@ public class HudDisplayTab implements IConfigTab {
                 equipConfig::setShowSkillCooldownNumber
         ));
 
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.show_global_cooldown",
+                equipConfig::isShowGlobalCooldown,
+                equipConfig::setShowGlobalCooldown,
+                (Component) null
+        ));
+
         if (MethodHandlesUtil.isAvailable()) {
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.hotbar_swapping",

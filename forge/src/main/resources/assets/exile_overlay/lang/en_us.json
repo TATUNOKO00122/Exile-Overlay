@@ -60,6 +60,7 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "Display empty skill slots on the HUD",
   "exile_overlay.config.show_skill_cooldown_number": "Skill Cooldown Number: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "Display remaining cooldown seconds on skill hotbar icons",
+  "exile_overlay.config.show_global_cooldown": "Show Global Cooldown: %s",
   "exile_overlay.config.hotbar_swapping": "Hotbar Swapping (M&S): %s",
   "exile_overlay.config.hotbar_swapping.tooltip": "Mine and Slash HOTBAR_SWAPPING setting. OFF: 8 slots, 8 keybinds / ON: 4 slots, 5 keybinds",
   "exile_overlay.config.enable_shadow": "Enable Shadow: %s",

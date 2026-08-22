@@ -60,6 +60,7 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "Отображает пустые слоты навыков на HUD",
   "exile_overlay.config.show_skill_cooldown_number": "Цифровое время перезарядки: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "Отображать оставшиеся секунды перезарядки на иконках панели навыков",
+  "exile_overlay.config.show_global_cooldown": "Отображать глобальную перезарядку: %s",
   "exile_overlay.config.hotbar_swapping": "Переключение хотбара (M&S): %s",
   "exile_overlay.config.hotbar_swapping.tooltip": "Настройка HOTBAR_SWAPPING в Mine and Slash. OFF: 8 слотов / ON: 4 слота с переключением",
   "exile_overlay.config.enable_shadow": "Включить тень: %s",

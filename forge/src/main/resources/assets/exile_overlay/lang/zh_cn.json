@@ -60,6 +60,7 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "在HUD上显示未设置的空技能栏",
   "exile_overlay.config.show_skill_cooldown_number": "技能冷却倒计时数字: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "在技能栏图标上显示剩余冷却时间（秒）",
+  "exile_overlay.config.show_global_cooldown": "显示公共冷却时间: %s",
   "exile_overlay.config.hotbar_swapping": "快捷栏切换 (M&S): %s",
   "exile_overlay.config.hotbar_swapping.tooltip": "Mine and Slash 的 HOTBAR_SWAPPING 设置。OFF: 显示全部8栏 / ON: 4栏切换显示",
   "exile_overlay.config.enable_shadow": "启用阴影: %s",

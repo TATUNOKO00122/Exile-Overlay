@@ -60,6 +60,7 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "설정되지 않은 빈 스킬 슬롯도 HUD에 표시합니다",
   "exile_overlay.config.show_skill_cooldown_number": "스킬 재사용 대기시간 숫자 표시: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "스킬 핫바 아이콘 위에 남은 재사용 대기시간(초)을 표시합니다",
+  "exile_overlay.config.show_global_cooldown": "글로벌 쿨다운 표시: %s",
   "exile_overlay.config.hotbar_swapping": "핫바 스왑 (M&S): %s",
   "exile_overlay.config.hotbar_swapping.tooltip": "Mine and Slash의 HOTBAR_SWAPPING 설정. OFF: 8개 슬롯 전체 표시 / ON: 4개 슬롯 전환 표시",
   "exile_overlay.config.enable_shadow": "그림자 활성화: %s",
