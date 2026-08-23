@@ -61,6 +61,8 @@
   "exile_overlay.config.show_skill_cooldown_number": "スキルのクールダウン数値表示: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "スキルホットバーのアイコン上に残りクールダウン秒数を表示します",
   "exile_overlay.config.show_global_cooldown": "グローバルクールダウンを表示: %s",
+  "exile_overlay.config.simple_skill_keybind": "シンプルなキーバインド表示: %s",
+  "exile_overlay.config.simple_skill_keybind.tooltip": "スキルのキーバインド表示から背景枠を消し、テキスト（黒縁付き）のみで表示します",
   "exile_overlay.config.hotbar_swapping": "ホットバースワップ (M&S): %s",
   "exile_overlay.config.hotbar_swapping.tooltip": "Mine and SlashのHOTBAR_SWAPPING設定。OFF: 8スロット全表示 / ON: 4スロット切替表示",
   "exile_overlay.config.enable_shadow": "影を有効化: %s",

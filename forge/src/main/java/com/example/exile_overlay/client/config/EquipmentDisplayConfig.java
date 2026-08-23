@@ -54,6 +54,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean enableOrbNoise = true;
     private boolean enableLiquidShadow = false;
     private boolean enableOrbInnerShadow = true;
+    private boolean simpleSkillKeybindDisplay = false;
 
     private EquipmentDisplayConfig() {
         super(SECTION_ID, FILE_NAME, true);
@@ -118,6 +119,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("enableOrbNoise")) enableOrbNoise = obj.get("enableOrbNoise").getAsBoolean();
         if (obj.has("enableLiquidShadow")) enableLiquidShadow = obj.get("enableLiquidShadow").getAsBoolean();
         if (obj.has("enableOrbInnerShadow")) enableOrbInnerShadow = obj.get("enableOrbInnerShadow").getAsBoolean();
+        if (obj.has("simpleSkillKeybindDisplay")) simpleSkillKeybindDisplay = obj.get("simpleSkillKeybindDisplay").getAsBoolean();
     }
 
     @Override
@@ -149,6 +151,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("enableOrbNoise", enableOrbNoise);
         obj.addProperty("enableLiquidShadow", enableLiquidShadow);
         obj.addProperty("enableOrbInnerShadow", enableOrbInnerShadow);
+        obj.addProperty("simpleSkillKeybindDisplay", simpleSkillKeybindDisplay);
     }
 
     public boolean isUsePercentage() { return usePercentage; }
@@ -232,6 +235,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isEnableOrbInnerShadow() { return enableOrbInnerShadow; }
     public void setEnableOrbInnerShadow(boolean enable) { this.enableOrbInnerShadow = enable; }
 
+    public boolean isSimpleSkillKeybindDisplay() { return simpleSkillKeybindDisplay; }
+    public void setSimpleSkillKeybindDisplay(boolean simple) { this.simpleSkillKeybindDisplay = simple; }
+
     public void resetToDefaults() {
         this.usePercentage = true;
         this.enableShadow = true;
@@ -260,5 +266,6 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.enableOrbNoise = true;
         this.enableLiquidShadow = false;
         this.enableOrbInnerShadow = true;
+        this.simpleSkillKeybindDisplay = false;
     }
 }

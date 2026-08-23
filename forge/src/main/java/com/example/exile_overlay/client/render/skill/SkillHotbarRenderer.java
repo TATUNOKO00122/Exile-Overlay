@@ -244,10 +244,12 @@ public class SkillHotbarRenderer implements IRenderCommand {
             String rawKeyText = SpellKeyHelper.getSpellKeyText(slot);
             String displayKey = abbreviateKeyText(rawKeyText);
 
+            boolean isSimpleKeybind = EquipmentDisplayConfig.getInstance().isSimpleSkillKeybindDisplay();
+
             RenderSystem.enableBlend();
             graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
-            if (!displayKey.isEmpty()) {
+            if (!displayKey.isEmpty() && !isSimpleKeybind) {
                 RenderSystem.enableBlend();
                 ResourceLocation keybindFrame = displayKey.length() >= 2
                         ? KEYBIND_MOD_FRAME_TEXTURE : KEYBIND_FRAME_TEXTURE;
@@ -256,10 +258,16 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
             if (!displayKey.isEmpty()) {
                 int fullTextWidth = HudFontHelper.getTextWidth(mc.font, displayKey);
-                float textScale = 0.8f;
-                float frameCenterX = displayKey.length() >= 2 ? 20.5f : 24.5f;
-                float keyX = slotX + frameCenterX - fullTextWidth * textScale / 2.0f;
-                float keyY = slotY + 25.0f - mc.font.lineHeight * textScale / 2.0f;
+                float textScale = isSimpleKeybind ? 1.25f : 0.8f;
+                float keyX, keyY;
+                if (isSimpleKeybind) {
+                    keyX = slotX + 3.0f;
+                    keyY = slotY + 20.0f; // Adjusted up slightly to compensate for larger scale
+                } else {
+                    float frameCenterX = displayKey.length() >= 2 ? 20.5f : 24.5f;
+                    keyX = slotX + frameCenterX - fullTextWidth * textScale / 2.0f;
+                    keyY = slotY + 25.0f - mc.font.lineHeight * textScale / 2.0f;
+                }
 
                 graphics.pose().pushPose();
                 graphics.pose().translate(keyX, keyY, 0);
@@ -271,10 +279,29 @@ public class SkillHotbarRenderer implements IRenderCommand {
                     String mainKeyPart = displayKey.substring(plusIndex + 1);
                     int modKeyWidth = HudFontHelper.getTextWidth(mc.font, modKeyPart);
                     int plusWidth = HudFontHelper.getTextWidth(mc.font, "+");
+                    
+                    if (isSimpleKeybind) {
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dy = -1; dy <= 1; dy++) {
+                                if (dx != 0 || dy != 0) {
+                                    HudFontHelper.drawString(graphics, mc.font, displayKey, dx, dy, 0xFF000000, false);
+                                }
+                            }
+                        }
+                    }
                     HudFontHelper.drawString(graphics, mc.font, modKeyPart, 0, 0, 0xFF55FF55, false);
                     HudFontHelper.drawString(graphics, mc.font, "+", modKeyWidth, 0, 0xFFFFFF55, false);
                     HudFontHelper.drawString(graphics, mc.font, mainKeyPart, modKeyWidth + plusWidth, 0, 0xFFFFFFFF, false);
                 } else {
+                    if (isSimpleKeybind) {
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dy = -1; dy <= 1; dy++) {
+                                if (dx != 0 || dy != 0) {
+                                    HudFontHelper.drawString(graphics, mc.font, displayKey, dx, dy, 0xFF000000, false);
+                                }
+                            }
+                        }
+                    }
                     HudFontHelper.drawString(graphics, mc.font, displayKey, 0, 0, 0xFFFFFFFF, false);
                 }
 

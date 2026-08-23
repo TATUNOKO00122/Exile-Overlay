@@ -107,6 +107,12 @@ public class HudDisplayTab implements IConfigTab {
                 (Component) null
         ));
 
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.simple_skill_keybind",
+                equipConfig::isSimpleSkillKeybindDisplay,
+                equipConfig::setSimpleSkillKeybindDisplay
+        ));
+
         if (MethodHandlesUtil.isAvailable()) {
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.hotbar_swapping",
