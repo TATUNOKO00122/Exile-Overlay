@@ -184,18 +184,23 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
                 if (MethodHandlesUtil.getSpellUsesCharges(player, slot)) {
                     int charges = MethodHandlesUtil.getSpellCharges(player, slot);
+                    int maxCharges = MethodHandlesUtil.getSpellMaxCharges(player, slot);
+                    float smoothedRegen = 0f;
 
-                    if (charges == 0) {
+                    if (charges < maxCharges) {
                         float regenPercent = MethodHandlesUtil.getSpellChargeRegenPercent(player, slot);
-                        float smoothedRegen = CooldownSmoothedValue.getSmoothedChargeRegen(slot, regenPercent);
-                        if (smoothedRegen > 0) {
-                            drawCooldownOverlay(graphics, iconX, iconY, smoothedRegen);
-                        }
+                        smoothedRegen = CooldownSmoothedValue.getSmoothedChargeRegen(slot, regenPercent);
                     } else {
                         CooldownSmoothedValue.getSmoothedChargeRegen(slot, 0.0f);
-                        if (showGcd && smoothedGcd > 0) {
-                            drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
-                        }
+                        smoothedRegen = 0.0f;
+                    }
+
+                    if (showGcd && smoothedGcd > 0) {
+                        drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
+                    }
+
+                    if (smoothedRegen > 0) {
+                        drawChargeRegenBar(graphics, iconX, iconY, smoothedRegen);
                     }
                 } else {
                     float cdPercent = MethodHandlesUtil.getSpellCooldownPercent(player, slot);
@@ -311,13 +316,13 @@ public class SkillHotbarRenderer implements IRenderCommand {
             if (icon != null) {
                 int summonCount = MethodHandlesUtil.getSummonCount(player, slot);
                 if (summonCount > 0) {
-                    drawSummonBadge(graphics, mc, slotX, slotY, summonCount);
+                    drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleKeybind);
                 }
 
                 if (MethodHandlesUtil.getSpellUsesCharges(player, slot)) {
                     int charges = MethodHandlesUtil.getSpellCharges(player, slot);
                     int maxCharges = MethodHandlesUtil.getSpellMaxCharges(player, slot);
-                    drawChargeBadge(graphics, mc, slotX, slotY, charges, maxCharges);
+                    drawChargeBadge(graphics, mc, slotX, slotY, charges, maxCharges, isSimpleKeybind);
                 }
             }
         }
@@ -325,36 +330,59 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().popPose();
     }
 
-    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count) {
-        RenderSystem.enableBlend();
-        graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count, boolean isSimpleKeybind) {
+        if (!isSimpleKeybind) {
+            RenderSystem.enableBlend();
+            graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        }
 
         String text = String.valueOf(count);
         int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
-        float s = 0.8f;
+        float s = isSimpleKeybind ? 1.0f : 0.8f;
         float textX = slotX + 2.0f + (8.0f - textWidth * s) / 2.0f + 0.5f + 1;
         float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
+        if (isSimpleKeybind) {
+            // Adjust position for larger text scale without badge
+            textX = slotX + 7.0f - (textWidth * s) / 2.0f; // moved right 1px
+            textY = slotY + 4.0f; 
+        }
 
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
+        if (isSimpleKeybind) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    if (dx != 0 || dy != 0) {
+                        HudFontHelper.drawString(graphics, mc.font, text, dx, dy, 0xFF000000, false);
+                    }
+                }
+            }
+        }
         HudFontHelper.drawString(graphics, mc.font, text, 0, 0, SUMMON_TEXT_COLOR, false);
         graphics.pose().popPose();
     }
 
-    private void drawChargeBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int charges, int maxCharges) {
-        RenderSystem.enableBlend();
-        graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+    private void drawChargeBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int charges, int maxCharges, boolean isSimpleKeybind) {
+        if (!isSimpleKeybind) {
+            RenderSystem.enableBlend();
+            graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        }
 
         String text = String.valueOf(charges);
         int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
-        float s = 0.8f;
+        float s = isSimpleKeybind ? 1.0f : 0.8f;
         float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f - 1;
         float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
+        if (isSimpleKeybind) {
+            // Symmetrically aligned with summon count (6px from right edge, 4px from top edge)
+            textX = slotX + 26.0f - (textWidth * s) / 2.0f;
+            textY = slotY + 4.0f;
+        }
 
         int color;
         if (charges <= 0) {
@@ -368,6 +396,15 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
+        if (isSimpleKeybind) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    if (dx != 0 || dy != 0) {
+                        HudFontHelper.drawString(graphics, mc.font, text, dx, dy, 0xFF000000, false);
+                    }
+                }
+            }
+        }
         HudFontHelper.drawString(graphics, mc.font, text, 0, 0, color, false);
         graphics.pose().popPose();
     }
@@ -402,6 +439,45 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {
         CooldownRenderHelper.drawRadialCooldown(graphics, x, y, ICON_SIZE, ICON_SIZE, percent, COOLDOWN_OVERLAY_COLOR);
+    }
+
+    private void drawChargeRegenBar(GuiGraphics graphics, int iconX, int iconY, float percent) {
+        float barHeight = 2.0f;
+        float y = iconY + ICON_SIZE - barHeight;
+
+        // 左右に2pxずつ余裕を持たせる（先ほどより左右1pxずつ拡大）
+        float barWidth = ICON_SIZE - 4.0f;
+        float x = iconX + 2.0f;
+
+        // percentは1.0(回復開始)から0.0(完了)へ減少していく値なので、進捗バーの長さは (1.0 - percent)
+        float fillWidth = barWidth * (1.0f - percent);
+
+        // 背景 (半透明の黒)
+        fillFloat(graphics, x, y, x + barWidth, y + barHeight, 0x88000000);
+        // プログレス (黄色系、右下バッジの色に近い色)
+        fillFloat(graphics, x, y, x + fillWidth, y + barHeight, 0xFFFFFF00);
+    }
+
+    private void fillFloat(GuiGraphics graphics, float minX, float minY, float maxX, float maxY, int color) {
+        org.joml.Matrix4f matrix4f = graphics.pose().last().pose();
+        float a = (float)(color >> 24 & 255) / 255.0F;
+        float r = (float)(color >> 16 & 255) / 255.0F;
+        float g = (float)(color >> 8 & 255) / 255.0F;
+        float b = (float)(color & 255) / 255.0F;
+        
+        com.mojang.blaze3d.vertex.BufferBuilder bufferbuilder = com.mojang.blaze3d.vertex.Tesselator.getInstance().getBuilder();
+        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+        com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+        com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+        
+        bufferbuilder.begin(com.mojang.blaze3d.vertex.VertexFormat.Mode.QUADS, com.mojang.blaze3d.vertex.DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.vertex(matrix4f, minX, maxY, 0.0F).color(r, g, b, a).endVertex();
+        bufferbuilder.vertex(matrix4f, maxX, maxY, 0.0F).color(r, g, b, a).endVertex();
+        bufferbuilder.vertex(matrix4f, maxX, minY, 0.0F).color(r, g, b, a).endVertex();
+        bufferbuilder.vertex(matrix4f, minX, minY, 0.0F).color(r, g, b, a).endVertex();
+        
+        com.mojang.blaze3d.vertex.BufferUploader.drawWithShader(bufferbuilder.end());
+        com.mojang.blaze3d.systems.RenderSystem.disableBlend();
     }
 
     @Override

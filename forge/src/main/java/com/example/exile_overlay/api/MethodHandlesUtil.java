@@ -1599,12 +1599,25 @@ public class MethodHandlesUtil {
             if (chargeData == null) return 0;
 
             int currentTicks = (int) GET_CURRENT_TICKS_CHARGING.invoke(chargeData, chargeName);
-            float remaining = chargeRegen - currentTicks;
-            return Math.max(0, Math.min(remaining / chargeRegen, 1.0f));
+            // currentTicks は「回復完了までの残りTick数」であるため、そのまま割合にする
+            return Math.max(0, Math.min((float) currentTicks / chargeRegen, 1.0f));
         } catch (Throwable t) {
             LOGGER.debug("Failed to get charge regen at slot {}: {}", slot, t.getMessage());
         }
         return 0;
+    }
+
+    public static int getSpellChargeRegenTicks(Player player, int slot) {
+        if (LOAD_PLAYER == null || player == null) return 0;
+        try {
+            Object spell = getSpell(player, slot);
+            if (spell == null) return 0;
+            Object config = SPELL_CONFIG_GETTER.invoke(spell);
+            if (config == null) return 0;
+            return SPELL_CONFIG_CHARGE_REGEN_FIELD.getInt(config);
+        } catch (Throwable t) {
+            return 0;
+        }
     }
 
     public static boolean isOnSecondHotbar() {
