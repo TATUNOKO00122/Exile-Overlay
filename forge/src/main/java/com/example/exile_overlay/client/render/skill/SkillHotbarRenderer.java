@@ -150,6 +150,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
         float gcdPercent = MethodHandlesUtil.getGlobalCooldownPercent(player);
         int gcdNeededTicks = MethodHandlesUtil.getGlobalCooldownNeededTicks(player);
+        int gcdLeft = MethodHandlesUtil.getGlobalCooldownTicks(player);
         float smoothedGcd = CooldownSmoothedValue.getSmoothedGcd(gcdPercent, gcdNeededTicks);
         boolean showGcd = EquipmentDisplayConfig.getInstance().isShowGlobalCooldown();
 
@@ -198,31 +199,44 @@ public class SkillHotbarRenderer implements IRenderCommand {
                     }
                 } else {
                     float cdPercent = MethodHandlesUtil.getSpellCooldownPercent(player, slot);
-                    int neededTicks = MethodHandlesUtil.getSpellNeededTicks(player, slot);
-                    float smoothedCd = CooldownSmoothedValue.getSmoothedCooldown(slot, cdPercent, neededTicks);
-                    if (smoothedCd > 0) {
-                        drawCooldownOverlay(graphics, iconX, iconY, smoothedCd);
+                    int cdLeft = MethodHandlesUtil.getSpellCooldownTicks(player, slot);
+                    int cdNeed = MethodHandlesUtil.getSpellNeededTicks(player, slot);
+                    float smoothedCd = CooldownSmoothedValue.getSmoothedCooldown(slot, cdPercent, cdNeed);
 
-                        if (EquipmentDisplayConfig.getInstance().isShowSkillCooldownNumber()) {
-                            int seconds = MethodHandlesUtil.getSpellCooldownSeconds(player, slot);
-                            if (seconds > 0) {
-                                String text = String.valueOf(seconds);
-                                float cdTextScale = 1.5f;
-                                int textWidth = HudFontHelper.getTextWidth(mc.font, text);
-                                float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
-                                float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
-                                graphics.pose().pushPose();
-                                try {
-                                    graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
-                                    HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
-                                    HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
-                                } finally {
-                                    graphics.pose().popPose();
-                                }
+                    float renderPercent = 0f;
+                    int longestLeft = 0;
+
+                    if (cdLeft > 1 && cdNeed > 0 && cdLeft > longestLeft) {
+                        longestLeft = cdLeft;
+                        renderPercent = smoothedCd;
+                    }
+
+                    if (showGcd && gcdLeft > 1 && gcdNeededTicks > 0 && gcdLeft > longestLeft) {
+                        longestLeft = gcdLeft;
+                        renderPercent = smoothedGcd;
+                    }
+
+                    if (renderPercent > 0) {
+                        drawCooldownOverlay(graphics, iconX, iconY, renderPercent);
+                    }
+
+                    if (smoothedCd > 0 && EquipmentDisplayConfig.getInstance().isShowSkillCooldownNumber()) {
+                        int seconds = MethodHandlesUtil.getSpellCooldownSeconds(player, slot);
+                        if (seconds > 0) {
+                            String text = String.valueOf(seconds);
+                            float cdTextScale = 1.5f;
+                            int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+                            float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
+                            float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
+                            graphics.pose().pushPose();
+                            try {
+                                graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
+                                HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
+                                HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
+                            } finally {
+                                graphics.pose().popPose();
                             }
                         }
-                    } else if (showGcd && smoothedGcd > 0) {
-                        drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
                     }
                 }
             }

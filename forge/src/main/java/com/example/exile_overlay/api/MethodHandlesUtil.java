@@ -1234,6 +1234,24 @@ public class MethodHandlesUtil {
         return 0;
     }
 
+    public static int getSpellCooldownTicks(Player player, int slot) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            String guid = getSpellGuid(player, slot);
+            if (guid == null || guid.isEmpty()) return 0;
+
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            return (int) GET_COOLDOWN_TICKS.invoke(cds, guid);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get cooldown ticks at slot {}: {}", slot, t.getMessage());
+        }
+        return 0;
+    }
+
     public static int getSpellCooldownSeconds(Player player, int slot) {
         if (!isAvailable() || player == null) return 0;
         try {
@@ -1287,6 +1305,21 @@ public class MethodHandlesUtil {
             }
         } catch (Throwable t) {
             LOGGER.debug("Failed to get global cooldown: {}", t.getMessage());
+        }
+        return 0;
+    }
+
+    public static int getGlobalCooldownTicks(Player player) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            return (int) GET_COOLDOWN_TICKS.invoke(cds, "global_cooldown");
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get global cooldown ticks: {}", t.getMessage());
         }
         return 0;
     }
