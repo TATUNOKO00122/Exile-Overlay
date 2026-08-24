@@ -28,10 +28,10 @@ import static com.example.exile_overlay.client.render.orb.OrbType.ORB_3;
  * StringBuilder再利用でGCプレッシャを軽減。
  */
 public class HotbarRenderCommand implements IRenderCommand {
-    
+
     private static final String COMMAND_ID = "hotbar";
     private static final int PRIORITY = 100;
-    
+
     private static final ResourceLocation BACKGROUND_TEXTURE = new ResourceLocation("exile_overlay",
             "textures/gui/hotbar_background.png");
     private static final ResourceLocation BACKGROUND_NO_ORBS_TEXTURE = new ResourceLocation("exile_overlay",
@@ -61,8 +61,8 @@ public class HotbarRenderCommand implements IRenderCommand {
     private static final int POTION_SLOT_GAP = 2;
     private static final int POTION_SLOT_INNER_GAP = 1;
     private static final int POTION_SLOT_COUNT = 2;
-    private static final ResourceLocation POTION_SLOT_TEXTURE = 
-        new ResourceLocation("exile_overlay", "textures/gui/potion_slot.png");
+    private static final ResourceLocation POTION_SLOT_TEXTURE = new ResourceLocation("exile_overlay",
+            "textures/gui/potion_slot.png");
 
     // 経験値バー定数
     private static final int EXP_BAR_X = 65;
@@ -74,34 +74,34 @@ public class HotbarRenderCommand implements IRenderCommand {
     // テキスト定数（中心座標、HJUDと同じ値）
     private static final float LEVEL_CENTER_X = 320.0f;
     private static final float LEVEL_CENTER_Y = 204.0f;
-    
+
     // レイアウト設定
     private final int screenOffsetY;
     private final EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
-    
+
     public HotbarRenderCommand() {
         this(0);
     }
-    
+
     public HotbarRenderCommand(int screenOffsetY) {
         this.screenOffsetY = screenOffsetY;
     }
-    
+
     @Override
     public String getId() {
         return COMMAND_ID;
     }
-    
+
     @Override
     public int getPriority() {
         return PRIORITY;
     }
-    
+
     @Override
     public RenderLayer getLayer() {
         return RenderLayer.FILL;
     }
-    
+
     @Override
     public boolean isVisible(RenderContext ctx) {
         if (!IRenderCommand.super.isVisible(ctx)) {
@@ -111,8 +111,8 @@ public class HotbarRenderCommand implements IRenderCommand {
         if (mc.player == null) {
             return false;
         }
-        return mc.gameMode == null || 
-               mc.gameMode.getPlayerMode() != net.minecraft.world.level.GameType.SPECTATOR;
+        return mc.gameMode == null ||
+                mc.gameMode.getPlayerMode() != net.minecraft.world.level.GameType.SPECTATOR;
     }
 
     @Override
@@ -146,20 +146,18 @@ public class HotbarRenderCommand implements IRenderCommand {
         try {
             graphics.pose().translate(bgX, bgY, 0);
             graphics.pose().scale(totalScale, totalScale, 1.0f);
-            
+
             // Layer 1: Background Layer (背面)
             renderExpBars(graphics, mc);
 
-
-
             // Layer 2: Fill Layer (中間)
             visibleOrbs.forEach(orbType -> OrbRenderer.renderFillLayer(graphics, orbType.getConfig(), player));
-            
+
             // Layer 3: Frame Layer (前面)
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
             ResourceLocation bgTex = selectBackgroundTexture(visibleOrbs, player);
             graphics.blit(bgTex, 0, 0, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
-            
+
             // Layer 4: Overlay Layer (最前面)
             visibleOrbs.forEach(orbType -> OrbRenderer.renderOverlayLayer(graphics, orbType.getConfig(), player, mc));
 
@@ -169,23 +167,23 @@ public class HotbarRenderCommand implements IRenderCommand {
             graphics.pose().popPose();
         }
     }
-    
+
     private void renderExpBars(GuiGraphics graphics, Minecraft mc) {
         // MOD経験値 (明るい黄土色)
         float currentModExp = ModDataProviderRegistry.getValue(mc.player, DataType.EXP);
         float maxModExp = ModDataProviderRegistry.getMaxValue(mc.player, DataType.EXP_REQUIRED);
         renderSingleExpBar(graphics, MOD_EXP_BAR_Y, currentModExp, maxModExp, 0xFFF0C040);
-        
+
         // バニラ経験値 (濃ゆい明るいオリーブ)
         renderSingleExpBar(graphics, VANILLA_EXP_BAR_Y, mc.player.experienceProgress, 1.0f, 0xFF40B040);
     }
-    
+
     private void renderSingleExpBar(GuiGraphics graphics, int y, float current, float max, int color) {
         float progress = max > 0 ? Math.min(current / max, 1.0f) : 0;
-        
+
         // 背景
         graphics.fill(EXP_BAR_X, y, EXP_BAR_X + EXP_BAR_WIDTH, y + EXP_BAR_HEIGHT, 0xFF808080);
-        
+
         // プログレス
         if (progress > 0) {
             int filledWidth = (int) (EXP_BAR_WIDTH * progress);
@@ -255,14 +253,14 @@ public class HotbarRenderCommand implements IRenderCommand {
 
         graphics.pose().popPose();
     }
-    
+
     private ResourceLocation selectBackgroundTexture(List<OrbType> visibleOrbs, Player player) {
         if (!OrbRegistry.isOrbVisible(player, ORB_3)) {
             return BACKGROUND_NO_ORBS_TEXTURE;
         }
         return BACKGROUND_TEXTURE;
     }
-    
+
     private void renderHotbarSlots(GuiGraphics graphics, Minecraft mc) {
         // オフハンドスロット（左側、下部合わせ）
         renderOffhandSlot(graphics, mc);
@@ -271,19 +269,19 @@ public class HotbarRenderCommand implements IRenderCommand {
         renderPotionSlot(graphics, mc);
 
         int selectedSlot = mc.player.getInventory().selected;
-        
+
         for (int i = 0; i < 9; i++) {
             int slotX = SLOT_START_X + (i * SLOT_PITCH);
-            
+
             if (i == selectedSlot) {
                 graphics.fill(slotX + 2, SLOT_START_Y + 2, slotX + SLOT_DISPLAY_SIZE - 2,
                         SLOT_START_Y + SLOT_DISPLAY_SIZE - 2,
                         0x80FFFFFF);
             }
-            
+
             graphics.blit(SLOT_TEXTURE, slotX, SLOT_START_Y, SLOT_DISPLAY_SIZE, SLOT_DISPLAY_SIZE, 0, 0, SLOT_TEX_SIZE,
                     SLOT_TEX_SIZE, SLOT_TEX_SIZE, SLOT_TEX_SIZE);
-            
+
             ItemStack stack = mc.player.getInventory().items.get(i);
             if (!stack.isEmpty()) {
                 renderHotbarItem(graphics, mc, stack, slotX, SLOT_START_Y);
@@ -322,8 +320,8 @@ public class HotbarRenderCommand implements IRenderCommand {
         boolean manaCooldown = MethodHandlesUtil.isPotionOnCooldown(mc.player, manaPotion);
 
         for (int i = 0; i < POTION_SLOT_COUNT; i++) {
-            int potionX = lastSlotX + SLOT_DISPLAY_SIZE + POTION_SLOT_GAP 
-                + (i * (POTION_SLOT_DISPLAY_SIZE_X + POTION_SLOT_INNER_GAP));
+            int potionX = lastSlotX + SLOT_DISPLAY_SIZE + POTION_SLOT_GAP
+                    + (i * (POTION_SLOT_DISPLAY_SIZE_X + POTION_SLOT_INNER_GAP));
 
             ItemStack stack = (i == 0) ? hpPotion : manaPotion;
             boolean cooldown = (i == 0) ? hpCooldown : manaCooldown;
@@ -351,7 +349,7 @@ public class HotbarRenderCommand implements IRenderCommand {
                     POTION_SLOT_DISPLAY_SIZE_X, POTION_SLOT_DISPLAY_SIZE_Y);
         }
     }
-    
+
     private void renderHotbarItem(GuiGraphics graphics, Minecraft mc, ItemStack stack, int x, int y) {
         graphics.pose().pushPose();
         graphics.pose().translate(x + 3.5f, y + 3.5f, 0);
@@ -365,7 +363,7 @@ public class HotbarRenderCommand implements IRenderCommand {
     public String getConfigKey() {
         return "hotbar";
     }
-    
+
     @Override
     public int getWidth() {
         return (int) (BG_WIDTH * RENDER_SCALE);
@@ -386,9 +384,8 @@ public class HotbarRenderCommand implements IRenderCommand {
         // 底辺中心基準: Xは中心、Yは底辺
         // render()メソッド: bgY = pos[1] - height + screenOffsetY
         return new HudRenderMetadata(
-            CoordinateSystem.BOTTOM_CENTER_BASED,
-            new Insets(0, 0, 0, 0),
-            new Insets(0, 0, 0, 0)
-        );
+                CoordinateSystem.BOTTOM_CENTER_BASED,
+                new Insets(0, 0, 0, 0),
+                new Insets(0, 0, 0, 0));
     }
 }

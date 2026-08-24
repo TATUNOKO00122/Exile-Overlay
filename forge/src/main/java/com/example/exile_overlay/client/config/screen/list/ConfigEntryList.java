@@ -30,6 +30,7 @@ public class ConfigEntryList {
     private int maxScroll = 0;
     private int totalContentHeight = 0;
     private boolean isDraggingScrollbar = false;
+    private ConfigEntry focusedEntry = null;
     private String currentFilter = "";
 
     public ConfigEntryList(int x, int y, int width, int height) {
@@ -45,6 +46,7 @@ public class ConfigEntryList {
     }
 
     public void setEntries(List<ConfigEntry> entries) {
+        this.focusedEntry = null;
         this.allEntries.clear();
         if (entries != null) {
             this.allEntries.addAll(entries);
@@ -53,11 +55,13 @@ public class ConfigEntryList {
     }
 
     public void setFilter(String filter) {
+        this.focusedEntry = null;
         this.currentFilter = (filter != null) ? filter.trim().toLowerCase(Locale.ROOT) : "";
         applyFilter();
     }
 
     public void resetScroll() {
+        this.focusedEntry = null;
         this.scrollOffset = 0;
         clampScroll();
     }
@@ -169,12 +173,14 @@ public class ConfigEntryList {
             int entryH = entry.getHeight();
             if (mouseY >= currentY && mouseY < currentY + entryH) {
                 if (entry.mouseClicked(mouseX, mouseY, button)) {
+                    this.focusedEntry = entry;
                     return true;
                 }
             }
             currentY += entryH;
         }
 
+        this.focusedEntry = null;
         return false;
     }
 
@@ -184,12 +190,12 @@ public class ConfigEntryList {
             return true;
         }
 
-        for (ConfigEntry entry : visibleEntries) {
-            if (entry.mouseReleased(mouseX, mouseY, button)) {
-                return true;
-            }
+        boolean handled = false;
+        if (focusedEntry != null) {
+            handled = focusedEntry.mouseReleased(mouseX, mouseY, button);
+            focusedEntry = null;
         }
-        return false;
+        return handled;
     }
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
@@ -201,10 +207,8 @@ public class ConfigEntryList {
             return true;
         }
 
-        for (ConfigEntry entry : visibleEntries) {
-            if (entry.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
-                return true;
-            }
+        if (focusedEntry != null) {
+            return focusedEntry.mouseDragged(mouseX, mouseY, button, dragX, dragY);
         }
         return false;
     }
