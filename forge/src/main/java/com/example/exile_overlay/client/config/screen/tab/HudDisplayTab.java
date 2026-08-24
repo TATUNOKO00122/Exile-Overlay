@@ -88,11 +88,30 @@ public class HudDisplayTab implements IConfigTab {
         // 3. スキルホットバー
         entries.add(new SectionHeaderEntry("section.exile_overlay.skill_hotbar"));
 
+        if (MethodHandlesUtil.isAvailable()) {
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.hotbar_swapping",
+                    MethodHandlesUtil::isHotbarSwappingEnabled,
+                    MethodHandlesUtil::setHotbarSwappingEnabled
+            ));
+        }
+
         entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.show_empty_skill_slots",
-                equipConfig::isShowEmptySkillSlots,
-                equipConfig::setShowEmptySkillSlots
+                "exile_overlay.config.simple_skill_keybind",
+                equipConfig::isSimpleSkillKeybindDisplay,
+                equipConfig::setSimpleSkillKeybindDisplay,
+                null,
+                Component.translatable("exile_overlay.config.simple_skill_keybind.tooltip"),
+                screen::rebuildCurrentTab
         ));
+
+        if (equipConfig.isSimpleSkillKeybindDisplay()) {
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.simple_skill_charge_max_display",
+                    equipConfig::isSimpleSkillChargeMaxDisplay,
+                    equipConfig::setSimpleSkillChargeMaxDisplay
+            ));
+        }
 
         entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.show_skill_cooldown_number",
@@ -101,25 +120,10 @@ public class HudDisplayTab implements IConfigTab {
         ));
 
         entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.show_global_cooldown",
-                equipConfig::isShowGlobalCooldown,
-                equipConfig::setShowGlobalCooldown,
-                (Component) null
+                "exile_overlay.config.show_empty_skill_slots",
+                equipConfig::isShowEmptySkillSlots,
+                equipConfig::setShowEmptySkillSlots
         ));
-
-        entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.simple_skill_keybind",
-                equipConfig::isSimpleSkillKeybindDisplay,
-                equipConfig::setSimpleSkillKeybindDisplay
-        ));
-
-        if (MethodHandlesUtil.isAvailable()) {
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.hotbar_swapping",
-                    MethodHandlesUtil::isHotbarSwappingEnabled,
-                    MethodHandlesUtil::setHotbarSwappingEnabled
-            ));
-        }
 
         // 4. レベル表示
         entries.add(new SectionHeaderEntry("section.exile_overlay.level_display"));

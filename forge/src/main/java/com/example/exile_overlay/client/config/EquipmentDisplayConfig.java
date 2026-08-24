@@ -50,11 +50,11 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean enableBossPortalMarker = false;
     private boolean showEmptySkillSlots = false;
     private boolean showSkillCooldownNumber = true;
-    private boolean showGlobalCooldown = true;
     private boolean enableOrbNoise = true;
     private boolean enableLiquidShadow = false;
     private boolean enableOrbInnerShadow = true;
     private boolean simpleSkillKeybindDisplay = false;
+    private boolean simpleSkillChargeMaxDisplay = false;
 
     private EquipmentDisplayConfig() {
         super(SECTION_ID, FILE_NAME, true);
@@ -115,11 +115,11 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("enableBossPortalMarker")) enableBossPortalMarker = obj.get("enableBossPortalMarker").getAsBoolean();
         if (obj.has("showEmptySkillSlots")) showEmptySkillSlots = obj.get("showEmptySkillSlots").getAsBoolean();
         if (obj.has("showSkillCooldownNumber")) showSkillCooldownNumber = obj.get("showSkillCooldownNumber").getAsBoolean();
-        if (obj.has("showGlobalCooldown")) showGlobalCooldown = obj.get("showGlobalCooldown").getAsBoolean();
         if (obj.has("enableOrbNoise")) enableOrbNoise = obj.get("enableOrbNoise").getAsBoolean();
         if (obj.has("enableLiquidShadow")) enableLiquidShadow = obj.get("enableLiquidShadow").getAsBoolean();
         if (obj.has("enableOrbInnerShadow")) enableOrbInnerShadow = obj.get("enableOrbInnerShadow").getAsBoolean();
         if (obj.has("simpleSkillKeybindDisplay")) simpleSkillKeybindDisplay = obj.get("simpleSkillKeybindDisplay").getAsBoolean();
+        if (obj.has("simpleSkillChargeMaxDisplay")) simpleSkillChargeMaxDisplay = obj.get("simpleSkillChargeMaxDisplay").getAsBoolean();
     }
 
     @Override
@@ -147,11 +147,11 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("enableBossPortalMarker", enableBossPortalMarker);
         obj.addProperty("showEmptySkillSlots", showEmptySkillSlots);
         obj.addProperty("showSkillCooldownNumber", showSkillCooldownNumber);
-        obj.addProperty("showGlobalCooldown", showGlobalCooldown);
         obj.addProperty("enableOrbNoise", enableOrbNoise);
         obj.addProperty("enableLiquidShadow", enableLiquidShadow);
         obj.addProperty("enableOrbInnerShadow", enableOrbInnerShadow);
         obj.addProperty("simpleSkillKeybindDisplay", simpleSkillKeybindDisplay);
+        obj.addProperty("simpleSkillChargeMaxDisplay", simpleSkillChargeMaxDisplay);
     }
 
     public boolean isUsePercentage() { return usePercentage; }
@@ -223,9 +223,6 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isShowSkillCooldownNumber() { return showSkillCooldownNumber; }
     public void setShowSkillCooldownNumber(boolean show) { this.showSkillCooldownNumber = show; }
 
-    public boolean isShowGlobalCooldown() { return showGlobalCooldown; }
-    public void setShowGlobalCooldown(boolean show) { this.showGlobalCooldown = show; }
-
     public boolean isEnableOrbNoise() { return enableOrbNoise; }
     public void setEnableOrbNoise(boolean enable) { this.enableOrbNoise = enable; }
 
@@ -237,6 +234,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
 
     public boolean isSimpleSkillKeybindDisplay() { return simpleSkillKeybindDisplay; }
     public void setSimpleSkillKeybindDisplay(boolean simple) { this.simpleSkillKeybindDisplay = simple; }
+
+    public boolean isSimpleSkillChargeMaxDisplay() { return simpleSkillChargeMaxDisplay; }
+    public void setSimpleSkillChargeMaxDisplay(boolean show) { this.simpleSkillChargeMaxDisplay = show; }
 
     public void resetToDefaults() {
         this.usePercentage = true;
@@ -262,10 +262,10 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.enableBossPortalMarker = false;
         this.showEmptySkillSlots = false;
         this.showSkillCooldownNumber = true;
-        this.showGlobalCooldown = true;
         this.enableOrbNoise = true;
         this.enableLiquidShadow = false;
         this.enableOrbInnerShadow = true;
         this.simpleSkillKeybindDisplay = false;
+        this.simpleSkillChargeMaxDisplay = false;
     }
 }

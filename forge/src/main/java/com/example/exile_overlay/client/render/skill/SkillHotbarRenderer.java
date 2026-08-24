@@ -152,7 +152,6 @@ public class SkillHotbarRenderer implements IRenderCommand {
         int gcdNeededTicks = MethodHandlesUtil.getGlobalCooldownNeededTicks(player);
         int gcdLeft = MethodHandlesUtil.getGlobalCooldownTicks(player);
         float smoothedGcd = CooldownSmoothedValue.getSmoothedGcd(gcdPercent, gcdNeededTicks);
-        boolean showGcd = EquipmentDisplayConfig.getInstance().isShowGlobalCooldown();
 
         int visibleIndex = 0;
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
@@ -195,7 +194,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
                         smoothedRegen = 0.0f;
                     }
 
-                    if (showGcd && smoothedGcd > 0) {
+                    if (smoothedGcd > 0) {
                         drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
                     }
 
@@ -216,7 +215,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
                         renderPercent = smoothedCd;
                     }
 
-                    if (showGcd && gcdLeft > 1 && gcdNeededTicks > 0 && gcdLeft > longestLeft) {
+                    if (gcdLeft > 1 && gcdNeededTicks > 0 && gcdLeft > longestLeft) {
                         longestLeft = gcdLeft;
                         renderPercent = smoothedGcd;
                     }
@@ -371,16 +370,16 @@ public class SkillHotbarRenderer implements IRenderCommand {
             graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         }
 
-        String text = String.valueOf(charges);
+        boolean showMax = isSimpleKeybind && EquipmentDisplayConfig.getInstance().isSimpleSkillChargeMaxDisplay();
+        String text = showMax ? (charges + "/" + maxCharges) : String.valueOf(charges);
         int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
-        float s = isSimpleKeybind ? 1.0f : 0.8f;
+        float s = isSimpleKeybind ? (showMax ? 0.75f : 1.0f) : 0.8f;
         float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f - 1;
         float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
         if (isSimpleKeybind) {
-            // Symmetrically aligned with summon count (6px from right edge, 4px from top edge)
-            textX = slotX + 26.0f - (textWidth * s) / 2.0f;
+            textX = showMax ? (slotX + 29.0f - textWidth * s) : (slotX + 26.0f - (textWidth * s) / 2.0f);
             textY = slotY + 4.0f;
         }
 
