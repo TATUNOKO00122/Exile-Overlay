@@ -2,6 +2,7 @@ package com.example.exile_overlay.mixin;
 
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.DamagePopupManager;
+import com.example.exile_overlay.client.damage.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -28,9 +29,14 @@ public class HealNumberMixin {
     @Inject(method = "spawnOnClient", at = @At("HEAD"), cancellable = true)
     private void exileOverlay$cancelHealParticleSpawn(Entity entity, CallbackInfo ci) {
         try {
-            DamagePopupConfig config = DamagePopupConfig.getInstance();
+            ci.cancel();
 
+            DamagePopupConfig config = DamagePopupConfig.getInstance();
             if (!config.isShowHealing()) {
+                return;
+            }
+
+            if (entity instanceof Player && !config.isShowPlayerHealing()) {
                 return;
             }
 
@@ -38,30 +44,42 @@ public class HealNumberMixin {
 
             Method numberMethod;
             try {
-                numberMethod = self.getClass().getDeclaredMethod("number");
+                numberMethod = self.getClass().getMethod("number");
             } catch (NoSuchMethodException e) {
-                LOGGER.warn("number() method not found, skipping heal popup");
-                return;
+                try {
+                    numberMethod = self.getClass().getDeclaredMethod("number");
+                    numberMethod.setAccessible(true);
+                } catch (NoSuchMethodException ex) {
+                    LOGGER.warn("number() method not found, skipping heal popup");
+                    return;
+                }
             }
-            numberMethod.setAccessible(true);
             Object result = numberMethod.invoke(self);
-            if (!(result instanceof Number)) {
+            if (!(result instanceof Number num)) {
                 LOGGER.warn("number() did not return Number: {}", result);
                 return;
             }
-            float healAmount = ((Number) result).floatValue();
+            float healAmount = num.floatValue();
 
-            if (entity instanceof LivingEntity living && healAmount > 0) {
-                if (living instanceof Player && !config.isShowPlayerHealing()) {
-                    ci.cancel();
-                    return;
-                }
-
-                DamagePopupManager.getInstance().addHealFromMsPacket(living, healAmount);
-                LOGGER.debug("Showing heal popup: {} for entity {}", healAmount, living.getId());
+            if (healAmount <= 0) {
+                return;
             }
 
-            ci.cancel();
+            if (entity instanceof LivingEntity living) {
+                DamagePopupManager.getInstance().addHealFromMsPacket(living, healAmount);
+                LOGGER.debug("Showing heal popup: {} for entity {}", healAmount, living.getId());
+            } else {
+                net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+                net.minecraft.world.phys.Vec3 position;
+                if (entity != null) {
+                    position = entity.position().add(0, entity.getBbHeight() * 0.8f, 0);
+                } else if (mc.player != null) {
+                    position = mc.player.getEyePosition().add(mc.player.getLookAngle().scale(2.5));
+                } else {
+                    return;
+                }
+                DamagePopupManager.getInstance().addDamageNumber(position, healAmount, false, DamageType.HEALING, -1, net.minecraft.world.phys.Vec3.ZERO);
+            }
 
         } catch (Exception e) {
             LOGGER.error("Failed to process heal number: {}", e.getMessage(), e);

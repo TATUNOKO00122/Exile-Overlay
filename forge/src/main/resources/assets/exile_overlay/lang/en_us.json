@@ -349,5 +349,12 @@
   "exile_overlay.config.smooth_decrease": "Smooth Decrease: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "Smooth the visual change when values decrease (e.g. taking damage or casting skills)",
   "exile_overlay.config.decrease_speed": "Decrease Speed: %.1f",
-  "exile_overlay.config.decrease_speed.tooltip": "Animation speed when the value decreases"
+  "exile_overlay.config.decrease_speed.tooltip": "Animation speed when the value decreases",
+  "exile_overlay.jei.category.prefixes": "M&S Prefixes",
+  "exile_overlay.jei.category.suffixes": "M&S Suffixes",
+  "exile_overlay.jei.category.implicits": "M&S Implicits",
+  "exile_overlay.jei.category.enchants": "M&S Enchants",
+  "exile_overlay.jei.applicable_gears": "Applicable Gears:",
+  "exile_overlay.jei.only_one_per_item": "Only 1 of this affix per item",
+  "exile_overlay.jei.one_of_a_kind": "Exclusive with other %s affixes"
 }

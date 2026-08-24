@@ -12,13 +12,13 @@ public class DamagePopupConfig extends AbstractConfigSection {
 
     private float baseScale = 0.018f;
     private float criticalScale = 0.032f;
-    private int displayDuration = 20;
+    private int displayDuration = 30;
     private boolean enableShadow = false;
     private float horizontalSpread = 0.5f;
     private int fadeInDuration = 5;
     private int fadeOutDuration = 10;
-    private boolean showDamage = false;
-    private int maxDamageTexts = 10;
+    private boolean showDamage = true;
+    private int maxDamageTexts = 100;
     private float popupHeightRatio = 0.8f;
     private boolean showPlayerDamage = false;
     private boolean showHealing = true;

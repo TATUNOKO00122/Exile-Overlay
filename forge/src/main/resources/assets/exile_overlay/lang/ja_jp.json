@@ -349,5 +349,12 @@
   "exile_overlay.config.smooth_decrease": "減少時スムージング: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "被ダメージやスキル使用などで数値が減少する際の変化を滑らかにします",
   "exile_overlay.config.decrease_speed": "減少速度: %.1f",
-  "exile_overlay.config.decrease_speed.tooltip": "数値が減少する際のアニメーション速度"
+  "exile_overlay.config.decrease_speed.tooltip": "数値が減少する際のアニメーション速度",
+  "exile_overlay.jei.category.prefixes": "M&S プレフィックス (接頭辞)",
+  "exile_overlay.jei.category.suffixes": "M&S サフィックス (接尾辞)",
+  "exile_overlay.jei.category.implicits": "M&S インプリシット (固有効果)",
+  "exile_overlay.jei.category.enchants": "M&S エンチャント (注入効果)",
+  "exile_overlay.jei.applicable_gears": "付与可能な装備:",
+  "exile_overlay.jei.only_one_per_item": "1つのアイテムにつき1つのみ付与可能",
+  "exile_overlay.jei.one_of_a_kind": "同グループ(%s)のAffixと重複不可"
 }

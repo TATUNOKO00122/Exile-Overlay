@@ -18,6 +18,13 @@ subprojects {
 
     repositories {
         mavenCentral()
+        maven {
+            name = "ModMaven"
+            url = "https://modmaven.dev/"
+            content {
+                includeGroup "mezz.jei"
+            }
+        }
     }
 
     configurations.all {
