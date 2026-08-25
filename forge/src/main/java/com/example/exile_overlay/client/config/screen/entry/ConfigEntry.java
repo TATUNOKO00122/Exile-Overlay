@@ -39,6 +39,17 @@ public abstract class ConfigEntry {
     }
 
     /**
+     * エントリ内のウィジェット（ボタン・スライダー等）の座標・サイズを更新する
+     *
+     * @param x      描画開始X座標
+     * @param y      描画開始Y座標
+     * @param width  項目の幅
+     * @param height 項目の高さ
+     */
+    public void updateBounds(int x, int y, int width, int height) {
+    }
+
+    /**
      * 検索クエリに一致するかどうかを判定する
      *
      * @param query 小文字に変換された検索クエリ

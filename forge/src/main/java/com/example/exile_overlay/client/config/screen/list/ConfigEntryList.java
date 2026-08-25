@@ -168,13 +168,17 @@ public class ConfigEntryList {
         }
 
         // 各エントリへクリック伝播
+        int contentWidth = width - (maxScroll > 0 ? 8 : 0);
         int currentY = y + 5 - (int) scrollOffset;
         for (ConfigEntry entry : visibleEntries) {
             int entryH = entry.getHeight();
-            if (mouseY >= currentY && mouseY < currentY + entryH) {
-                if (entry.mouseClicked(mouseX, mouseY, button)) {
-                    this.focusedEntry = entry;
-                    return true;
+            if (currentY + entryH >= y && currentY <= y + height) {
+                if (mouseX >= x && mouseX <= x + contentWidth && mouseY >= currentY && mouseY < currentY + entryH) {
+                    entry.updateBounds(x, currentY, contentWidth, entryH);
+                    if (entry.mouseClicked(mouseX, mouseY, button)) {
+                        this.focusedEntry = entry;
+                        return true;
+                    }
                 }
             }
             currentY += entryH;

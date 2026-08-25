@@ -438,6 +438,22 @@ public class DraggableHudConfigScreen extends Screen {
         }
 
         if (button == 0) {
+            for (int i = draggableElements.size() - 1; i >= 0; i--) {
+                DraggableElement element = draggableElements.get(i);
+                if (element.isToggleButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
+                    toggleElementVisibility(element);
+                    selectedElement = element;
+                    resetButton.active = true;
+                    return true;
+                }
+                if (element.isOrientationButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
+                    toggleElementOrientation(element);
+                    selectedElement = element;
+                    resetButton.active = true;
+                    return true;
+                }
+            }
+
             DraggableElement hitElement = findElementAt((int) mouseX, (int) mouseY);
 
             if (hitElement != null) {
@@ -452,18 +468,6 @@ public class DraggableHudConfigScreen extends Screen {
 
                 resetButton.active = true;
                 return true;
-            }
-
-            for (int i = draggableElements.size() - 1; i >= 0; i--) {
-                DraggableElement element = draggableElements.get(i);
-                if (element.isToggleButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
-                    toggleElementVisibility(element);
-                    return true;
-                }
-                if (element.isOrientationButtonHit((int) mouseX, (int) mouseY, this.width, this.height)) {
-                    toggleElementOrientation(element);
-                    return true;
-                }
             }
 
             selectedElement = null;
@@ -501,20 +505,6 @@ public class DraggableHudConfigScreen extends Screen {
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         if (button == 0 && draggedElement != null) {
-            int dx = (int) mouseX - dragStartX;
-            int dy = (int) mouseY - dragStartY;
-            if (dx * dx + dy * dy <= 9) {
-                if (draggedElement.isToggleButtonHit(dragStartX, dragStartY, this.width, this.height)) {
-                    toggleElementVisibility(draggedElement);
-                    draggedElement = null;
-                    return true;
-                }
-                if (draggedElement.isOrientationButtonHit(dragStartX, dragStartY, this.width, this.height)) {
-                    toggleElementOrientation(draggedElement);
-                    draggedElement = null;
-                    return true;
-                }
-            }
             finalizeDrag((int) mouseX, (int) mouseY);
             draggedElement = null;
             return true;

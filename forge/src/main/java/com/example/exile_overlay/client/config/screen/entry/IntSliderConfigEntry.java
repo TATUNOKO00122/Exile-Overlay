@@ -58,8 +58,7 @@ public class IntSliderConfigEntry extends ConfigEntry {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int x, int y, int width, int height,
-                       int mouseX, int mouseY, boolean isHovered, float partialTick) {
+    public void updateBounds(int x, int y, int width, int height) {
         int btnW = Math.min(260, width - 16);
         int btnX = x + (width - btnW) / 2;
         int btnY = y + (height - 20) / 2;
@@ -68,7 +67,12 @@ public class IntSliderConfigEntry extends ConfigEntry {
         slider.setY(btnY);
         slider.setWidth(btnW);
         slider.setHeight(20);
+    }
 
+    @Override
+    public void render(GuiGraphics guiGraphics, int x, int y, int width, int height,
+                       int mouseX, int mouseY, boolean isHovered, float partialTick) {
+        updateBounds(x, y, width, height);
         slider.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 

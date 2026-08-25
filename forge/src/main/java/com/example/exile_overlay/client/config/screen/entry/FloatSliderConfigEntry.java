@@ -57,8 +57,7 @@ public class FloatSliderConfigEntry extends ConfigEntry {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int x, int y, int width, int height,
-                       int mouseX, int mouseY, boolean isHovered, float partialTick) {
+    public void updateBounds(int x, int y, int width, int height) {
         int btnW = Math.min(260, width - 16);
         int btnX = x + (width - btnW) / 2;
         int btnY = y + (height - 20) / 2;
@@ -67,7 +66,12 @@ public class FloatSliderConfigEntry extends ConfigEntry {
         slider.setY(btnY);
         slider.setWidth(btnW);
         slider.setHeight(20);
+    }
 
+    @Override
+    public void render(GuiGraphics guiGraphics, int x, int y, int width, int height,
+                       int mouseX, int mouseY, boolean isHovered, float partialTick) {
+        updateBounds(x, y, width, height);
         slider.render(guiGraphics, mouseX, mouseY, partialTick);
     }
 
@@ -93,6 +97,17 @@ public class FloatSliderConfigEntry extends ConfigEntry {
                 || textMatches(translationKey, query);
     }
 
+    private static float roundByFormat(float val, String format) {
+        if (format == null) {
+            return Math.round(val * 100.0f) / 100.0f;
+        }
+        try {
+            return Float.parseFloat(String.format(java.util.Locale.ROOT, format, val));
+        } catch (Exception e) {
+            return Math.round(val * 100.0f) / 100.0f;
+        }
+    }
+
     private class SliderWidget extends AbstractSliderButton {
         SliderWidget(int x, int y, int width, int height, double value) {
             super(x, y, width, height, Component.empty(), value);
@@ -116,8 +131,8 @@ public class FloatSliderConfigEntry extends ConfigEntry {
 
         @Override
         protected void applyValue() {
-            float newValue = min + (max - min) * (float) this.value;
-            newValue = Math.round(newValue * 100.0f) / 100.0f;
+            float rawValue = min + (max - min) * (float) this.value;
+            float newValue = roundByFormat(rawValue, format);
             setter.accept(newValue);
         }
     }
