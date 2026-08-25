@@ -1,5 +1,10 @@
 package com.example.exile_overlay.compat.jei;
 
+import com.robertx22.mine_and_slash.database.data.rarities.GearRarity;
+import com.robertx22.mine_and_slash.database.data.rarities.GearRarityType;
+import com.robertx22.mine_and_slash.itemstack.ExileStack;
+import com.robertx22.mine_and_slash.itemstack.StackKeys;
+import com.robertx22.mine_and_slash.saveclasses.item_classes.GearItemData;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -13,7 +18,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -21,9 +25,10 @@ import java.util.List;
 
 public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
 
-    public static final int WIDTH = 168;
-    public static final int HEIGHT = 125;
-    public static final int SLOTS_COUNT = 9;
+    public static final int WIDTH = 176;
+    public static final int HEIGHT = 130;
+    private static final int LIST_TOP = 28;
+    private static final int ROW_HEIGHT = 14;
 
     private final RecipeType<AffixRecipe> recipeType;
     private final Component title;
@@ -61,26 +66,47 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, AffixRecipe recipe, IFocusGroup focuses) {
-        List<ItemStack> items = recipe.getApplicableItems();
-        if (items.isEmpty()) return;
+        if (recipe.getInputItems().isEmpty()) return;
 
-        int slotY = 100;
-        int itemsPerSlot = Math.max(1, (int) Math.ceil((double) items.size() / SLOTS_COUNT));
-
-        for (int i = 0; i < SLOTS_COUNT; i++) {
-            int slotX = i * 18 + 3;
-            int fromIdx = i * itemsPerSlot;
-            int toIdx = Math.min(fromIdx + itemsPerSlot, items.size());
-
-            if (fromIdx < items.size()) {
-                List<ItemStack> subList = items.subList(fromIdx, toIdx);
-                builder.addSlot(RecipeIngredientRole.INPUT, slotX + 1, slotY + 1)
-                        .setBackground(slotBackground, -1, -1)
-                        .addItemStacks(subList);
-            } else {
-                break;
+        // Exclude Runed and Unique gear from affix recipe matching
+        boolean isExcludedFocus = focuses.getAllFocuses().stream().anyMatch(focus -> {
+            Object val = focus.getTypedValue().getIngredient();
+            if (val instanceof ItemStack stack) {
+                return isRunedOrUnique(stack);
             }
+            return false;
+        });
+
+        if (isExcludedFocus) {
+            return;
         }
+
+        builder.addSlot(RecipeIngredientRole.INPUT, 5, 4)
+                .setBackground(slotBackground, -1, -1)
+                .addItemStacks(recipe.getInputItems());
+    }
+
+    private static boolean isRunedOrUnique(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        try {
+            ExileStack exStack = ExileStack.of(stack);
+            if (exStack.get(StackKeys.GEAR).has()) {
+                GearItemData gear = exStack.get(StackKeys.GEAR).get();
+                if (gear != null) {
+                    GearRarity rarity = gear.getRarity();
+                    if (rarity != null) {
+                        if (rarity.type == GearRarityType.RUNED
+                                || rarity.type == GearRarityType.UNIQUE
+                                || rarity.is_unique_item
+                                || rarity.can_have_runewords) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 
     @Override
@@ -88,16 +114,11 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
 
-        // 1. Header: Affix display name
-        Component name = recipe.getDisplayName();
-        guiGraphics.drawString(font, name, 4, 3, 0x00FFFF, false);
+        // 1. Header: Gear Type Name
+        Component gearName = recipe.getGearTypeName();
+        guiGraphics.drawString(font, gearName, 28, 4, 0xFFFFFF, false);
 
-        // 2. Header right: Weight
-        String weightText = "Weight: " + recipe.getWeight();
-        int weightWidth = font.width(weightText);
-        guiGraphics.drawString(font, weightText, WIDTH - weightWidth - 4, 3, 0x888888, false);
-
-        // 3. Slot badge & ID
+        // Subtitle: Slot badge & Page/Affix count
         String slotBadge = "[" + recipe.getSlot().name() + "]";
         int badgeColor = switch (recipe.getSlot()) {
             case prefix -> 0x55AAFF;
@@ -105,64 +126,86 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
             case implicit -> 0xCC77FF;
             default -> 0x55FF55;
         };
-        guiGraphics.drawString(font, slotBadge, 4, 15, badgeColor, false);
+        guiGraphics.drawString(font, slotBadge, 28, 14, badgeColor, false);
 
-        String idText = "ID: " + recipe.getGuid();
-        int idWidth = font.width(idText);
-        if (WIDTH - idWidth - 4 > font.width(slotBadge) + 10) {
-            guiGraphics.drawString(font, idText, WIDTH - idWidth - 4, 15, 0x555555, false);
-        }
+        int startIdx = (recipe.getPageIndex() - 1) * AffixRecipeMaker.ENTRIES_PER_PAGE + 1;
+        int endIdx = startIdx + recipe.getEntries().size() - 1;
+        String countText = "(" + startIdx + "-" + endIdx + " / " + recipe.getTotalAffixesCount() + ")";
+        guiGraphics.drawString(font, countText, 28 + font.width(slotBadge) + 4, 14, 0x888888, false);
 
-        // Horizontal separator line
-        guiGraphics.fill(4, 26, WIDTH - 4, 27, 0x33FFFFFF);
+        // Separator line
+        guiGraphics.fill(4, 25, WIDTH - 4, 26, 0x33FFFFFF);
 
-        // 4. Stats section
-        int y = 30;
-        List<Component> stats = recipe.getStatLines();
-        for (Component statLine : stats) {
-            if (y > 66) break;
-            List<FormattedText> lines = font.getSplitter().splitLines(statLine, WIDTH - 8, statLine.getStyle());
-            for (FormattedText line : lines) {
-                if (y > 66) break;
-                guiGraphics.drawString(font, line.getString(), 6, y, 0xFFFFAA, false);
-                y += 10;
+        // 2. Affix List (Only effect names, uniform clean rows)
+        List<AffixRecipe.AffixEntry> entries = recipe.getEntries();
+        for (int i = 0; i < entries.size(); i++) {
+            AffixRecipe.AffixEntry entry = entries.get(i);
+            int rowY = LIST_TOP + i * ROW_HEIGHT;
+
+            // Hover highlight
+            if (mouseX >= 4 && mouseX <= WIDTH - 4 && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT) {
+                guiGraphics.fill(4, rowY, WIDTH - 4, rowY + ROW_HEIGHT, 0x22FFFFFF);
             }
-        }
 
-        // 5. Requirements & limits
-        int reqY = 70;
-        List<Component> reqs = recipe.getRequirementLines();
-        if (!reqs.isEmpty()) {
-            Component firstReq = reqs.get(0);
-            guiGraphics.drawString(font, firstReq.getString(), 6, reqY, 0xAAAAAA, false);
-        }
+            // Bullet icon
+            guiGraphics.drawString(font, "•", 6, rowY + 3, 0x777777, false);
 
-        // 6. Section header: Applicable Gears
-        Component gearLabel = Component.translatable("exile_overlay.jei.applicable_gears")
-                .withStyle(ChatFormatting.GRAY);
-        guiGraphics.drawString(font, gearLabel, 4, 88, 0xAAAAAA, false);
+            // Effect name only (truncated with ellipsis if too long)
+            Component effectName = !entry.getEffectNames().isEmpty()
+                    ? entry.getEffectNames().get(0)
+                    : entry.getDisplayName();
+            Component truncated = truncateText(font, effectName, WIDTH - 22);
+            guiGraphics.drawString(font, truncated, 14, rowY + 3, 0xFFFFFF, false);
+        }
+    }
+
+    private static Component truncateText(Font font, Component text, int maxWidth) {
+        if (font.width(text) <= maxWidth) {
+            return text;
+        }
+        String str = text.getString();
+        String ellipsis = "...";
+        int ellipsisWidth = font.width(ellipsis);
+        int availableWidth = maxWidth - ellipsisWidth;
+        if (availableWidth <= 0) {
+            return text;
+        }
+        String truncated = font.plainSubstrByWidth(str, availableWidth);
+        return Component.literal(truncated + ellipsis).withStyle(text.getStyle());
     }
 
     @Override
     public List<Component> getTooltipStrings(AffixRecipe recipe, IRecipeSlotsView recipeSlotsView, double mouseX, double mouseY) {
         List<Component> tooltip = new ArrayList<>();
 
-        if (mouseY >= 28 && mouseY <= 85 && mouseX >= 4 && mouseX <= WIDTH - 4) {
-            tooltip.add(recipe.getDisplayName().copy().withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
-            tooltip.add(Component.literal("ID: " + recipe.getGuid()).withStyle(ChatFormatting.DARK_GRAY));
-            tooltip.add(Component.literal("Slot: " + recipe.getSlot().name()).withStyle(ChatFormatting.YELLOW));
-            tooltip.add(Component.literal("Weight: " + recipe.getWeight()).withStyle(ChatFormatting.GRAY));
+        if (mouseX < 4 || mouseX > WIDTH - 4 || mouseY < LIST_TOP) {
+            return tooltip;
+        }
+
+        int index = (int) ((mouseY - LIST_TOP) / ROW_HEIGHT);
+        List<AffixRecipe.AffixEntry> entries = recipe.getEntries();
+
+        if (index >= 0 && index < entries.size()) {
+            AffixRecipe.AffixEntry entry = entries.get(index);
+
+            // Title: Affix Name & Slot
+            String slotName = recipe.getSlot().name();
+            tooltip.add(entry.getDisplayName().copy().append(" (" + slotName + ")").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
+            tooltip.add(Component.literal("ID: " + entry.getGuid()).withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.literal("Weight: " + entry.getWeight()).withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.empty());
 
-            tooltip.add(Component.literal("Stats:").withStyle(ChatFormatting.WHITE));
-            for (Component stat : recipe.getStatLines()) {
-                tooltip.add(stat);
+            // Stats / Min-Max Range
+            tooltip.add(Component.literal("Stats / Range:").withStyle(ChatFormatting.WHITE));
+            for (Component stat : entry.getRawStatLines()) {
+                tooltip.add(Component.literal(" • ").withStyle(ChatFormatting.GRAY).append(stat));
             }
 
-            if (!recipe.getRequirementLines().isEmpty()) {
+            // Requirements
+            if (!entry.getRequirementLines().isEmpty()) {
                 tooltip.add(Component.empty());
                 tooltip.add(Component.literal("Requirements:").withStyle(ChatFormatting.WHITE));
-                for (Component req : recipe.getRequirementLines()) {
+                for (Component req : entry.getRequirementLines()) {
                     tooltip.add(req);
                 }
             }
@@ -171,3 +214,6 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
         return tooltip;
     }
 }
+
+
+

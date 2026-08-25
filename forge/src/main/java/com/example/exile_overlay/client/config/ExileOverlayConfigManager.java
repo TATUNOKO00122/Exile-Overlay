@@ -5,11 +5,12 @@ import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.render.DayCounterConfig;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 // import com.example.exile_overlay.client.render.kill.KillCounterConfig;
+import com.example.exile_overlay.client.config.position.HudPosition;
+import com.example.exile_overlay.compat.jei.JeiConfig;
+import com.example.exile_overlay.dmgtracker.config.TrackerConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.example.exile_overlay.client.config.position.HudPosition;
-import com.example.exile_overlay.dmgtracker.config.TrackerConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -135,6 +136,7 @@ public final class ExileOverlayConfigManager {
         // saveSection(KillCounterConfig.getInstance());
         saveSection(HudPositionManager.getInstance());
         saveSection(DropSoundConfig.getInstance());
+        saveSection(JeiConfig.getInstance());
     }
 
     private void saveSection(IConfigSection section) {

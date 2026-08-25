@@ -33,6 +33,10 @@ public class ExileOverlayJeiPlugin implements IModPlugin {
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
+        if (!JeiConfig.getInstance().isEnabled()) {
+            return;
+        }
+
         IGuiHelper helper = registration.getJeiHelpers().getGuiHelper();
 
         registration.addRecipeCategories(
@@ -65,6 +69,10 @@ public class ExileOverlayJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
+        if (!JeiConfig.getInstance().isEnabled()) {
+            return;
+        }
+
         AffixRecipeMaker.CategorizedRecipes recipes = AffixRecipeMaker.createRecipes();
 
         if (!recipes.prefixes.isEmpty()) {
