@@ -55,6 +55,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean enableOrbInnerShadow = true;
     private boolean simpleSkillKeybindDisplay = false;
     private boolean simpleSkillChargeMaxDisplay = false;
+    private boolean simpleBuffStackDisplay = false;
 
     private EquipmentDisplayConfig() {
         super(SECTION_ID, FILE_NAME, true);
@@ -120,6 +121,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("enableOrbInnerShadow")) enableOrbInnerShadow = obj.get("enableOrbInnerShadow").getAsBoolean();
         if (obj.has("simpleSkillKeybindDisplay")) simpleSkillKeybindDisplay = obj.get("simpleSkillKeybindDisplay").getAsBoolean();
         if (obj.has("simpleSkillChargeMaxDisplay")) simpleSkillChargeMaxDisplay = obj.get("simpleSkillChargeMaxDisplay").getAsBoolean();
+        if (obj.has("simpleBuffStackDisplay")) simpleBuffStackDisplay = obj.get("simpleBuffStackDisplay").getAsBoolean();
     }
 
     @Override
@@ -152,6 +154,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("enableOrbInnerShadow", enableOrbInnerShadow);
         obj.addProperty("simpleSkillKeybindDisplay", simpleSkillKeybindDisplay);
         obj.addProperty("simpleSkillChargeMaxDisplay", simpleSkillChargeMaxDisplay);
+        obj.addProperty("simpleBuffStackDisplay", simpleBuffStackDisplay);
     }
 
     public boolean isUsePercentage() { return usePercentage; }
@@ -238,6 +241,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isSimpleSkillChargeMaxDisplay() { return simpleSkillChargeMaxDisplay; }
     public void setSimpleSkillChargeMaxDisplay(boolean show) { this.simpleSkillChargeMaxDisplay = show; }
 
+    public boolean isSimpleBuffStackDisplay() { return simpleBuffStackDisplay; }
+    public void setSimpleBuffStackDisplay(boolean simple) { this.simpleBuffStackDisplay = simple; }
+
     public void resetToDefaults() {
         this.usePercentage = true;
         this.enableShadow = true;
@@ -267,5 +273,6 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.enableOrbInnerShadow = true;
         this.simpleSkillKeybindDisplay = false;
         this.simpleSkillChargeMaxDisplay = false;
+        this.simpleBuffStackDisplay = false;
     }
 }

@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.render.effect;
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.render.HudFontHelper;
@@ -159,24 +160,44 @@ public class BuffOverlayRenderer implements IRenderCommand {
 
         int stacks = effect.getStacks();
         if (stacks > 1) {
-            RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
-            graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-
+            boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
             String stackText = toRoman(stacks);
-            float stackScale = 0.7f;
+            float stackScale = isSimple ? 0.9f : 0.7f;
             int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
 
             float badgeCenterX = x + FRAME_WIDTH - 5;
             float badgeCenterY = y + 7;
-            float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
-            float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
+
+            if (isSimple) {
+                float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
+                float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
 
                 graphics.pose().pushPose();
-            try {
+                graphics.pose().translate(textX, textY, 0);
                 graphics.pose().scale(stackScale, stackScale, 1.0f);
-                HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
-            } finally {
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        if (dx != 0 || dy != 0) {
+                            HudFontHelper.drawString(graphics, mc.font, stackText, dx, dy, 0xFF000000, false);
+                        }
+                    }
+                }
+                HudFontHelper.drawString(graphics, mc.font, stackText, 0, 0, 0xFFFFFFFF, false);
                 graphics.pose().popPose();
+            } else {
+                RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
+                graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+                float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
+                float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
+
+                graphics.pose().pushPose();
+                try {
+                    graphics.pose().scale(stackScale, stackScale, 1.0f);
+                    HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
+                } finally {
+                    graphics.pose().popPose();
+                }
             }
         }
 

@@ -150,6 +150,12 @@ public class HudDisplayTab implements IConfigTab {
         // 5. バフオーバーレイフィルター
         entries.add(new SectionHeaderEntry("section.exile_overlay.buff_overlay_filters"));
 
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.simple_buff_stack",
+                equipConfig::isSimpleBuffStackDisplay,
+                equipConfig::setSimpleBuffStackDisplay
+        ));
+
         BuffOverlayFilterConfig.OverlayFilter buffFilter = BuffOverlayFilterConfig.getInstance().getBuffOverlay();
 
         entries.add(new BooleanConfigEntry(
