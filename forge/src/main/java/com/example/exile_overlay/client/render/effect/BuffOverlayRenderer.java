@@ -80,7 +80,7 @@ public class BuffOverlayRenderer implements IRenderCommand {
                 float targetY = horizontal ? 0 : i * spacing;
 
                 EffectRenderHelper.VisualState state = EffectRenderHelper.getVisualState(CONFIG_KEY,
-                        effect.getId(), horizontal ? targetX : targetY, effect.getDuration());
+                        effect.getId(), horizontal ? targetX : targetY, effect.getMaxDuration());
 
                 EffectRenderHelper.updateFadeIn(state);
 
@@ -137,9 +137,10 @@ public class BuffOverlayRenderer implements IRenderCommand {
         if (!effect.isInfinite()) {
             int currentDuration = effect.getDuration();
             int maxDur = state.maxDuration;
+            int effectMax = effect.getMaxDuration();
 
-            if (maxDur <= 0 || currentDuration > maxDur) {
-                maxDur = currentDuration;
+            if (maxDur <= 0 || effectMax > maxDur) {
+                maxDur = effectMax;
                 state.maxDuration = maxDur;
             }
 

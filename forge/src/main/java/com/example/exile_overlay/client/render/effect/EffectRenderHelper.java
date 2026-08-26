@@ -67,6 +67,7 @@ public class EffectRenderHelper {
         boolean isBeneficial();
         boolean isInfinite();
         int getDuration();
+        default int getMaxDuration() { return getDuration(); }
         int getStacks();
         String getDurationText();
         void renderIcon(GuiGraphics graphics, int x, int y, int size);
@@ -171,6 +172,55 @@ public class EffectRenderHelper {
         }
     }
 
+    public static class BlockCooldownEffectWrapper implements DisplayableEffect {
+        private static final ResourceLocation TEXTURE = new ResourceLocation("mmorpg", "textures/gui/block_disabled.png");
+        private int currentTicks;
+        private int neededTicks;
+
+        public void update(int currentTicks, int neededTicks) {
+            this.currentTicks = currentTicks;
+            this.neededTicks = neededTicks;
+        }
+
+        @Override
+        public String getId() { return "mns:block_cooldown"; }
+
+        @Override
+        public ResourceLocation getTexture() { return TEXTURE; }
+
+        @Override
+        public TextureAtlasSprite getSprite() { return null; }
+
+        @Override
+        public boolean isBeneficial() { return false; }
+
+        @Override
+        public boolean isInfinite() { return false; }
+
+        @Override
+        public int getDuration() { return currentTicks; }
+
+        @Override
+        public int getMaxDuration() { return neededTicks > 0 ? neededTicks : currentTicks; }
+
+        @Override
+        public int getStacks() { return 1; }
+
+        @Override
+        public String getDurationText() {
+            int seconds = (currentTicks + 19) / 20;
+            return formatDuration(seconds);
+        }
+
+        @Override
+        public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
+            RenderSystem.setShaderTexture(0, TEXTURE);
+            graphics.blit(TEXTURE, x, y, size, size, 0, 0, 16, 16, 16, 16);
+        }
+    }
+
+    private static final BlockCooldownEffectWrapper blockCooldownWrapper = new BlockCooldownEffectWrapper();
+
     private static final java.util.Comparator<DisplayableEffect> DEFAULT_ORDER_COMPARATOR = (a, b) -> {
         return Long.compare(getOrAssignOrder(a.getId()), getOrAssignOrder(b.getId()));
     };
@@ -211,6 +261,16 @@ public class EffectRenderHelper {
                 if (info.isBeneficial && !filter.isShowMnsBuffs()) continue;
                 if (!info.isBeneficial && !filter.isShowMnsDebuffs()) continue;
                 addMnsEffect(info);
+            }
+        }
+
+        if (filter.isShowMnsDebuffs()) {
+            if (MethodHandlesUtil.isBlockOnCooldown(player)) {
+                int blockCdTicks = MethodHandlesUtil.getBlockCooldownTicks(player);
+                int blockCdNeeded = MethodHandlesUtil.getBlockCooldownNeededTicks(player);
+                if (blockCdTicks <= 0) blockCdTicks = 1;
+                blockCooldownWrapper.update(blockCdTicks, blockCdNeeded);
+                filteredEffectsCache.add(blockCooldownWrapper);
             }
         }
 

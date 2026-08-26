@@ -147,6 +147,8 @@ public class MethodHandlesUtil {
     private static MethodHandle GET_COOLDOWNS = null;
     private static MethodHandle GET_COOLDOWN_TICKS = null;
     private static MethodHandle GET_NEEDED_TICKS = null;
+    private static MethodHandle GET_IS_ON_COOLDOWN = null;
+    private static String blockCooldownKey = "block";
     private static java.lang.reflect.Field MANA_COST_MIN_FIELD = null;
     private static MethodHandle SPELL_CONFIG_GETTER = null;
     private static MethodHandle GET_SUMMONED_DATA = null;
@@ -1069,6 +1071,18 @@ public class MethodHandlesUtil {
             Class<?> cooldownsClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.CooldownsData");
             GET_COOLDOWN_TICKS = lookupMethod(cooldownsClass, "getCooldownTicks", String.class);
             GET_NEEDED_TICKS = lookupMethod(cooldownsClass, "getNeededTicks", String.class);
+            GET_IS_ON_COOLDOWN = lookupMethod(cooldownsClass, "isOnCooldown", String.class);
+
+            try {
+                Class<?> blockChanceClass = Class.forName("com.robertx22.mine_and_slash.database.data.stats.types.defense.BlockChance");
+                java.lang.reflect.Field blockCdField = blockChanceClass.getField("BLOCK_CD");
+                Object val = blockCdField.get(null);
+                if (val instanceof String s && !s.isEmpty()) {
+                    blockCooldownKey = s;
+                }
+            } catch (Exception e) {
+                LOGGER.debug("BlockChance.BLOCK_CD not available: {}", e.getMessage());
+            }
 
             try {
                 Class<?> spellKeybindClass = Class.forName("com.robertx22.mine_and_slash.mmorpg.registers.client.SpellKeybind");
@@ -1335,6 +1349,56 @@ public class MethodHandlesUtil {
             return (int) GET_NEEDED_TICKS.invoke(cds, "global_cooldown");
         } catch (Throwable t) {
             LOGGER.debug("Failed to get global cooldown needed ticks: {}", t.getMessage());
+        }
+        return 0;
+    }
+
+    public static final String BLOCK_COOLDOWN_KEY = "block";
+
+    public static boolean isBlockOnCooldown(Player player) {
+        if (!isAvailable() || player == null) return false;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return false;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return false;
+
+            if (GET_IS_ON_COOLDOWN != null) {
+                return (boolean) GET_IS_ON_COOLDOWN.invoke(cds, blockCooldownKey);
+            }
+            return (int) GET_COOLDOWN_TICKS.invoke(cds, blockCooldownKey) > 0;
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to check block cooldown: {}", t.getMessage());
+        }
+        return false;
+    }
+
+    public static int getBlockCooldownTicks(Player player) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            return (int) GET_COOLDOWN_TICKS.invoke(cds, blockCooldownKey);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get block cooldown ticks: {}", t.getMessage());
+        }
+        return 0;
+    }
+
+    public static int getBlockCooldownNeededTicks(Player player) {
+        if (!isAvailable() || player == null) return 0;
+        try {
+            Object data = LOAD_UNIT.invoke(player);
+            if (data == null) return 0;
+            Object cds = GET_COOLDOWNS.invoke(data);
+            if (cds == null) return 0;
+
+            return (int) GET_NEEDED_TICKS.invoke(cds, blockCooldownKey);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get block cooldown needed ticks: {}", t.getMessage());
         }
         return 0;
     }
