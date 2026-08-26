@@ -290,6 +290,8 @@
   "exile_overlay.config.buff_filter_mns_buffs.tooltip": "Mine and Slashのバフを表示します",
   "exile_overlay.config.buff_filter_mns_debuffs": "M&Sデバフ: %s",
   "exile_overlay.config.buff_filter_mns_debuffs.tooltip": "Mine and Slashのデバフを表示します",
+  "exile_overlay.config.buff_filter_minions": "ミニオン召喚数: %s",
+  "exile_overlay.config.buff_filter_minions.tooltip": "召喚中のミニオンと残り時間をバフ欄に表示します",
   "exile_overlay.config.buff_filter_aura": "オーラ/スタンス: %s",
   "exile_overlay.config.buff_filter_self_skill": "自己スキルバフ: %s",
   "exile_overlay.config.buff_filter_food": "食事バフ: %s",

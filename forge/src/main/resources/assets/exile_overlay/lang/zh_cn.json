@@ -286,6 +286,8 @@
   "exile_overlay.config.buff_filter_mns_buffs.tooltip": "显示 Mine and Slash 增益",
   "exile_overlay.config.buff_filter_mns_debuffs": "M&S 减益: %s",
   "exile_overlay.config.buff_filter_mns_debuffs.tooltip": "显示 Mine and Slash 减益",
+  "exile_overlay.config.buff_filter_minions": "随从数量: %s",
+  "exile_overlay.config.buff_filter_minions.tooltip": "在增益栏显示召唤随从数量和剩余时间",
   "exile_overlay.config.buff_filter_aura": "光环/姿态: %s",
   "exile_overlay.config.buff_filter_self_skill": "自身技能增益: %s",
   "exile_overlay.config.buff_filter_food": "食物增益: %s",

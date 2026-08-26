@@ -286,6 +286,8 @@
   "exile_overlay.config.buff_filter_mns_buffs.tooltip": "Mine and Slash 버프 표시",
   "exile_overlay.config.buff_filter_mns_debuffs": "M&S 디버프: %s",
   "exile_overlay.config.buff_filter_mns_debuffs.tooltip": "Mine and Slash 디버프 표시",
+  "exile_overlay.config.buff_filter_minions": "미니언 소환 수: %s",
+  "exile_overlay.config.buff_filter_minions.tooltip": "소환된 미니언 수와 남은 시간을 버프 창에 표시합니다",
   "exile_overlay.config.buff_filter_aura": "오라/태세: %s",
   "exile_overlay.config.buff_filter_self_skill": "자가 스킬 버프: %s",
   "exile_overlay.config.buff_filter_food": "음식 버프: %s",

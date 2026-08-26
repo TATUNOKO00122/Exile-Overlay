@@ -286,6 +286,8 @@
   "exile_overlay.config.buff_filter_mns_buffs.tooltip": "Показать баффы Mine and Slash",
   "exile_overlay.config.buff_filter_mns_debuffs": "Дебаффы M&S: %s",
   "exile_overlay.config.buff_filter_mns_debuffs.tooltip": "Показать дебаффы Mine and Slash",
+  "exile_overlay.config.buff_filter_minions": "Миньоны: %s",
+  "exile_overlay.config.buff_filter_minions.tooltip": "Показывать призванных миньонов и оставшееся время в панели баффов",
   "exile_overlay.config.buff_filter_aura": "Аура/Стойка: %s",
   "exile_overlay.config.buff_filter_self_skill": "Баффы собственных навыков: %s",
   "exile_overlay.config.buff_filter_food": "Баффы еды: %s",

@@ -160,9 +160,10 @@ public class BuffOverlayRenderer implements IRenderCommand {
         graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
         int stacks = effect.getStacks();
-        if (stacks > 1) {
+        if (effect.showStackCount()) {
             boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
-            String stackText = toRoman(stacks);
+            String customStackText = effect.getCustomStackText();
+            String stackText = customStackText != null ? customStackText : toRoman(stacks);
             float stackScale = isSimple ? 0.9f : 0.7f;
             int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
 

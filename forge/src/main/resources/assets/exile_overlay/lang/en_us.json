@@ -290,6 +290,8 @@
   "exile_overlay.config.buff_filter_mns_buffs.tooltip": "Show Mine and Slash buffs",
   "exile_overlay.config.buff_filter_mns_debuffs": "M&S Debuffs: %s",
   "exile_overlay.config.buff_filter_mns_debuffs.tooltip": "Show Mine and Slash debuffs",
+  "exile_overlay.config.buff_filter_minions": "Minions: %s",
+  "exile_overlay.config.buff_filter_minions.tooltip": "Show summoned minions and remaining time in the buff overlay",
   "exile_overlay.config.buff_filter_aura": "Aura/Stance: %s",
   "exile_overlay.config.buff_filter_self_skill": "Self Skill Buff: %s",
   "exile_overlay.config.buff_filter_food": "Food Buff: %s",

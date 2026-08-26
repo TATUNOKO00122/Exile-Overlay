@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.render.effect;
 import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.data.ExileEffectInfo;
+import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -25,6 +26,8 @@ import java.util.*;
 public class EffectRenderHelper {
 
     private static final BuffOverlayFilterConfig FILTER_CONFIG = BuffOverlayFilterConfig.getInstance();
+    private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("exile_overlay",
+            "textures/gui/skill_slot_summon_badge.png");
     private static final float ANIMATION_SPEED = 0.2f;
     private static final float FADE_IN_SPEED = 0.06f;
     private static final float SLIDE_DISTANCE = 30.0f;
@@ -37,6 +40,7 @@ public class EffectRenderHelper {
     private static final List<DisplayableEffect> filteredEffectsCache = new ArrayList<>(32);
     private static final Map<String, VanillaEffectWrapper> vanillaWrapperCache = new HashMap<>();
     private static final Map<String, MnSEffectWrapper> mnsWrapperCache = new HashMap<>();
+    private static final Map<String, MinionEffectWrapper> minionWrapperCache = new HashMap<>();
     private static final Set<String> currentIdsCache = new HashSet<>(32);
     private static final Map<String, Long> effectOrderMap = new HashMap<>();
     private static long nextOrderSequence = 0L;
@@ -69,6 +73,8 @@ public class EffectRenderHelper {
         int getDuration();
         default int getMaxDuration() { return getDuration(); }
         int getStacks();
+        default boolean showStackCount() { return getStacks() > 1; }
+        default String getCustomStackText() { return null; }
         String getDurationText();
         void renderIcon(GuiGraphics graphics, int x, int y, int size);
     }
@@ -219,6 +225,64 @@ public class EffectRenderHelper {
         }
     }
 
+    public static class MinionEffectWrapper implements DisplayableEffect {
+        private MinionDisplayInfo minion;
+
+        public MinionEffectWrapper(MinionDisplayInfo minion) {
+            this.minion = minion;
+        }
+
+        public void updateInfo(MinionDisplayInfo minion) {
+            this.minion = minion;
+        }
+
+        @Override
+        public String getId() { return "mns:minion:" + minion.spellId(); }
+
+        @Override
+        public ResourceLocation getTexture() {
+            return minion.icon() != null ? minion.icon() : DEFAULT_MINION_ICON;
+        }
+
+        @Override
+        public TextureAtlasSprite getSprite() { return null; }
+
+        @Override
+        public boolean isBeneficial() { return true; }
+
+        @Override
+        public boolean isInfinite() { return minion.isInfinite(); }
+
+        @Override
+        public int getDuration() { return minion.isInfinite() ? Integer.MAX_VALUE : minion.durationTicks(); }
+
+        @Override
+        public int getMaxDuration() {
+            return minion.maxDurationTicks() > 0 ? minion.maxDurationTicks() : minion.durationTicks();
+        }
+
+        @Override
+        public int getStacks() { return minion.count(); }
+
+        @Override
+        public boolean showStackCount() { return minion.count() > 0; }
+
+        @Override
+        public String getCustomStackText() { return String.valueOf(minion.count()); }
+
+        @Override
+        public String getDurationText() { return minion.durationText(); }
+
+        @Override
+        public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
+            ResourceLocation icon = getTexture();
+            if (icon != null) {
+                RenderSystem.setShaderTexture(0, icon);
+                graphics.blit(icon, x, y, size, size, 0, 0, 16, 16, 16, 16);
+            }
+        }
+    }
+
     private static final BlockCooldownEffectWrapper blockCooldownWrapper = new BlockCooldownEffectWrapper();
 
     private static final java.util.Comparator<DisplayableEffect> DEFAULT_ORDER_COMPARATOR = (a, b) -> {
@@ -261,6 +325,12 @@ public class EffectRenderHelper {
                 if (info.isBeneficial && !filter.isShowMnsBuffs()) continue;
                 if (!info.isBeneficial && !filter.isShowMnsDebuffs()) continue;
                 addMnsEffect(info);
+            }
+        }
+
+        if (filter.isShowMinions() && MethodHandlesUtil.isAvailable()) {
+            for (MinionDisplayInfo minion : MethodHandlesUtil.getActiveMinions(player)) {
+                addMinionEffect(minion);
             }
         }
 
@@ -308,6 +378,18 @@ public class EffectRenderHelper {
             mnsWrapperCache.put(cacheKey, wrapper);
         } else {
             wrapper.updateInfo(info);
+        }
+        filteredEffectsCache.add(wrapper);
+    }
+
+    private static void addMinionEffect(MinionDisplayInfo minion) {
+        String cacheKey = "mns:minion:" + minion.spellId();
+        MinionEffectWrapper wrapper = minionWrapperCache.get(cacheKey);
+        if (wrapper == null) {
+            wrapper = new MinionEffectWrapper(minion);
+            minionWrapperCache.put(cacheKey, wrapper);
+        } else {
+            wrapper.updateInfo(minion);
         }
         filteredEffectsCache.add(wrapper);
     }
@@ -392,6 +474,7 @@ public class EffectRenderHelper {
     public static void clearCache() {
         vanillaWrapperCache.clear();
         mnsWrapperCache.clear();
+        minionWrapperCache.clear();
         displayStates.clear();
         effectOrderMap.clear();
         nextOrderSequence = 0L;

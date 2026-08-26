@@ -200,6 +200,12 @@ public class HudDisplayTab implements IConfigTab {
                         buffFilter::isShowMnsDebuffs,
                         buffFilter::setShowMnsDebuffs
                 ));
+
+                entries.add(new BooleanConfigEntry(
+                        "exile_overlay.config.buff_filter_minions",
+                        buffFilter::isShowMinions,
+                        buffFilter::setShowMinions
+                ));
             }
         }
 

@@ -21,6 +21,7 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
         public boolean showVanillaDebuffs = true;
         public boolean showMnsBuffs = true;
         public boolean showMnsDebuffs = true;
+        public boolean showMinions = true;
         public boolean sortByDuration = false;
 
         public static OverlayFilter createDefaultAll() {
@@ -33,6 +34,7 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
             f.showVanillaDebuffs = false;
             f.showMnsBuffs = true;
             f.showMnsDebuffs = false;
+            f.showMinions = true;
             f.sortByDuration = false;
             return f;
         }
@@ -41,12 +43,14 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
         public boolean isShowVanillaDebuffs() { return showVanillaDebuffs; }
         public boolean isShowMnsBuffs() { return showMnsBuffs; }
         public boolean isShowMnsDebuffs() { return showMnsDebuffs; }
+        public boolean isShowMinions() { return showMinions; }
         public boolean isSortByDuration() { return sortByDuration; }
 
         public void setShowVanillaBuffs(boolean v) { showVanillaBuffs = v; }
         public void setShowVanillaDebuffs(boolean v) { showVanillaDebuffs = v; }
         public void setShowMnsBuffs(boolean v) { showMnsBuffs = v; }
         public void setShowMnsDebuffs(boolean v) { showMnsDebuffs = v; }
+        public void setShowMinions(boolean v) { showMinions = v; }
         public void setSortByDuration(boolean v) { sortByDuration = v; }
     }
 
@@ -95,6 +99,7 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
         if (o.has("showVanillaDebuffs")) filter.showVanillaDebuffs = o.get("showVanillaDebuffs").getAsBoolean();
         if (o.has("showMnsBuffs")) filter.showMnsBuffs = o.get("showMnsBuffs").getAsBoolean();
         if (o.has("showMnsDebuffs")) filter.showMnsDebuffs = o.get("showMnsDebuffs").getAsBoolean();
+        if (o.has("showMinions")) filter.showMinions = o.get("showMinions").getAsBoolean();
         if (o.has("sortByDuration")) filter.sortByDuration = o.get("sortByDuration").getAsBoolean();
         return filter;
     }
@@ -105,6 +110,7 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
         o.addProperty("showVanillaDebuffs", filter.showVanillaDebuffs);
         o.addProperty("showMnsBuffs", filter.showMnsBuffs);
         o.addProperty("showMnsDebuffs", filter.showMnsDebuffs);
+        o.addProperty("showMinions", filter.showMinions);
         o.addProperty("sortByDuration", filter.sortByDuration);
         return o;
     }
