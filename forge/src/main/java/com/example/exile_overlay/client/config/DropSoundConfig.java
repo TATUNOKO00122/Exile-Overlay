@@ -96,7 +96,6 @@ public class DropSoundConfig extends AbstractConfigSection {
         this.raritySounds.put("legendary", new RaritySound(false, "", 1.0f));
         this.raritySounds.put("mythic", new RaritySound(false, "", 1.0f));
         this.raritySounds.put("unique", new RaritySound(false, "", 1.0f));
-        this.raritySounds.put("rune", new RaritySound(false, "", 1.0f));
     }
 
     public boolean isEnabled() {

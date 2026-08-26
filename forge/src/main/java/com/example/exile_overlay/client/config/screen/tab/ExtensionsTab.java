@@ -11,6 +11,7 @@ import com.example.exile_overlay.client.config.screen.entry.CycleConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.FloatSliderConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.SectionHeaderEntry;
 import com.example.exile_overlay.client.sound.CustomSoundManager;
+import com.example.exile_overlay.client.sound.ExileAudioPlayer;
 import com.example.exile_overlay.compat.BotaniaCompat;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
@@ -188,7 +189,7 @@ public class ExtensionsTab implements IConfigTab {
         ));
 
         if (!dropSoundCollapsed) {
-            String[] rarities = {"unique", "mythic", "legendary", "rune"};
+            String[] rarities = {"unique", "mythic", "legendary"};
             for (String rarity : rarities) {
                 DropSoundConfig.RaritySound raritySound = dropSoundConfig.getRaritySound(rarity);
                 if (raritySound == null) continue;
@@ -222,12 +223,12 @@ public class ExtensionsTab implements IConfigTab {
                     }
             ));
 
-            // 音量スライダー
+            // 音量スライダー（0〜2000%）
             entries.add(new FloatSliderConfigEntry(
                     "exile_overlay.config.drop_sound_volume",
                     raritySound::getVolume,
                     raritySound::setVolume,
-                    0.0f, 3.0f
+                    0.0f, 20.0f
             ));
         }
         }
@@ -240,7 +241,6 @@ public class ExtensionsTab implements IConfigTab {
             case "legendary" -> 0xFFAA00;   // GOLD
             case "mythic" -> 0xAA00AA;      // DARK_PURPLE
             case "unique" -> 0xFF5555;      // RED
-            case "rune" -> 0xFFFF55;        // YELLOW
             default -> 0xFFFFFF;
         };
     }
@@ -250,6 +250,7 @@ public class ExtensionsTab implements IConfigTab {
             return Component.translatable("exile_overlay.config.none").getString();
         }
         if (soundLoc.startsWith("exile_overlay:")) {
+            // 識別子から表示名を生成（例: "exile_overlay:name.mp3" → "name.mp3"）
             return soundLoc.substring(14);
         }
         return soundLoc;
@@ -277,7 +278,19 @@ public class ExtensionsTab implements IConfigTab {
     }
 
     private static void playPreviewSound(DropSoundConfig.RaritySound raritySound) {
-        ResourceLocation soundLoc = CustomSoundManager.getSafeSoundLocation(raritySound.getSound());
+        String soundName = raritySound.getSound();
+        if (soundName == null || soundName.isEmpty()) return;
+
+        // MP3 は ExileAudioPlayer で直接再生（Minecraft SoundManager は OGG 専用）
+        if (CustomSoundManager.isMp3Sound(soundName)) {
+            java.io.File mp3File = CustomSoundManager.getMp3File(soundName);
+            if (mp3File != null) {
+                ExileAudioPlayer.playMp3(mp3File, raritySound.getVolume());
+            }
+            return;
+        }
+
+        ResourceLocation soundLoc = CustomSoundManager.getSafeSoundLocation(soundName);
         if (soundLoc != null) {
             Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(
                     SoundEvent.createVariableRangeEvent(soundLoc).getLocation(),

@@ -2,6 +2,7 @@ package com.example.exile_overlay.mixin;
 
 import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.sound.CustomSoundManager;
+import com.example.exile_overlay.client.sound.ExileAudioPlayer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.client.Minecraft;
@@ -137,8 +138,12 @@ public abstract class ItemEntityMixin extends Entity {
             DropSoundConfig.RaritySound raritySound = config.getRaritySound(rarity);
             if (raritySound == null || !raritySound.isEnabled()) return;
 
-            ResourceLocation soundLoc = CustomSoundManager.getSafeSoundLocation(raritySound.getSound());
-            if (soundLoc == null) return;
+            String soundName = raritySound.getSound();
+            // MP3 は getSafeSoundLocation に通さず直接 ExileAudioPlayer で再生する
+            ResourceLocation soundLoc = CustomSoundManager.isMp3Sound(soundName)
+                    ? null
+                    : CustomSoundManager.getSafeSoundLocation(soundName);
+            if (soundLoc == null && !CustomSoundManager.isMp3Sound(soundName)) return;
             float volume = raritySound.getVolume();
             
             // ItemPhysicLite 等のMODによって即座にItemEntityが置き換えられる(削除される)場合への対策。
@@ -159,18 +164,26 @@ public abstract class ItemEntityMixin extends Entity {
                 }
                 exileOverlay$getPlayedUuids().add(this.getUUID());
 
-                EXILE_LOGGER.debug("[exile_overlay] Playing drop sound: loc={}, volume={}, entityId={}", soundLoc, volume, entityId);
+                EXILE_LOGGER.debug("[exile_overlay] Playing drop sound: loc={}, volume={}, entityId={}", soundName, volume, entityId);
 
-                // SimpleSoundInstance を直接生成することで、volume > 1.0f のブーストに対応する。
-                Minecraft.getInstance().getSoundManager().play(
-                        new SimpleSoundInstance(
-                                SoundEvent.createVariableRangeEvent(soundLoc).getLocation(),
-                                SoundSource.MASTER,
-                                volume, 1.0F,
-                                RandomSource.create(),
-                                false, 0,
-                                SoundInstance.Attenuation.NONE,
-                                0.0, 0.0, 0.0, true));
+                // MP3 は ExileAudioPlayer 経由で OpenAL へ、OGG は既存パスへ
+                if (CustomSoundManager.isMp3Sound(soundName)) {
+                    java.io.File mp3File = CustomSoundManager.getMp3File(soundName);
+                    if (mp3File != null) {
+                        ExileAudioPlayer.playMp3(mp3File, volume);
+                    }
+                } else {
+                    // SimpleSoundInstance を直接生成することで、volume > 1.0f のブーストに対応する。
+                    Minecraft.getInstance().getSoundManager().play(
+                            new SimpleSoundInstance(
+                                    SoundEvent.createVariableRangeEvent(soundLoc).getLocation(),
+                                    SoundSource.MASTER,
+                                    volume, 1.0F,
+                                    RandomSource.create(),
+                                    false, 0,
+                                    SoundInstance.Attenuation.NONE,
+                                    0.0, 0.0, 0.0, true));
+                }
             });
 
         } catch (Exception e) {
