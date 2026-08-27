@@ -133,6 +133,7 @@ public class ExileOverlayForgeClient {
 
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         com.example.exile_overlay.api.UnifiedCache.getInstance().clearAll();
+        com.example.exile_overlay.client.render.minion.MercenaryClientCache.clear();
         OrbSmoothedValue.resetAll();
         TrackerSyncS2C.ClientTrackerData.resetServerPresence();
         // KillCountManager.getInstance().reset();

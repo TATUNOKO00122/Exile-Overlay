@@ -20,7 +20,14 @@ public class SkillIdResolver {
             return "spell:" + event.data.getString(EventData.SPELL);
         }
         if (event.data.isBasicAttack()) {
-            return "basic:" + event.data.getWeaponType().id;
+            var wt = event.data.getWeaponType();
+            return "basic:" + (wt != null ? wt.id : "attack");
+        }
+        if (event.data.getBoolean(EventData.IS_SUMMON_ATTACK)) {
+            return "summon:attack";
+        }
+        if (event.source instanceof net.minecraft.world.entity.OwnableEntity) {
+            return "minion:attack";
         }
         LOGGER.debug("Unknown skill ID for DamageEvent. source: {}, isSpell: {}, isBasicAttack: {}", event.source, event.isSpell(), event.data.isBasicAttack());
         return "unknown";
@@ -63,7 +70,7 @@ public class SkillIdResolver {
             }
             return "exile_overlay.tracker.unknown_spell";
         }
-        if (event.data.isBasicAttack()) {
+        if (event.data.isBasicAttack() || event.data.getBoolean(EventData.IS_SUMMON_ATTACK) || event.source instanceof net.minecraft.world.entity.OwnableEntity) {
             return "exile_overlay.tracker.basic_attack";
         }
         return "exile_overlay.tracker.unknown";

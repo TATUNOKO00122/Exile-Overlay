@@ -19,6 +19,7 @@ public class PlayerLoginHandler {
     public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer) {
             DamageTrackerManager.removeTracker(event.getEntity().getUUID());
+            ServerTickSyncHandler.onPlayerLogout(event.getEntity().getUUID());
         }
     }
 }

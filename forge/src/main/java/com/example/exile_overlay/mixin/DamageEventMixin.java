@@ -52,8 +52,15 @@ public class DamageEventMixin implements IDamageEventAccessor {
                 // non-critical
             }
 
-            // 攻撃者がプレイヤーである場合のみダメージトラッカーに記録
-            if (event.source instanceof ServerPlayer player) {
+            // 攻撃者がプレイヤー、またはプレイヤーがオーナーの召喚物/傭兵である場合に記録
+            ServerPlayer player = null;
+            if (event.source instanceof ServerPlayer sp) {
+                player = sp;
+            } else if (event.source instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer sp) {
+                player = sp;
+            }
+
+            if (player != null) {
                 try {
                     DamageTrackerManager.recordDamage(player, event);
                 } catch (Exception e) {

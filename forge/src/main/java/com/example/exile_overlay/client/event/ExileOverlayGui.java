@@ -65,35 +65,27 @@ public class ExileOverlayGui {
                 return;
             }
         }
-        if (overlayId.equals("irons_spellbooks:mana_overlay")) {
+        if (overlayId.contains("irons_spellbooks") && overlayId.contains("mana_overlay")) {
             if (hotbarVisible) {
                 event.setCanceled(true);
                 return;
             }
         }
-        if (overlayId.endsWith("mmorpg.rpg_gui") && EQUIP_CONFIG.isCancelMnsRpgBars()) {
-            if (hotbarVisible) {
-                event.setCanceled(true);
-                return;
-            }
+        if (overlayId.contains("rpg_gui") && EQUIP_CONFIG.isCancelMnsRpgBars()) {
+            event.setCanceled(true);
+            return;
         }
-        if (overlayId.endsWith("mmorpg.spell_hotbar") && EQUIP_CONFIG.isCancelMnsSpellHotbar()) {
-            if (skillHotbarVisible) {
-                event.setCanceled(true);
-                return;
-            }
+        if (overlayId.contains("spell_hotbar") && EQUIP_CONFIG.isCancelMnsSpellHotbar()) {
+            event.setCanceled(true);
+            return;
         }
-        if (overlayId.endsWith("mmorpg.cast_bar") && EQUIP_CONFIG.isCancelMnsCastBar()) {
-            if (hotbarVisible || skillHotbarVisible) {
-                event.setCanceled(true);
-                return;
-            }
+        if (overlayId.contains("cast_bar") && EQUIP_CONFIG.isCancelMnsCastBar()) {
+            event.setCanceled(true);
+            return;
         }
-        if (overlayId.endsWith("mmorpg.status_effects") && EQUIP_CONFIG.isCancelMnsStatusEffects()) {
-            if (buffVisible || skillBuffVisible) {
-                event.setCanceled(true);
-                return;
-            }
+        if (overlayId.contains("status_effects") && EQUIP_CONFIG.isCancelMnsStatusEffects()) {
+            event.setCanceled(true);
+            return;
         }
     }
 }

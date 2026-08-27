@@ -30,5 +30,11 @@ public class NetworkHandler {
                 TrackerActionC2S::encode,
                 TrackerActionC2S::decode,
                 TrackerActionC2S::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                MercenarySyncS2C.class,
+                MercenarySyncS2C::encode,
+                MercenarySyncS2C::decode,
+                MercenarySyncS2C::handle);
     }
 }

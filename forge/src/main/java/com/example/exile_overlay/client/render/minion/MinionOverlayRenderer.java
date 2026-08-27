@@ -4,6 +4,8 @@ import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
+import com.example.exile_overlay.api.data.MercenarySkillInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
@@ -37,6 +39,12 @@ public class MinionOverlayRenderer implements IRenderCommand {
             "textures/gui/effect_stack_badge.png");
     private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("exile_overlay",
             "textures/gui/skill_slot_summon_badge.png");
+    private static final ResourceLocation SKILL_SLOT_BASE = new ResourceLocation("exile_overlay",
+            "textures/gui/skill_slot_base.png");
+    private static final ResourceLocation SKILL_SLOT_BG = new ResourceLocation("exile_overlay",
+            "textures/gui/skill_slot_background.png");
+    private static final ResourceLocation MERCENARY_FRAME = new ResourceLocation("exile_overlay",
+            "textures/gui/mercenary_frame.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -80,63 +88,171 @@ public class MinionOverlayRenderer implements IRenderCommand {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
+        MercenaryDisplayInfo merc = MethodHandlesUtil.getActiveMercenary(mc.player);
         List<MinionDisplayInfo> minions = MethodHandlesUtil.getActiveMinions(mc.player);
         minionCache.clear();
-        minionCache.addAll(minions);
+        if (minions != null) {
+            minionCache.addAll(minions);
+        }
 
-        if (!minionCache.isEmpty()) {
+        if (merc != null || !minionCache.isEmpty()) {
             int screenWidth = ctx.getScreenWidth();
             int screenHeight = ctx.getScreenHeight();
             HudPosition position = POSITION_MANAGER.getPosition(CONFIG_KEY);
             int[] pos = position.resolve(screenWidth, screenHeight);
 
             float userScale = getScale();
-            renderMinionList(graphics, mc, minionCache, pos[0], pos[1], position.isHorizontal(),
+            renderCombinedOverlay(graphics, mc, merc, minionCache, pos[0], pos[1], position.isHorizontal(),
                     userScale, ctx.getPartialTick());
         }
     }
 
-    private static void renderMinionList(GuiGraphics graphics, Minecraft mc,
-                                         List<MinionDisplayInfo> minions,
-                                         int listX, int listY, boolean horizontal,
-                                         double scale, float partialTick) {
-        int spacing = horizontal ? SPACING_HORIZONTAL : SPACING_VERTICAL;
-
-        updateVisualStates(minions);
-
+    private static void renderCombinedOverlay(GuiGraphics graphics, Minecraft mc,
+                                             MercenaryDisplayInfo merc,
+                                             List<MinionDisplayInfo> minions,
+                                             int listX, int listY, boolean horizontal,
+                                             double scale, float partialTick) {
         graphics.pose().pushPose();
         try {
             graphics.pose().translate(listX, listY, 0);
             graphics.pose().scale((float) scale, (float) scale, 1.0f);
 
-            for (int i = 0; i < minions.size(); i++) {
-                MinionDisplayInfo minion = minions.get(i);
+            int minionStartX = 0;
+            int minionStartY = 0;
 
-                float targetX = horizontal ? i * spacing : 0;
-                float targetY = horizontal ? 0 : i * spacing;
-
-                VisualState state = getVisualState(minion.spellId(), targetX, targetY, minion.durationTicks());
-
-                updateFadeIn(state);
-
-                float currentPosX = updatePositionX(state, targetX);
-                float currentPosY = updatePositionY(state, targetY);
-
-                float renderX = horizontal ? currentPosX + state.offsetX : 0;
-                float renderY = horizontal ? 0 : currentPosY;
-
-                if (state.alpha < 0.01f)
-                    continue;
-
-                RenderSystem.setShaderColor(1f, 1f, 1f, state.alpha);
-                try {
-                    renderSingleMinion(graphics, mc, minion, (int) renderX, (int) renderY, state);
-                } finally {
-                    RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            if (merc != null) {
+                renderMercenaryFrame(graphics, mc, merc, 0, 0);
+                if (horizontal) {
+                    minionStartX = 33 + 80 + 8;
+                } else {
+                    minionStartY = 35;
                 }
+            }
+
+            if (!minions.isEmpty()) {
+                renderMinionListInternal(graphics, mc, minions, minionStartX, minionStartY, horizontal);
             }
         } finally {
             graphics.pose().popPose();
+        }
+    }
+
+    private static void renderMercenaryFrame(GuiGraphics graphics, Minecraft mc,
+                                            MercenaryDisplayInfo merc,
+                                            int x, int y) {
+        RenderSystem.enableBlend();
+
+        int frameW = 30;
+        int frameH = 30;
+        int iconOffset = 3;
+        int iconSize = 24;
+        int drawY = y + 1; // 全体を1px下に移動
+
+        // 1. アイコン穴の背景
+        graphics.fill(x + iconOffset, drawY + iconOffset, x + iconOffset + iconSize, drawY + iconOffset + iconSize, 0xAA000000);
+
+        // 2. 傭兵クラスアイコン
+        int iconX = x + iconOffset;
+        int iconY = drawY + iconOffset;
+        ResourceLocation icon = merc.icon() != null ? merc.icon() : DEFAULT_MINION_ICON;
+        int srcSize = (icon.getPath().contains("summon_zombie") || icon.getPath().contains("skill_slot_summon_badge")) ? 16 : 36;
+
+        RenderSystem.setShaderTexture(0, icon);
+        graphics.blit(icon, iconX, iconY, iconSize, iconSize, 0, 0, srcSize, srcSize, srcSize, srcSize);
+
+        // 3. アイコン枠（指定の mercenary_frame を 30x30 にスケーリング描画）
+        RenderSystem.setShaderTexture(0, MERCENARY_FRAME);
+        graphics.blit(MERCENARY_FRAME, x, drawY, frameW, frameH, 0, 0, 21, 21, 32, 32);
+
+        // 4. HP / ES バー座標設定（ESが無い場合は 5px 下にシフトし、アイコンも連動）
+        boolean hasES = merc.maxEnergyShield() > 0;
+        int barShift = hasES ? 0 : 5;
+
+        int barX = x + 33;
+        int barY = drawY + 18 + barShift;
+        int barW = 80;
+        int hpBarH = 4;
+
+        // 5. 装備スキルアイコン (HPバーの2px上に左から2px間隔で配置)
+        if (merc.skills() != null && !merc.skills().isEmpty()) {
+            int skillIconSize = 12;
+            int skillY = barY - 2 - skillIconSize;
+
+            for (int i = 0; i < merc.skills().size(); i++) {
+                MercenarySkillInfo skill = merc.skills().get(i);
+                int skillX = barX + i * (skillIconSize + 2);
+
+                // アイコン背景
+                graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + skillIconSize, 0xAA000000);
+
+                // スキルアイコン
+                ResourceLocation skillIcon = skill.icon() != null ? skill.icon() : DEFAULT_MINION_ICON;
+                RenderSystem.setShaderTexture(0, skillIcon);
+                graphics.blit(skillIcon, skillX, skillY, skillIconSize, skillIconSize, 0, 0, 16, 16, 16, 16);
+
+                // クールダウンオーバーレイ
+                if (skill.onCooldown()) {
+                    float cdPct = Math.max(0.0f, Math.min(1.0f, skill.cooldownProgress()));
+                    int cdH = (int) Math.ceil(skillIconSize * cdPct);
+                    if (cdH > 0) {
+                        graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + cdH, 0xB0000000);
+                    }
+                }
+            }
+        }
+
+        float hpPct = merc.maxHealth() > 0 ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
+        int hpFillW = (int) (barW * hpPct);
+
+        graphics.fill(barX, barY, barX + barW, barY + hpBarH, 0x80000000);
+        if (hpFillW > 0) {
+            graphics.fill(barX, barY, barX + hpFillW, barY + hpBarH, 0xFF43A047);
+        }
+
+        // 6. ES（Energy Shield）バー (ESが存在する場合のみ表示)
+        if (hasES) {
+            int esBarY = barY + hpBarH + 1;
+            int esBarH = 4;
+            float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
+            int esFillW = (int) (barW * esPct);
+
+            graphics.fill(barX, esBarY, barX + barW, esBarY + esBarH, 0x80000000);
+            if (esFillW > 0) {
+                graphics.fill(barX, esBarY, barX + esFillW, esBarY + esBarH, 0xFF00B0FF);
+            }
+        }
+    }
+
+    private static void renderMinionListInternal(GuiGraphics graphics, Minecraft mc,
+                                                 List<MinionDisplayInfo> minions,
+                                                 int startX, int startY, boolean horizontal) {
+        int spacing = horizontal ? SPACING_HORIZONTAL : SPACING_VERTICAL;
+        updateVisualStates(minions);
+
+        for (int i = 0; i < minions.size(); i++) {
+            MinionDisplayInfo minion = minions.get(i);
+
+            float targetX = horizontal ? startX + i * spacing : startX;
+            float targetY = horizontal ? startY : startY + i * spacing;
+
+            VisualState state = getVisualState(minion.spellId(), targetX, targetY, minion.durationTicks());
+            updateFadeIn(state);
+
+            float currentPosX = updatePositionX(state, targetX);
+            float currentPosY = updatePositionY(state, targetY);
+
+            float renderX = horizontal ? currentPosX + state.offsetX : startX;
+            float renderY = horizontal ? startY : currentPosY;
+
+            if (state.alpha < 0.01f)
+                continue;
+
+            RenderSystem.setShaderColor(1f, 1f, 1f, state.alpha);
+            try {
+                renderSingleMinion(graphics, mc, minion, (int) renderX, (int) renderY, state);
+            } finally {
+                RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+            }
         }
     }
 

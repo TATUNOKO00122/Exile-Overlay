@@ -1,7 +1,11 @@
 package com.example.exile_overlay.api;
 
+import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
+import com.example.exile_overlay.client.render.minion.MercenaryClientCache;
+import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -10,7 +14,6 @@ import com.mojang.logging.LogUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,6 +71,7 @@ public class MethodHandlesUtil {
     private static MethodHandle IS_BLOOD_MAGE = null;
     private static MethodHandle GET_CURRENT_HEALTH = null;
     private static MethodHandle GET_MAX_HEALTH = null;
+    private static MethodHandle GET_CURRENT_MAGIC_SHIELD = null;
     private static MethodHandle GET_LAST_DAMAGE_TAKEN = null;
     private static MethodHandle GET_DAMAGE_EVENT_ELEMENT = null;
     private static MethodHandle GET_ELEMENTS_FORMAT = null;
@@ -177,6 +181,17 @@ public class MethodHandlesUtil {
     private static java.lang.reflect.Field RARITY_STAT_PERCENTS_FIELD = null;
     private static java.lang.reflect.Field STAT_PERCENTS_MAX_FIELD = null;
 
+    // === Mercenary MethodHandles ===
+    private static MethodHandle GET_SERVER_MERCENARY = null;
+    private static MethodHandle GET_MERC_CLASS = null;
+    private static MethodHandle GET_MERC_ICON_LOC = null;
+    private static MethodHandle GET_MERC_DATA = null;
+    private static MethodHandle GET_EQUIPPED_SPELL = null;
+    private static Method mercRegistryMethod = null;
+    private static Object mercRegistry = null;
+    private static Method mercRegistryGetMethod = null;
+    private static final ResourceLocation MERC_ICON_FALLBACK = new ResourceLocation("mmorpg", "textures/gui/spells/icons/summon_zombie.png");
+
     // === Additional ExileEffect Field Handles ===
     private static MethodHandle GET_SPELL_ID = null;
     private static MethodHandle GET_SELF_CAST = null;
@@ -223,6 +238,7 @@ public class MethodHandlesUtil {
             IS_BLOOD_MAGE = lookupMethod(unitClass, "isBloodMage");
             GET_CURRENT_HEALTH = lookupMethod(healthUtilsClass, "getCurrentHealth", LivingEntity.class);
             GET_MAX_HEALTH = lookupMethod(healthUtilsClass, "getMaxHealth", LivingEntity.class);
+            GET_CURRENT_MAGIC_SHIELD = lookupMethod(healthUtilsClass, "getCurrentMagicShield", LivingEntity.class);
             
             GET_LAST_DAMAGE_TAKEN = lookupFieldGetter(entityDataClass, "lastDamageTaken");
             GET_DAMAGE_EVENT_ELEMENT = lookupMethod(damageEventClass, "getElement");
@@ -281,6 +297,7 @@ public class MethodHandlesUtil {
             initializePotionHandles();
             initializeConfigHandles();
             initializeAdditionalEffectHandles();
+            initializeMercenaryHandles();
         }
     }
 
@@ -490,6 +507,12 @@ public class MethodHandlesUtil {
         if (entity == null) return 0f;
         if (GET_MAX_HEALTH == null) throw new IllegalStateException("M&S max health handle not available");
         Object result = GET_MAX_HEALTH.invoke(entity);
+        return result instanceof Number ? ((Number) result).floatValue() : 0f;
+    }
+
+    public static float getCurrentMagicShield(LivingEntity entity) throws Throwable {
+        if (entity == null || GET_CURRENT_MAGIC_SHIELD == null) return 0f;
+        Object result = GET_CURRENT_MAGIC_SHIELD.invoke(entity);
         return result instanceof Number ? ((Number) result).floatValue() : 0f;
     }
     
@@ -1180,6 +1203,30 @@ public class MethodHandlesUtil {
                     GET_SPELL_ID != null, GET_EFFECT_TAGS != null);
         } catch (Exception e) {
             LOGGER.debug("Additional effect handles not available: {}", e.getMessage());
+        }
+    }
+
+    private static void initializeMercenaryHandles() {
+        try {
+            try {
+                Class<?> mercManagerClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.MercenaryManager");
+                GET_SERVER_MERCENARY = lookupMethod(mercManagerClass, "getMerc", Player.class);
+            } catch (Throwable ignore) {}
+
+            Class<?> mercEntityClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.entity.MercenaryEntity");
+            GET_MERC_CLASS = lookupMethod(mercEntityClass, "getMercClass");
+
+            Class<?> mercClassClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.MercenaryClass");
+            GET_MERC_ICON_LOC = lookupMethod(mercClassClass, "getIconLoc");
+
+            GET_MERC_DATA = lookupMethod(mercEntityClass, "getMercData");
+            Class<?> mercDataClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.mercenary.MercenaryData");
+            GET_EQUIPPED_SPELL = lookupMethod(mercDataClass, "getEquippedSpell", int.class);
+
+            LOGGER.debug("Mercenary handles initialized: serverMerc={}, mercClass={}, mercData={}",
+                    GET_SERVER_MERCENARY != null, GET_MERC_CLASS != null, GET_MERC_DATA != null);
+        } catch (Exception e) {
+            LOGGER.debug("Mercenary handles not available: {}", e.getMessage());
         }
     }
 
@@ -2233,5 +2280,187 @@ public class MethodHandlesUtil {
             // non-critical
         }
         return false;
+    }
+
+    /**
+     * スペルGUIDからスペルアイコンを取得
+     */
+    public static ResourceLocation getSpellIconByGuid(String guid) {
+        if (guid == null || guid.isEmpty()) return null;
+        try {
+            Object spell = getSpellByGuid(guid);
+            if (spell != null && GET_SPELL_ICON_LOC != null) {
+                return (ResourceLocation) GET_SPELL_ICON_LOC.invoke(spell);
+            }
+        } catch (Throwable ignore) {}
+        return null;
+    }
+
+    /**
+     * 傭兵クラスIDからアイコンを取得
+     */
+    public static ResourceLocation getMercClassIconById(String classId) {
+        if (classId == null || classId.isEmpty() || exileDBClass == null) return MERC_ICON_FALLBACK;
+        try {
+            if (mercRegistryMethod == null) {
+                synchronized (MethodHandlesUtil.class) {
+                    if (mercRegistryMethod == null) {
+                        mercRegistryMethod = exileDBClass.getMethod("Mercenaries");
+                        mercRegistry = mercRegistryMethod.invoke(null);
+                        if (mercRegistry != null) {
+                            mercRegistryGetMethod = mercRegistry.getClass().getMethod("get", String.class);
+                        }
+                    }
+                }
+            }
+            if (mercRegistry != null && mercRegistryGetMethod != null) {
+                Object mercClass = mercRegistryGetMethod.invoke(mercRegistry, classId);
+                if (mercClass != null && GET_MERC_ICON_LOC != null) {
+                    ResourceLocation loc = (ResourceLocation) GET_MERC_ICON_LOC.invoke(mercClass);
+                    if (loc != null) return loc;
+                }
+            }
+        } catch (Throwable ignore) {}
+        return MERC_ICON_FALLBACK;
+    }
+
+    /**
+     * サーバーサイドでプレイヤーのアクティブ傭兵を取得
+     */
+    public static LivingEntity getServerMercenary(Player player) {
+        if (!isAvailable() || player == null) return null;
+        try {
+            if (GET_SERVER_MERCENARY != null) {
+                Object result = GET_SERVER_MERCENARY.invoke(player);
+                if (result instanceof LivingEntity living && living.isAlive()) {
+                    return living;
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get server mercenary via MercenaryManager: {}", t.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * サーバー側で傭兵同期パケットを作成
+     */
+    public static MercenarySyncS2C createMercenarySyncPacket(ServerPlayer player) {
+        if (player == null || !isAvailable()) return null;
+        try {
+            LivingEntity merc = getServerMercenary(player);
+            if (merc == null || !merc.isAlive()) {
+                return new MercenarySyncS2C();
+            }
+
+            String classId = "";
+            if (GET_MERC_CLASS != null) {
+                Object mercClass = GET_MERC_CLASS.invoke(merc);
+                if (mercClass != null) {
+                    try {
+                        Method idMethod = mercClass.getClass().getMethod("GUID");
+                        classId = (String) idMethod.invoke(mercClass);
+                    } catch (Throwable ignore) {}
+                }
+            }
+            if (classId.isEmpty()) {
+                try {
+                    Method getClassId = merc.getClass().getMethod("getClassId");
+                    classId = (String) getClassId.invoke(merc);
+                } catch (Throwable ignore) {}
+            }
+
+            String name = merc.getName() != null ? merc.getName().getString() : "Mercenary";
+            float health = 0;
+            float maxHealth = 0;
+            float energyShield = 0;
+            float maxEnergyShield = 0;
+            int level = 1;
+            Object cooldowns = null;
+
+            try {
+                health = getCurrentHealth(merc);
+                maxHealth = getMaxHealth(merc);
+                energyShield = getCurrentMagicShield(merc);
+            } catch (Throwable ignore) {}
+
+            if (LOAD_UNIT != null) {
+                Object entityData = LOAD_UNIT.invoke(merc);
+                if (entityData != null) {
+                    if (GET_LEVEL != null) {
+                        try {
+                            level = getLevel(entityData);
+                        } catch (Throwable ignore) {}
+                    }
+
+                    try {
+                        if (MAGIC_SHIELD_TYPE != null && GET_MAXIMUM_RESOURCE != null) {
+                            maxEnergyShield = getMaximumResource(entityData, MAGIC_SHIELD_TYPE);
+                        }
+                    } catch (Throwable ignore) {}
+
+                    if (GET_COOLDOWNS != null) {
+                        cooldowns = GET_COOLDOWNS.invoke(entityData);
+                    }
+                }
+            }
+
+            List<MercenarySyncS2C.SkillData> skillList = new ArrayList<>();
+            if (GET_MERC_DATA != null && GET_EQUIPPED_SPELL != null) {
+                Object mercData = GET_MERC_DATA.invoke(merc);
+                if (mercData != null) {
+                    for (int i = 0; i < 4; i++) {
+                        Object spell = GET_EQUIPPED_SPELL.invoke(mercData, i);
+                        if (spell != null) {
+                            String spellId = "";
+                            if (GET_SPELL_GUID != null) {
+                                spellId = (String) GET_SPELL_GUID.invoke(spell);
+                            }
+                            boolean onCooldown = false;
+                            float progress = 0.0f;
+                            int remainingTicks = 0;
+                            int totalTicks = 0;
+
+                            if (cooldowns != null && spellId != null && !spellId.isEmpty()) {
+                                if (GET_COOLDOWN_TICKS != null && GET_NEEDED_TICKS != null) {
+                                    int spellLeft = (int) GET_COOLDOWN_TICKS.invoke(cooldowns, spellId);
+                                    int spellNeed = (int) GET_NEEDED_TICKS.invoke(cooldowns, spellId);
+                                    int gcdLeft = (int) GET_COOLDOWN_TICKS.invoke(cooldowns, "global_cooldown");
+                                    int gcdNeed = (int) GET_NEEDED_TICKS.invoke(cooldowns, "global_cooldown");
+
+                                    if (spellLeft > 0 && spellNeed > 0) {
+                                        remainingTicks = spellLeft;
+                                        totalTicks = spellNeed;
+                                    } else if (gcdLeft > 0 && gcdNeed > 0) {
+                                        remainingTicks = gcdLeft;
+                                        totalTicks = gcdNeed;
+                                    }
+
+                                    if (remainingTicks > 0) {
+                                        onCooldown = true;
+                                        progress = totalTicks > 0 ? (float) remainingTicks / (float) totalTicks : 1.0f;
+                                    }
+                                }
+                            }
+                            skillList.add(new MercenarySyncS2C.SkillData(spellId, onCooldown, progress, remainingTicks, totalTicks));
+                        }
+                    }
+                }
+            }
+
+            return new MercenarySyncS2C(classId, name, level, health, maxHealth, energyShield, maxEnergyShield, skillList);
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to create mercenary sync packet: {}", t.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 現在召喚中の自傭兵情報を取得
+     * サーバー同期パケットのキャッシュから解決
+     */
+    public static MercenaryDisplayInfo getActiveMercenary(Player player) {
+        if (!isAvailable() || player == null) return null;
+        return MercenaryClientCache.get();
     }
 }

@@ -27,13 +27,20 @@ public class MobDeathHandler {
                     if (killer == null) {
                         try {
                             if (event.mob.getLastDamageSource() != null &&
-                                    event.mob.getLastDamageSource().getEntity() instanceof ServerPlayer) {
-                                killer = (LivingEntity) event.mob.getLastDamageSource().getEntity();
+                                    event.mob.getLastDamageSource().getEntity() instanceof LivingEntity le) {
+                                killer = le;
                             }
                         } catch (Exception ignored) {}
                     }
 
-                    if (!(killer instanceof ServerPlayer player)) return;
+                    ServerPlayer player = null;
+                    if (killer instanceof ServerPlayer sp) {
+                        player = sp;
+                    } else if (killer instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer sp) {
+                        player = sp;
+                    }
+
+                    if (player == null) return;
 
                     String skillId = DamageTrackerManager.consumeMobLastHitSkill(event.mob.getUUID());
                     if (skillId == null) {
