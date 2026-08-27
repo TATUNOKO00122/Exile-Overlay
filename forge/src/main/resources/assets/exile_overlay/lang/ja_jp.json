@@ -340,7 +340,7 @@
   "exile_overlay.config.rarity.uncommon": "アンコモン (Uncommon)",
   "exile_overlay.config.rarity.common": "コモン (Common)",
   "exile_overlay.config.rarity.rune": "ルーン (Rune)",
-  "exile_overlay.config.drop_sound_volume": "音量",
+  "exile_overlay.config.drop_sound_volume": "音量: %s",
   "exile_overlay.config.drop_sound_volume.tooltip": "ドロップ音の音量を調整します",
   "exile_overlay.config.none": "なし",
   "exile_overlay.config.kill_counter_timeout": "自動リセット時間: %s秒",

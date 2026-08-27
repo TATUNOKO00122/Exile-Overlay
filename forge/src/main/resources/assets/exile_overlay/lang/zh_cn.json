@@ -336,7 +336,7 @@
   "exile_overlay.config.rarity.uncommon": "罕见 (Uncommon)",
   "exile_overlay.config.rarity.common": "普通 (Common)",
   "exile_overlay.config.rarity.rune": "符文 (Rune)",
-  "exile_overlay.config.drop_sound_volume": "音量",
+  "exile_overlay.config.drop_sound_volume": "音量: %s",
   "exile_overlay.config.drop_sound_volume.tooltip": "调整掉落音效的音量",
   "exile_overlay.config.none": "无",
   "exile_overlay.config.kill_counter_timeout": "自动重置时间: %s秒",

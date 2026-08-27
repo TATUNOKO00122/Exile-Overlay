@@ -139,11 +139,11 @@ public abstract class ItemEntityMixin extends Entity {
             if (raritySound == null || !raritySound.isEnabled()) return;
 
             String soundName = raritySound.getSound();
-            // MP3 は getSafeSoundLocation に通さず直接 ExileAudioPlayer で再生する
-            ResourceLocation soundLoc = CustomSoundManager.isMp3Sound(soundName)
-                    ? null
-                    : CustomSoundManager.getSafeSoundLocation(soundName);
-            if (soundLoc == null && !CustomSoundManager.isMp3Sound(soundName)) return;
+            if (soundName == null || soundName.isEmpty()) return;
+
+            java.io.File customSoundFile = CustomSoundManager.getCustomSoundFile(soundName);
+            ResourceLocation soundLoc = customSoundFile == null ? CustomSoundManager.getSafeSoundLocation(soundName) : null;
+            if (customSoundFile == null && soundLoc == null) return;
             float volume = raritySound.getVolume();
             
             // ItemPhysicLite 等のMODによって即座にItemEntityが置き換えられる(削除される)場合への対策。
@@ -166,14 +166,10 @@ public abstract class ItemEntityMixin extends Entity {
 
                 EXILE_LOGGER.debug("[exile_overlay] Playing drop sound: loc={}, volume={}, entityId={}", soundName, volume, entityId);
 
-                // MP3 は ExileAudioPlayer 経由で OpenAL へ、OGG は既存パスへ
-                if (CustomSoundManager.isMp3Sound(soundName)) {
-                    java.io.File mp3File = CustomSoundManager.getMp3File(soundName);
-                    if (mp3File != null) {
-                        ExileAudioPlayer.playMp3(mp3File, volume);
-                    }
-                } else {
-                    // SimpleSoundInstance を直接生成することで、volume > 1.0f のブーストに対応する。
+                // カスタム音（OGG / MP3）は ExileAudioPlayer 経由で PCM 増幅再生（0〜2000%対応）
+                if (customSoundFile != null) {
+                    ExileAudioPlayer.playCustomSound(customSoundFile, volume);
+                } else if (soundLoc != null) {
                     Minecraft.getInstance().getSoundManager().play(
                             new SimpleSoundInstance(
                                     SoundEvent.createVariableRangeEvent(soundLoc).getLocation(),

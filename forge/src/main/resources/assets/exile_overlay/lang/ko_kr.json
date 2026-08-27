@@ -336,7 +336,7 @@
   "exile_overlay.config.rarity.uncommon": "언커먼 (Uncommon)",
   "exile_overlay.config.rarity.common": "커먼 (Common)",
   "exile_overlay.config.rarity.rune": "룬 (Rune)",
-  "exile_overlay.config.drop_sound_volume": "음량",
+  "exile_overlay.config.drop_sound_volume": "음량: %s",
   "exile_overlay.config.drop_sound_volume.tooltip": "드롭 사운드 볼륨을 조절합니다",
   "exile_overlay.config.none": "없음",
   "exile_overlay.config.kill_counter_timeout": "자동 초기화 시간: %s초",

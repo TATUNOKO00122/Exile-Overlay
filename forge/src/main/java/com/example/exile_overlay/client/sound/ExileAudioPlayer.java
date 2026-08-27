@@ -7,6 +7,9 @@ import javazoom.jl.decoder.SampleBuffer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.lwjgl.openal.AL10;
+import org.lwjgl.stb.STBVorbis;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.libc.LibCStdlib;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +19,15 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * JLayerでMP3をデコードし、OpenALで直接再生するプレイヤー。
+ * MP3 / OGG オーディオファイルをデコードし、OpenALで直接再生するプレイヤー。
+ * ソフトウェアゲイン増幅により 0%〜200%（2.0f）の音量ブーストに対応。
  * デコードは別スレッドで行い、全OpenAL操作はメインスレッドへ委譲する。
  */
 @OnlyIn(Dist.CLIENT)
@@ -32,34 +39,74 @@ public class ExileAudioPlayer {
     private record DecodeResult(byte[] pcm, int sampleRate, int channels) {}
 
     /**
-     * MP3ファイルを指定音量で再生する。メインスレッドから呼び出すこと。
-     * volume は 0.0f〜20.0f（1.0f = 100%）。
+     * オーディオファイル（.ogg / .mp3）を指定音量で再生する。メインスレッドから呼び出すこと。
+     * volume は 0.0f〜2.0f（1.0f = 100%）。
      */
-    public static void playMp3(File file, float volume) {
+    public static void playCustomSound(File file, float volume) {
         if (file == null || !file.exists()) {
-            LOGGER.warn("MP3ファイルが見つかりません: {}", file);
+            LOGGER.warn("音声ファイルが見つかりません: {}", file);
             return;
         }
-        LOGGER.info("[exile_overlay] MP3再生要求: path='{}', volume={}", file.getName(), volume);
+        if (volume <= 0.0f) {
+            return;
+        }
 
         Thread thread = new Thread(() -> {
             try {
-                DecodeResult result = decodeMp3(file);
+                String name = file.getName().toLowerCase(Locale.ROOT);
+                DecodeResult result = name.endsWith(".ogg") ? decodeOgg(file) : decodeMp3(file);
                 if (result == null) return;
-                // OpenAL コンテキストはメインスレッドが保持するため tell() で委譲
-                net.minecraft.client.Minecraft.getInstance().tell(() -> playPcm(result, volume));
+
+                byte[] amplifiedPcm = applyVolume(result.pcm(), volume);
+                DecodeResult finalResult = new DecodeResult(amplifiedPcm, result.sampleRate(), result.channels());
+
+                net.minecraft.client.Minecraft.getInstance().tell(() -> playPcm(finalResult));
             } catch (Exception e) {
-                LOGGER.error("[exile_overlay] MP3再生失敗: {}", file.getName(), e);
+                LOGGER.error("[exile_overlay] 音声再生失敗: {}", file.getName(), e);
             }
-        }, "ExileOverlay-Mp3Decoder");
+        }, "ExileOverlay-AudioDecoder");
         thread.setDaemon(true);
         thread.start();
     }
 
     /**
+     * 後方互換用メソッド。
+     */
+    public static void playMp3(File file, float volume) {
+        playCustomSound(file, volume);
+    }
+
+    /**
+     * STBVorbis を使用して OGG をデコードして 16bit PCM を返す。
+     */
+    private static DecodeResult decodeOgg(File file) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer channels = stack.mallocInt(1);
+            IntBuffer sampleRate = stack.mallocInt(1);
+            ShortBuffer pcmBuffer = STBVorbis.stb_vorbis_decode_filename(file.getAbsolutePath(), channels, sampleRate);
+            if (pcmBuffer == null) {
+                LOGGER.error("OGGデコード失敗 (STBVorbis): {}", file.getName());
+                return null;
+            }
+
+            try {
+                int ch = channels.get(0);
+                int rate = sampleRate.get(0);
+                int sampleCount = pcmBuffer.remaining();
+                byte[] pcmBytes = new byte[sampleCount * 2];
+                ByteBuffer.wrap(pcmBytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(pcmBuffer);
+                return new DecodeResult(pcmBytes, rate, ch);
+            } finally {
+                LibCStdlib.free(pcmBuffer);
+            }
+        } catch (Exception e) {
+            LOGGER.error("OGGデコード例外: {}", file.getName(), e);
+            return null;
+        }
+    }
+
+    /**
      * JLayer で MP3 をデコードして 16bit PCM を返す。
-     * モノラル MP3 は channels=1、ステレオ/ジョイントステレオ等は channels=2。
-     * JLayer の SampleBuffer はチャンネル数に応じたデータのみ出力する（モノ→1ch、ステレオ→2ch）。
      */
     private static DecodeResult decodeMp3(File file) {
         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
@@ -74,14 +121,12 @@ public class ExileAudioPlayer {
             while ((header = bitstream.readFrame()) != null && frames < MAX_FRAMES) {
                 if (frames == 0) {
                     sampleRate = header.frequency();
-                    // SINGLE_CHANNEL = 3 がモノラル。それ以外（STEREO/JOINT_STEREO/DUAL_CHANNEL）はステレオ扱い。
                     channels = (header.mode() == Header.SINGLE_CHANNEL) ? 1 : 2;
                 }
                 SampleBuffer output = (SampleBuffer) decoder.decodeFrame(header, bitstream);
                 int count = output.getBufferLength();
                 short[] samples = output.getBuffer();
 
-                // short[] → byte[] (little-endian)
                 byte[] chunk = new byte[count * 2];
                 ByteBuffer.wrap(chunk).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(samples, 0, count);
                 chunks.add(chunk);
@@ -97,7 +142,6 @@ public class ExileAudioPlayer {
                 System.arraycopy(chunk, 0, result, offset, chunk.length);
                 offset += chunk.length;
             }
-            LOGGER.info("[exile_overlay] MP3デコード完了: {} ({}フレーム, {}Hz, {}ch, {}bytes)", file.getName(), frames, sampleRate, channels, totalBytes);
             return new DecodeResult(result, sampleRate, channels);
 
         } catch (Exception e) {
@@ -107,10 +151,35 @@ public class ExileAudioPlayer {
     }
 
     /**
-     * PCMデータを OpenAL バッファへ流し込んで再生する。メインスレッドで呼ぶこと。
-     * AL_GAIN は Minecraft の音量制限を受けないため volume > 1.0f が有効。
+     * 16bit PCM サンプルに対してソフトウェアゲイン増幅（クリッピング保護付き）を適用する。
      */
-    private static void playPcm(DecodeResult decoded, float volume) {
+    private static byte[] applyVolume(byte[] pcm, float volume) {
+        if (pcm == null || pcm.length == 0 || Math.abs(volume - 1.0f) < 0.001f) {
+            return pcm;
+        }
+        if (volume <= 0.0f) {
+            return new byte[pcm.length];
+        }
+
+        byte[] result = new byte[pcm.length];
+        for (int i = 0; i < pcm.length - 1; i += 2) {
+            int sample = (short) ((pcm[i] & 0xFF) | (pcm[i + 1] << 8));
+            int amplified = Math.round(sample * volume);
+            if (amplified > Short.MAX_VALUE) {
+                amplified = Short.MAX_VALUE;
+            } else if (amplified < Short.MIN_VALUE) {
+                amplified = Short.MIN_VALUE;
+            }
+            result[i] = (byte) (amplified & 0xFF);
+            result[i + 1] = (byte) ((amplified >> 8) & 0xFF);
+        }
+        return result;
+    }
+
+    /**
+     * PCMデータを OpenAL バッファへ流し込んで再生する。メインスレッドで呼ぶこと。
+     */
+    private static void playPcm(DecodeResult decoded) {
         int buffer = AL10.alGenBuffers();
         int source = AL10.alGenSources();
 
@@ -119,23 +188,19 @@ public class ExileAudioPlayer {
             buf.put(decoded.pcm());
             buf.flip();
 
-            // チャンネル数に応じた AL フォーマットを選択。
-            // モノラルMP3 を STEREO16 で渡すと OpenAL が 2ch として解釈し 2倍速再生になるため必須。
             int alFormat = decoded.channels() == 1 ? AL10.AL_FORMAT_MONO16 : AL10.AL_FORMAT_STEREO16;
             AL10.alBufferData(buffer, alFormat, buf, decoded.sampleRate());
             AL10.alSourcei(source, AL10.AL_BUFFER, buffer);
 
-            // 2D/UIサウンドとして耳元で再生（リスナー相対座標 & 距離減衰なし）
-            // これを設定しないとワールド座標(0,0,0)で再生され、原点から離れたプレイヤーには距離減衰で無音になる
             AL10.alSourcei(source, AL10.AL_SOURCE_RELATIVE, AL10.AL_TRUE);
             AL10.alSource3f(source, AL10.AL_POSITION, 0.0f, 0.0f, 0.0f);
             AL10.alSource3f(source, AL10.AL_VELOCITY, 0.0f, 0.0f, 0.0f);
             AL10.alSourcef(source, AL10.AL_ROLLOFF_FACTOR, 0.0f);
+            AL10.alSourcef(source, AL10.AL_MAX_GAIN, 20.0f);
+            AL10.alSourcef(source, AL10.AL_GAIN, 1.0f);
 
-            AL10.alSourcef(source, AL10.AL_GAIN, Math.max(0.0f, volume));
             AL10.alSourcePlay(source);
 
-            // 再生時間 = bytes / (sampleRate × channels × 2bytes/sample)
             long durationMs = (long) decoded.pcm().length * 1000L
                     / ((long) decoded.sampleRate() * decoded.channels() * 2L) + 2000L;
             int finalSource = source;
@@ -148,7 +213,7 @@ public class ExileAudioPlayer {
                     AL10.alDeleteSources(finalSource);
                     AL10.alDeleteBuffers(finalBuffer);
                 });
-            }, "ExileOverlay-Mp3Cleanup");
+            }, "ExileOverlay-AudioCleanup");
             cleanup.setDaemon(true);
             cleanup.start();
 

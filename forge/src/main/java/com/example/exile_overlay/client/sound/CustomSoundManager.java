@@ -115,34 +115,47 @@ public class CustomSoundManager {
     }
 
     /**
-     * MP3 識別子からファイルオブジェクトを返す。
-     * soundName は "exile_overlay:name.mp3" または "name.mp3" 形式。
-     * ディレクトリをスキャンして名前完全一致で探す。
-     * new File(dir, name).exists() は Unicode 正規化差異や特殊文字で失敗する場合があるため。
+     * サウンド識別子がカスタムサウンド（config/exile_overlay/sounds/ 内のファイル）かどうかを判定する。
      */
-    public static File getMp3File(String soundName) {
+    public static boolean isCustomSound(String soundName) {
+        if (soundName == null || soundName.isEmpty()) return false;
+        return soundName.startsWith("exile_overlay:") || getCustomSoundFile(soundName) != null;
+    }
+
+    /**
+     * サウンド識別子からカスタムサウンドファイル（.ogg / .mp3）を検索して返す。
+     * soundName は "exile_overlay:name", "exile_overlay:name.mp3", "name", "name.ogg", "name.mp3" 等に対応。
+     */
+    public static File getCustomSoundFile(String soundName) {
         if (soundDir == null) {
             init();
         }
-        if (soundName == null || soundDir == null) {
-            LOGGER.warn("getMp3File: 引数不正 soundName={}, soundDir={}", soundName, soundDir);
+        if (soundName == null || soundDir == null || !soundDir.isDirectory()) {
             return null;
         }
-        String targetName = soundName.startsWith("exile_overlay:") ? soundName.substring(14) : soundName;
 
-        // OS 由来の File オブジェクトで返すため、パス文字コード問題を回避する
-        if (soundDir.isDirectory()) {
-            File[] files = soundDir.listFiles();
-            if (files != null) {
-                for (File f : files) {
-                    if (f.getName().equals(targetName)) {
-                        return f;
-                    }
-                }
+        String rawName = soundName.startsWith("exile_overlay:") ? soundName.substring(14) : soundName;
+        File[] files = soundDir.listFiles();
+        if (files == null) return null;
+
+        for (File f : files) {
+            String fName = f.getName();
+            if (fName.equalsIgnoreCase(rawName)) {
+                return f;
+            }
+            // 拡張子なしで指定された場合の .ogg / .mp3 マッチ
+            if (fName.equalsIgnoreCase(rawName + ".ogg") || fName.equalsIgnoreCase(rawName + ".mp3")) {
+                return f;
             }
         }
-        LOGGER.warn("getMp3File: ファイルが見つかりません name='{}', soundDir='{}'", targetName, soundDir.getAbsolutePath());
         return null;
+    }
+
+    /**
+     * MP3 識別子からファイルオブジェクトを返す（互換用）。
+     */
+    public static File getMp3File(String soundName) {
+        return getCustomSoundFile(soundName);
     }
 
     /**

@@ -336,7 +336,7 @@
   "exile_overlay.config.rarity.uncommon": "Необычный (Uncommon)",
   "exile_overlay.config.rarity.common": "Обычный (Common)",
   "exile_overlay.config.rarity.rune": "Руна (Rune)",
-  "exile_overlay.config.drop_sound_volume": "Громкость",
+  "exile_overlay.config.drop_sound_volume": "Громкость: %s",
   "exile_overlay.config.drop_sound_volume.tooltip": "Отрегулируйте громкость звука выпадения",
   "exile_overlay.config.none": "Нет",
   "exile_overlay.config.kill_counter_timeout": "Время автосброса: %sс",

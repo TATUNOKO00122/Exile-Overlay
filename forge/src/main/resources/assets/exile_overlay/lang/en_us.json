@@ -340,7 +340,7 @@
   "exile_overlay.config.rarity.uncommon": "Uncommon",
   "exile_overlay.config.rarity.common": "Common",
   "exile_overlay.config.rarity.rune": "Rune",
-  "exile_overlay.config.drop_sound_volume": "Volume",
+  "exile_overlay.config.drop_sound_volume": "Volume: %s",
   "exile_overlay.config.drop_sound_volume.tooltip": "Adjust the volume of the drop sound",
   "exile_overlay.config.none": "None",
   "exile_overlay.config.kill_counter_timeout": "Auto-reset Time: %ss",

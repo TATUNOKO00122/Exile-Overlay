@@ -25,7 +25,7 @@ public class DropSoundConfig extends AbstractConfigSection {
         public String getSound() { return sound; }
         public void setSound(String sound) { this.sound = sound; }
         public float getVolume() { return volume; }
-        public void setVolume(float volume) { this.volume = volume; }
+        public void setVolume(float volume) { this.volume = Math.max(0.0f, Math.min(2.0f, volume)); }
     }
 
     private boolean enabled = false;

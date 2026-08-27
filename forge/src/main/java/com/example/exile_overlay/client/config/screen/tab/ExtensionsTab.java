@@ -223,12 +223,13 @@ public class ExtensionsTab implements IConfigTab {
                     }
             ));
 
-            // 音量スライダー（0〜2000%）
+            // 音量スライダー（0〜200%）
             entries.add(new FloatSliderConfigEntry(
                     "exile_overlay.config.drop_sound_volume",
                     raritySound::getVolume,
                     raritySound::setVolume,
-                    0.0f, 20.0f
+                    0.0f, 2.0f,
+                    val -> Component.translatable("exile_overlay.config.drop_sound_volume", Math.round(val * 100) + "%")
             ));
         }
         }
@@ -281,12 +282,10 @@ public class ExtensionsTab implements IConfigTab {
         String soundName = raritySound.getSound();
         if (soundName == null || soundName.isEmpty()) return;
 
-        // MP3 は ExileAudioPlayer で直接再生（Minecraft SoundManager は OGG 専用）
-        if (CustomSoundManager.isMp3Sound(soundName)) {
-            java.io.File mp3File = CustomSoundManager.getMp3File(soundName);
-            if (mp3File != null) {
-                ExileAudioPlayer.playMp3(mp3File, raritySound.getVolume());
-            }
+        // カスタム音（OGG / MP3）は ExileAudioPlayer で PCM 増幅再生（0〜2000%対応）
+        java.io.File customSoundFile = CustomSoundManager.getCustomSoundFile(soundName);
+        if (customSoundFile != null) {
+            ExileAudioPlayer.playCustomSound(customSoundFile, raritySound.getVolume());
             return;
         }
 

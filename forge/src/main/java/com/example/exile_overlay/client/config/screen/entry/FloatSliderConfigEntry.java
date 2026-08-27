@@ -6,6 +6,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -19,27 +20,39 @@ public class FloatSliderConfigEntry extends ConfigEntry {
     private final String format;
     private final Supplier<Float> getter;
     private final Consumer<Float> setter;
+    private final Function<Float, Component> customFormatter;
     private final Component tooltip;
     private final SliderWidget slider;
 
     public FloatSliderConfigEntry(String translationKey, Supplier<Float> getter, Consumer<Float> setter,
                                   float min, float max) {
-        this(translationKey, getter, setter, min, max, "%.2f", Component.translatable(translationKey + ".tooltip"));
+        this(translationKey, getter, setter, min, max, "%.2f", null, Component.translatable(translationKey + ".tooltip"));
     }
 
     public FloatSliderConfigEntry(String translationKey, Supplier<Float> getter, Consumer<Float> setter,
                                   float min, float max, String format) {
-        this(translationKey, getter, setter, min, max, format, Component.translatable(translationKey + ".tooltip"));
+        this(translationKey, getter, setter, min, max, format, null, Component.translatable(translationKey + ".tooltip"));
+    }
+
+    public FloatSliderConfigEntry(String translationKey, Supplier<Float> getter, Consumer<Float> setter,
+                                  float min, float max, Function<Float, Component> customFormatter) {
+        this(translationKey, getter, setter, min, max, null, customFormatter, Component.translatable(translationKey + ".tooltip"));
     }
 
     public FloatSliderConfigEntry(String translationKey, Supplier<Float> getter, Consumer<Float> setter,
                                   float min, float max, String format, Component tooltip) {
+        this(translationKey, getter, setter, min, max, format, null, tooltip);
+    }
+
+    public FloatSliderConfigEntry(String translationKey, Supplier<Float> getter, Consumer<Float> setter,
+                                  float min, float max, String format, Function<Float, Component> customFormatter, Component tooltip) {
         this.translationKey = translationKey;
         this.min = min;
         this.max = max;
         this.format = format;
         this.getter = getter;
         this.setter = setter;
+        this.customFormatter = customFormatter;
         this.tooltip = tooltip;
 
         float current = getter.get();
@@ -121,10 +134,12 @@ public class FloatSliderConfigEntry extends ConfigEntry {
 
         @Override
         protected void updateMessage() {
-            if (format == null) {
+            float val = min + (max - min) * (float) this.value;
+            if (customFormatter != null) {
+                this.setMessage(customFormatter.apply(val));
+            } else if (format == null) {
                 this.setMessage(Component.translatable(translationKey));
             } else {
-                float val = min + (max - min) * (float) this.value;
                 this.setMessage(Component.translatable(translationKey, String.format(format, val)));
             }
         }
