@@ -13,8 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DamageTrackerManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/DamageTrackerManager");
 
+    public record MobLastHitRecord(UUID attackerUuid, String skillId, String displayName, long timestampMs) {}
+
     private static final Map<UUID, PlayerTrackerData> playerData = new ConcurrentHashMap<>();
-    private static final Map<UUID, String> mobLastHitSkill = new ConcurrentHashMap<>();
+    private static final Map<UUID, MobLastHitRecord> mobLastHitRecords = new ConcurrentHashMap<>();
     private static final Set<UUID> dirtyPlayers = ConcurrentHashMap.newKeySet();
     private static final int MAX_MOB_CACHE = 1000;
 
@@ -30,11 +32,12 @@ public class DamageTrackerManager {
         SkillDamageStats stats = tracker.getOrCreateStats(skillId, displayName);
 
         if (dmgEvent.target != null) {
-            mobLastHitSkill.put(dmgEvent.target.getUUID(), skillId);
+            mobLastHitRecords.put(dmgEvent.target.getUUID(),
+                    new MobLastHitRecord(player.getUUID(), skillId, displayName, System.currentTimeMillis()));
             // サイズ超過時は全消しせず半分を削除し、直近の記録を保持する
-            if (mobLastHitSkill.size() > MAX_MOB_CACHE) {
+            if (mobLastHitRecords.size() > MAX_MOB_CACHE) {
                 int removeCount = MAX_MOB_CACHE / 2;
-                Iterator<UUID> it = mobLastHitSkill.keySet().iterator();
+                Iterator<UUID> it = mobLastHitRecords.keySet().iterator();
                 while (it.hasNext() && removeCount-- > 0) {
                     it.next();
                     it.remove();
@@ -69,14 +72,32 @@ public class DamageTrackerManager {
     }
 
     public static void recordKill(UUID playerUuid, String skillId) {
-        PlayerTrackerData tracker = getTracker(playerUuid);
-        SkillDamageStats stats = tracker.getOrCreateStats(skillId, skillId);
-        stats.recordKill();
-        dirtyPlayers.add(playerUuid);
+        recordKill(playerUuid, skillId, skillId);
+    }
+
+    public static void recordKill(UUID playerUuid, String skillId, String displayName) {
+        if (playerUuid == null || skillId == null) return;
+        PlayerTrackerData tracker = playerData.get(playerUuid);
+        if (tracker == null) return;
+
+        SkillDamageStats stats = tracker.getStats(skillId);
+        if (stats != null) {
+            stats.recordKill();
+            dirtyPlayers.add(playerUuid);
+        }
+    }
+
+    public static MobLastHitRecord consumeMobLastHit(UUID mobUuid, UUID killerPlayerUuid) {
+        MobLastHitRecord record = mobLastHitRecords.remove(mobUuid);
+        if (record != null && killerPlayerUuid != null && killerPlayerUuid.equals(record.attackerUuid())) {
+            return record;
+        }
+        return null;
     }
 
     public static String consumeMobLastHitSkill(UUID mobUuid) {
-        return mobLastHitSkill.remove(mobUuid);
+        MobLastHitRecord record = mobLastHitRecords.remove(mobUuid);
+        return record != null ? record.skillId() : null;
     }
 
     public static boolean consumeDirty(UUID playerUuid) {

@@ -55,6 +55,10 @@ public class MinionOverlayRenderer implements IRenderCommand {
     private static final int SPACING_HORIZONTAL = FRAME_WIDTH + 1;
     private static final int SPACING_VERTICAL = FRAME_HEIGHT - 2;
 
+    // 傭兵フレーム定数
+    private static final int MERC_BAR_OFFSET_X = 35;
+    private static final int MERC_BAR_WIDTH = 90;
+
     // アニメーション設定
     private static final float ANIMATION_SPEED = 0.2f;
     private static final float FADE_IN_SPEED = 0.06f;
@@ -123,9 +127,9 @@ public class MinionOverlayRenderer implements IRenderCommand {
             if (merc != null) {
                 renderMercenaryFrame(graphics, mc, merc, 0, 0);
                 if (horizontal) {
-                    minionStartX = 33 + 80 + 8;
+                    minionStartX = MERC_BAR_OFFSET_X + MERC_BAR_WIDTH + 8;
                 } else {
-                    minionStartY = 35;
+                    minionStartY = 37;
                 }
             }
 
@@ -142,10 +146,10 @@ public class MinionOverlayRenderer implements IRenderCommand {
                                             int x, int y) {
         RenderSystem.enableBlend();
 
-        int frameW = 30;
-        int frameH = 30;
-        int iconOffset = 3;
-        int iconSize = 24;
+        int frameW = 32;
+        int frameH = 32;
+        int iconOffset = 2;
+        int iconSize = 28;
         int drawY = y + 1; // 全体を1px下に移動
 
         // 1. アイコン穴の背景
@@ -160,17 +164,17 @@ public class MinionOverlayRenderer implements IRenderCommand {
         RenderSystem.setShaderTexture(0, icon);
         graphics.blit(icon, iconX, iconY, iconSize, iconSize, 0, 0, srcSize, srcSize, srcSize, srcSize);
 
-        // 3. アイコン枠（指定の mercenary_frame を 30x30 にスケーリング描画）
+        // 3. アイコン枠
         RenderSystem.setShaderTexture(0, MERCENARY_FRAME);
-        graphics.blit(MERCENARY_FRAME, x, drawY, frameW, frameH, 0, 0, 21, 21, 32, 32);
+        graphics.blit(MERCENARY_FRAME, x, drawY, frameW, frameH, 0, 0, 32, 32, 32, 32);
 
         // 4. HP / ES バー座標設定（ESが無い場合は 5px 下にシフトし、アイコンも連動）
         boolean hasES = merc.maxEnergyShield() > 0;
         int barShift = hasES ? 0 : 5;
 
-        int barX = x + 33;
+        int barX = x + MERC_BAR_OFFSET_X;
         int barY = drawY + 18 + barShift;
-        int barW = 80;
+        int barW = MERC_BAR_WIDTH;
         int hpBarH = 4;
 
         // 5. 装備スキルアイコン (HPバーの2px上に左から2px間隔で配置)

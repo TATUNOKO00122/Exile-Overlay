@@ -17,6 +17,10 @@ public class PlayerTrackerData {
         this.sessionStartMs = System.currentTimeMillis();
     }
 
+    public SkillDamageStats getStats(String skillId) {
+        return skillStats.get(skillId);
+    }
+
     public SkillDamageStats getOrCreateStats(String skillId, String displayName) {
         return skillStats.computeIfAbsent(skillId, id -> new SkillDamageStats(id, displayName));
     }
@@ -26,14 +30,20 @@ public class PlayerTrackerData {
     }
 
     public List<SkillDamageStats> getTopSkillsByDamage(int count) {
-        List<SkillDamageStats> all = new ArrayList<>(skillStats.values());
+        List<SkillDamageStats> active = new ArrayList<>();
+        for (SkillDamageStats s : skillStats.values()) {
+            if (s.getTotalDamage() > 0 || s.getHitCount() > 0) {
+                active.add(s);
+            }
+        }
+
         // 各要素の総ダメージ量を同一固定値としてマップし安定ソート
         Map<SkillDamageStats, Double> dmgSnapshots = new HashMap<>();
-        for (SkillDamageStats s : all) {
+        for (SkillDamageStats s : active) {
             dmgSnapshots.put(s, s.getTotalDamage());
         }
-        all.sort((a, b) -> Double.compare(dmgSnapshots.getOrDefault(b, 0.0), dmgSnapshots.getOrDefault(a, 0.0)));
-        return all.size() <= count ? all : all.subList(0, count);
+        active.sort((a, b) -> Double.compare(dmgSnapshots.getOrDefault(b, 0.0), dmgSnapshots.getOrDefault(a, 0.0)));
+        return active.size() <= count ? active : active.subList(0, count);
     }
 
     public double getTotalDamage() {

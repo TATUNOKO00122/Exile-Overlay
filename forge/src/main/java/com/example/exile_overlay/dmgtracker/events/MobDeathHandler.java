@@ -42,13 +42,10 @@ public class MobDeathHandler {
 
                     if (player == null) return;
 
-                    String skillId = DamageTrackerManager.consumeMobLastHitSkill(event.mob.getUUID());
-                    if (skillId == null) {
-                        skillId = "unknown";
-                        LOGGER.debug("Mob {} was killed by {} but last hit skill was null", event.mob.getName().getString(), player.getName().getString());
+                    DamageTrackerManager.MobLastHitRecord record = DamageTrackerManager.consumeMobLastHit(event.mob.getUUID(), player.getUUID());
+                    if (record != null) {
+                        DamageTrackerManager.recordKill(player.getUUID(), record.skillId(), record.displayName());
                     }
-
-                    DamageTrackerManager.recordKill(player.getUUID(), skillId);
                 } catch (Exception e) {
                     LOGGER.error("Error recording kill", e);
                 }
