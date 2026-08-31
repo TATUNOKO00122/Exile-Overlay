@@ -1,22 +1,22 @@
 package com.example.exile_overlay.client.config.position;
 
+import com.example.exile_overlay.client.config.IConfigSection;
+
+import net.minecraft.client.Minecraft;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
-import net.minecraft.client.Minecraft;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.example.exile_overlay.client.config.IConfigSection;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,14 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * - 各HUD要素の位置設定を一元管理
  * - JSONファイルへの保存・読み込み
- * - デフォルト値の提供
- * 
- * 設定はアプリケーション全体で共有される
+ * - デフォルト値の外部設定ファイル（hud_default_positions.json）対応
  */
 public class HudPositionManager implements IConfigSection {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(HudPositionManager.class);
     private static final String CONFIG_FILE_NAME = "hud_positions.json";
+    private static final String DEFAULTS_CONFIG_FILE_NAME = "hud_default_positions.json";
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .create();
@@ -69,11 +68,12 @@ public class HudPositionManager implements IConfigSection {
     }
 
     /**
-     * IConfigSection準拠のload。既存のinitialize()に委譲。
+     * IConfigSection準拠のload。デフォルトと位置設定を再読み込み。
      */
     @Override
     public void load() {
-        initialize();
+        loadDefaultsFromFile();
+        loadFromFile();
     }
 
     /**
@@ -86,7 +86,7 @@ public class HudPositionManager implements IConfigSection {
     
     /**
      * 初期化
-     * デフォルト値の登録とファイルからの読み込みを行う
+     * デフォルト値の登録・読み込みとファイルからの位置読み込みを行う
      */
     public void initialize() {
         if (initialized) {
@@ -99,15 +99,16 @@ public class HudPositionManager implements IConfigSection {
             LOGGER.info("Initializing HudPositionManager...");
             
             registerDefaults();
+            loadDefaultsFromFile();
             loadFromFile();
             
             initialized = true;
-            LOGGER.info("HudPositionManager initialized with {} positions", positions.size());
+            LOGGER.info("HudPositionManager initialized with {} positions ({} defaults)", positions.size(), defaults.size());
         }
     }
     
     /**
-     * デフォルト位置を登録
+     * 内蔵のデフォルト位置を登録（フォールバック用）
      */
     private void registerDefaults() {
         defaults.put("hotbar", new HudPosition(Anchor.BOTTOM_CENTER, 12, 0, 1.3f, true, false));
@@ -138,18 +139,13 @@ public class HudPositionManager implements IConfigSection {
 
         defaults.put("botania_mana_bar", new HudPosition(Anchor.BOTTOM_CENTER, 0, -29, 1.0f, false, false));
 
-        // defaults.put("kill_counter", new HudPosition(Anchor.TOP_LEFT, 10, 10, 1.0f, false, false));
-
         defaults.put("minion_overlay", new HudPosition(Anchor.TOP_LEFT, 0, 50, 0.6f, true, false));
 
         defaults.put("lightmans_currency_coins", new HudPosition(Anchor.BOTTOM_LEFT, 5, -25, 1.0f, true, false));
 
         defaults.put("exp_accumulator", new HudPosition(Anchor.TOP_CENTER, 0, 80, 1.0f, false, false));
 
-        // TODO: Harvestマップ用HUD（現在使用しないためコメントアウト）
-        // defaults.put("dungeon_hud", new HudPosition(Anchor.CENTER, 140, -40, 0.8f, true, false));
-
-        LOGGER.debug("Registered {} default positions", defaults.size());
+        LOGGER.debug("Registered {} builtin default positions", defaults.size());
     }
     
     /**
@@ -248,23 +244,7 @@ public class HudPositionManager implements IConfigSection {
                 parentDir.mkdirs();
             }
             
-            JsonObject root = new JsonObject();
-            JsonObject positionsJson = new JsonObject();
-            
-            for (Map.Entry<String, HudPosition> entry : positions.entrySet()) {
-                HudPosition pos = entry.getValue();
-                JsonObject posJson = new JsonObject();
-                posJson.addProperty("anchor", pos.getAnchor().name());
-                posJson.addProperty("offsetX", pos.getOffsetX());
-                posJson.addProperty("offsetY", pos.getOffsetY());
-                posJson.addProperty("scale", pos.getScale());
-                posJson.addProperty("visible", pos.isVisible());
-                posJson.addProperty("horizontal", pos.isHorizontal());
-                positionsJson.add(entry.getKey(), posJson);
-            }
-
-            root.add("positions", positionsJson);
-            root.addProperty("version", 3);
+            JsonObject root = serializePositions(positions, 3);
             
             try (FileWriter writer = new FileWriter(configFile)) {
                 GSON.toJson(root, writer);
@@ -275,9 +255,32 @@ public class HudPositionManager implements IConfigSection {
             LOGGER.error("Failed to save positions to file: {}", e.getMessage());
         }
     }
+
+    /**
+     * デフォルト位置をファイルに保存
+     */
+    public void saveDefaultsToFile() {
+        try {
+            File configFile = getDefaultsConfigFile();
+            File parentDir = configFile.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            JsonObject root = serializePositions(defaults, 1);
+
+            try (FileWriter writer = new FileWriter(configFile)) {
+                GSON.toJson(root, writer);
+            }
+
+            LOGGER.info("Saved {} default positions to {}", defaults.size(), configFile.getAbsolutePath());
+        } catch (IOException e) {
+            LOGGER.error("Failed to save default positions to file: {}", e.getMessage());
+        }
+    }
     
     /**
-     * ファイルから読み込み
+     * ファイルから位置設定を読み込み
      */
     private void loadFromFile() {
         File configFile = getConfigFile();
@@ -293,59 +296,113 @@ public class HudPositionManager implements IConfigSection {
                 return;
             }
             
-            JsonObject rootObj = root.getAsJsonObject();
-            JsonElement positionsElement = rootObj.get("positions");
-            
-            if (positionsElement == null || !positionsElement.isJsonObject()) {
-                LOGGER.warn("No positions found in config file");
-                return;
-            }
-            
-            JsonObject positionsJson = positionsElement.getAsJsonObject();
-            int loadedCount = 0;
-            
-            for (Map.Entry<String, JsonElement> entry : positionsJson.entrySet()) {
-                String key = entry.getKey();
-                JsonElement posElement = entry.getValue();
-                
-                if (!posElement.isJsonObject()) {
-                    continue;
-                }
-                
-                try {
-                    JsonObject posJson = posElement.getAsJsonObject();
-                    String anchorName = posJson.get("anchor").getAsString();
-                    int offsetX = posJson.get("offsetX").getAsInt();
-                    int offsetY = posJson.get("offsetY").getAsInt();
-
-                    float scale = 1.0f;
-                    if (posJson.has("scale")) {
-                        scale = posJson.get("scale").getAsFloat();
-                    }
-
-                    boolean visible = true;
-                    if (posJson.has("visible")) {
-                        visible = posJson.get("visible").getAsBoolean();
-                    }
-
-                    boolean horizontal = false;
-                    if (posJson.has("horizontal")) {
-                        horizontal = posJson.get("horizontal").getAsBoolean();
-                    }
-
-                    Anchor anchor = Anchor.valueOf(anchorName);
-                    HudPosition position = new HudPosition(anchor, offsetX, offsetY, scale, visible, horizontal);
-                    positions.put(key, position);
-                    loadedCount++;
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to parse position for {}: {}", key, e.getMessage());
-                }
-            }
-            
-            LOGGER.info("Loaded {} positions from file", loadedCount);
+            parsePositions(root.getAsJsonObject(), positions);
+            LOGGER.info("Loaded {} positions from file", positions.size());
         } catch (IOException e) {
             LOGGER.error("Failed to load positions from file: {}", e.getMessage());
         }
+    }
+
+    /**
+     * ファイルからデフォルト位置設定を読み込み
+     */
+    private void loadDefaultsFromFile() {
+        File configFile = getDefaultsConfigFile();
+        if (!configFile.exists()) {
+            LOGGER.info("No default positions config file found, creating with builtin defaults");
+            saveDefaultsToFile();
+            return;
+        }
+
+        try (FileReader reader = new FileReader(configFile)) {
+            JsonElement root = JsonParser.parseReader(reader);
+            if (!root.isJsonObject()) {
+                LOGGER.warn("Invalid default position config file format");
+                return;
+            }
+
+            parsePositions(root.getAsJsonObject(), defaults);
+            LOGGER.info("Loaded default positions from {}", configFile.getAbsolutePath());
+        } catch (IOException e) {
+            LOGGER.error("Failed to load default positions from file: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * JSONオブジェクトからHUD位置マップにデシリアライズする
+     */
+    private void parsePositions(JsonObject rootObj, Map<String, HudPosition> targetMap) {
+        JsonElement positionsElement = rootObj.get("positions");
+        if (positionsElement == null || !positionsElement.isJsonObject()) {
+            positionsElement = rootObj.get("default_positions");
+        }
+
+        if (positionsElement == null || !positionsElement.isJsonObject()) {
+            LOGGER.warn("No positions element found in json object");
+            return;
+        }
+
+        JsonObject positionsJson = positionsElement.getAsJsonObject();
+        for (Map.Entry<String, JsonElement> entry : positionsJson.entrySet()) {
+            String key = entry.getKey();
+            JsonElement posElement = entry.getValue();
+
+            if (!posElement.isJsonObject()) {
+                continue;
+            }
+
+            try {
+                JsonObject posJson = posElement.getAsJsonObject();
+                String anchorName = posJson.get("anchor").getAsString();
+                int offsetX = posJson.get("offsetX").getAsInt();
+                int offsetY = posJson.get("offsetY").getAsInt();
+
+                float scale = 1.0f;
+                if (posJson.has("scale")) {
+                    scale = posJson.get("scale").getAsFloat();
+                }
+
+                boolean visible = true;
+                if (posJson.has("visible")) {
+                    visible = posJson.get("visible").getAsBoolean();
+                }
+
+                boolean horizontal = false;
+                if (posJson.has("horizontal")) {
+                    horizontal = posJson.get("horizontal").getAsBoolean();
+                }
+
+                Anchor anchor = Anchor.valueOf(anchorName);
+                HudPosition position = new HudPosition(anchor, offsetX, offsetY, scale, visible, horizontal);
+                targetMap.put(key, position);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to parse position for {}: {}", key, e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * HUD位置マップをJSONオブジェクトへシリアライズする
+     */
+    private JsonObject serializePositions(Map<String, HudPosition> sourceMap, int version) {
+        JsonObject root = new JsonObject();
+        JsonObject positionsJson = new JsonObject();
+
+        for (Map.Entry<String, HudPosition> entry : sourceMap.entrySet()) {
+            HudPosition pos = entry.getValue();
+            JsonObject posJson = new JsonObject();
+            posJson.addProperty("anchor", pos.getAnchor().name());
+            posJson.addProperty("offsetX", pos.getOffsetX());
+            posJson.addProperty("offsetY", pos.getOffsetY());
+            posJson.addProperty("scale", pos.getScale());
+            posJson.addProperty("visible", pos.isVisible());
+            posJson.addProperty("horizontal", pos.isHorizontal());
+            positionsJson.add(entry.getKey(), posJson);
+        }
+
+        root.add("positions", positionsJson);
+        root.addProperty("version", version);
+        return root;
     }
     
     /**
@@ -354,6 +411,14 @@ public class HudPositionManager implements IConfigSection {
     private File getConfigFile() {
         Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
         return gameDir.resolve("config").resolve("exile_overlay").resolve(CONFIG_FILE_NAME).toFile();
+    }
+
+    /**
+     * デフォルト設定ファイルのパスを取得
+     */
+    private File getDefaultsConfigFile() {
+        Path gameDir = Minecraft.getInstance().gameDirectory.toPath();
+        return gameDir.resolve("config").resolve("exile_overlay").resolve(DEFAULTS_CONFIG_FILE_NAME).toFile();
     }
     
     /**
