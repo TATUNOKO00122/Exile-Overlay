@@ -43,8 +43,8 @@ public class MinionOverlayRenderer implements IRenderCommand {
             "textures/gui/skill_slot_base.png");
     private static final ResourceLocation SKILL_SLOT_BG = new ResourceLocation("exile_overlay",
             "textures/gui/skill_slot_background.png");
-    private static final ResourceLocation MERCENARY_FRAME = new ResourceLocation("exile_overlay",
-            "textures/gui/mercenary_frame.png");
+    private static final ResourceLocation MERCENARY_UI = new ResourceLocation("exile_overlay",
+            "textures/gui/mercenary_ui.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -55,9 +55,23 @@ public class MinionOverlayRenderer implements IRenderCommand {
     private static final int SPACING_HORIZONTAL = FRAME_WIDTH + 1;
     private static final int SPACING_VERTICAL = FRAME_HEIGHT - 2;
 
-    // 傭兵フレーム定数
-    private static final int MERC_BAR_OFFSET_X = 35;
-    private static final int MERC_BAR_WIDTH = 90;
+    // 傭兵フレーム定数 (mercenary_ui.png アトラス)
+    private static final int MERC_BAR_OFFSET_X = 33;
+    private static final float MERC_BAR_SCALE = 0.5f;
+    private static final int MERC_UI_TEX_SIZE = 256;
+    private static final int MERC_ICON_FRAME_U = 1;
+    private static final int MERC_ICON_FRAME_V = 1;
+    private static final int MERC_ICON_FRAME_SIZE = 32;
+
+    private static final int MERC_BAR_FRAME_U = 1;
+    private static final int MERC_BAR_FRAME_V = 36;
+    private static final int MERC_BAR_FRAME_W = 195;
+    private static final int MERC_BAR_FRAME_H = 13;
+    private static final int MERC_BAR_INNER_X = 2;
+    private static final int MERC_BAR_INNER_Y = 1;
+    private static final int MERC_BAR_INNER_W = 191;
+    private static final int MERC_BAR_INNER_H = 10;
+    private static final int MERC_BAR_WIDTH = (int) Math.round(MERC_BAR_FRAME_W * MERC_BAR_SCALE);
 
     // アニメーション設定
     private static final float ANIMATION_SPEED = 0.2f;
@@ -150,7 +164,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
         int frameH = 32;
         int iconOffset = 2;
         int iconSize = 28;
-        int drawY = y + 1; // 全体を1px下に移動
+        int drawY = y + 1;
 
         // 1. アイコン穴の背景
         graphics.fill(x + iconOffset, drawY + iconOffset, x + iconOffset + iconSize, drawY + iconOffset + iconSize, 0xAA000000);
@@ -164,27 +178,26 @@ public class MinionOverlayRenderer implements IRenderCommand {
         RenderSystem.setShaderTexture(0, icon);
         graphics.blit(icon, iconX, iconY, iconSize, iconSize, 0, 0, srcSize, srcSize, srcSize, srcSize);
 
-        // 3. アイコン枠
-        RenderSystem.setShaderTexture(0, MERCENARY_FRAME);
-        graphics.blit(MERCENARY_FRAME, x, drawY, frameW, frameH, 0, 0, 32, 32, 32, 32);
+        // 3. アイコン枠 (mercenary_ui.png から描画)
+        RenderSystem.setShaderTexture(0, MERCENARY_UI);
+        graphics.blit(MERCENARY_UI, x, drawY, frameW, frameH,
+                (float) MERC_ICON_FRAME_U, (float) MERC_ICON_FRAME_V,
+                MERC_ICON_FRAME_SIZE, MERC_ICON_FRAME_SIZE,
+                MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
 
-        // 4. HP / ES バー座標設定（ESが無い場合は 5px 下にシフトし、アイコンも連動）
-        boolean hasES = merc.maxEnergyShield() > 0;
-        int barShift = hasES ? 0 : 5;
+        // 4. HPバー枠 & スキルアイコン座標設定
+        int barFrameX = x + MERC_BAR_OFFSET_X;
+        int barFrameY = drawY + 22;
+        int scaledBarW = MERC_BAR_WIDTH;
 
-        int barX = x + MERC_BAR_OFFSET_X;
-        int barY = drawY + 18 + barShift;
-        int barW = MERC_BAR_WIDTH;
-        int hpBarH = 4;
-
-        // 5. 装備スキルアイコン (HPバーの2px上に左から2px間隔で配置)
+        // 5. 装備スキルアイコン (HPバー枠の上側に配置)
         if (merc.skills() != null && !merc.skills().isEmpty()) {
             int skillIconSize = 12;
-            int skillY = barY - 2 - skillIconSize;
+            int skillY = barFrameY - 2 - skillIconSize;
 
             for (int i = 0; i < merc.skills().size(); i++) {
                 MercenarySkillInfo skill = merc.skills().get(i);
-                int skillX = barX + i * (skillIconSize + 2);
+                int skillX = barFrameX + 3 + i * (skillIconSize + 2);
 
                 // アイコン背景
                 graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + skillIconSize, 0xAA000000);
@@ -205,25 +218,72 @@ public class MinionOverlayRenderer implements IRenderCommand {
             }
         }
 
-        float hpPct = merc.maxHealth() > 0 ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
-        int hpFillW = (int) (barW * hpPct);
+        // 6. HP / ES バー描画（mercenary_ui.png のバー枠を縦横比1:1で縮小描画）
+        graphics.pose().pushPose();
+        try {
+            graphics.pose().translate(barFrameX, barFrameY, 0);
+            graphics.pose().scale(MERC_BAR_SCALE, MERC_BAR_SCALE, 1.0f);
 
-        graphics.fill(barX, barY, barX + barW, barY + hpBarH, 0x80000000);
-        if (hpFillW > 0) {
-            graphics.fill(barX, barY, barX + hpFillW, barY + hpBarH, 0xFF43A047);
+            // バー背景
+            graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
+                    MERC_BAR_INNER_X + MERC_BAR_INNER_W, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                    0x80000000);
+
+            // 現在HPバー
+            float hpPct = merc.maxHealth() > 0 ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
+            int hpFillW = (int) (MERC_BAR_INNER_W * hpPct);
+            if (hpFillW > 0) {
+                graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
+                        MERC_BAR_INNER_X + hpFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                        0xFF43A047);
+            }
+
+            // ES（Energy Shield）オーバーレイ
+            boolean hasES = merc.maxEnergyShield() > 0;
+            if (hasES) {
+                float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
+                int esFillW = (int) (MERC_BAR_INNER_W * esPct);
+                if (esFillW > 0) {
+                    graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
+                            MERC_BAR_INNER_X + esFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                            0xAA00B0FF);
+                }
+            }
+
+            // HPBar枠テクスチャ描画
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            graphics.blit(MERCENARY_UI, 0, 0, MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
+                    (float) MERC_BAR_FRAME_U, (float) MERC_BAR_FRAME_V,
+                    MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
+                    MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
+        } finally {
+            graphics.pose().popPose();
         }
 
-        // 6. ES（Energy Shield）バー (ESが存在する場合のみ表示)
-        if (hasES) {
-            int esBarY = barY + hpBarH + 1;
-            int esBarH = 4;
-            float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
-            int esFillW = (int) (barW * esPct);
-
-            graphics.fill(barX, esBarY, barX + barW, esBarY + esBarH, 0x80000000);
-            if (esFillW > 0) {
-                graphics.fill(barX, esBarY, barX + esFillW, esBarY + esBarH, 0xFF00B0FF);
+        // 7. HP数値テキスト（バー右上肩にTargetInfo風に配置）
+        boolean hasES = merc.maxEnergyShield() > 0;
+        if (merc.maxHealth() > 0) {
+            int curHp = (int) Math.ceil(merc.health());
+            int maxHp = (int) Math.ceil(merc.maxHealth());
+            String hpText;
+            if (hasES && merc.energyShield() > 0) {
+                int curEs = (int) Math.ceil(merc.energyShield());
+                hpText = curHp + " (+" + curEs + ") / " + maxHp;
+            } else {
+                hpText = curHp + " / " + maxHp;
             }
+
+            float hpScale = 0.7f;
+            float textW = HudFontHelper.getTextWidth(mc.font, hpText) * hpScale;
+            float textX = barFrameX + scaledBarW - textW - 2;
+            float textY = barFrameY - mc.font.lineHeight * hpScale - 1.0f;
+
+            graphics.pose().pushPose();
+            graphics.pose().translate(textX, textY, 0);
+            graphics.pose().scale(hpScale, hpScale, 1.0f);
+            HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, 0xFFFFFFFF, true);
+            graphics.pose().popPose();
         }
     }
 
