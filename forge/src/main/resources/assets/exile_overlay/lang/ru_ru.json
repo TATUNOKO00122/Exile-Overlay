@@ -60,6 +60,8 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "Отображает пустые слоты навыков на HUD",
   "exile_overlay.config.show_skill_cooldown_number": "Цифровое время перезарядки: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "Отображать оставшиеся секунды перезарядки на иконках панели навыков",
+  "exile_overlay.config.show_skill_summon_count": "Количество миньонов: %s",
+  "exile_overlay.config.show_skill_summon_count.tooltip": "Отображать текущее количество призванных существ на иконках навыков",
   "exile_overlay.config.cooldown_display_type": "Тип отображения перезарядки: %s",
   "exile_overlay.config.cooldown_display_type.tooltip": "Переключение стиля отображения перезарядки навыков",
   "exile_overlay.config.cooldown_display_type.radial": "Радиальный",

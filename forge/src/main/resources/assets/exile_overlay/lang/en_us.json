@@ -60,6 +60,8 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "Display empty skill slots on the HUD",
   "exile_overlay.config.show_skill_cooldown_number": "Skill Cooldown Number: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "Display remaining cooldown seconds on skill hotbar icons",
+  "exile_overlay.config.show_skill_summon_count": "Show Skill Summon Count: %s",
+  "exile_overlay.config.show_skill_summon_count.tooltip": "Display current summon count on summon skill icons",
   "exile_overlay.config.cooldown_display_type": "Cooldown Display Type: %s",
   "exile_overlay.config.cooldown_display_type.tooltip": "Switch skill cooldown animation style",
   "exile_overlay.config.cooldown_display_type.radial": "Radial",

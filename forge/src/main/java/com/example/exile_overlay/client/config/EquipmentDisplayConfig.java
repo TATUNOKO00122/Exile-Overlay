@@ -59,6 +59,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean enableBossPortalMarker = false;
     private boolean showEmptySkillSlots = false;
     private boolean showSkillCooldownNumber = true;
+    private boolean showSkillSummonCount = true;
     private boolean enableOrbNoise = true;
     private boolean enableLiquidShadow = false;
     private boolean enableOrbInnerShadow = true;
@@ -126,6 +127,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("enableBossPortalMarker")) enableBossPortalMarker = obj.get("enableBossPortalMarker").getAsBoolean();
         if (obj.has("showEmptySkillSlots")) showEmptySkillSlots = obj.get("showEmptySkillSlots").getAsBoolean();
         if (obj.has("showSkillCooldownNumber")) showSkillCooldownNumber = obj.get("showSkillCooldownNumber").getAsBoolean();
+        if (obj.has("showSkillSummonCount")) showSkillSummonCount = obj.get("showSkillSummonCount").getAsBoolean();
         if (obj.has("enableOrbNoise")) enableOrbNoise = obj.get("enableOrbNoise").getAsBoolean();
         if (obj.has("enableLiquidShadow")) enableLiquidShadow = obj.get("enableLiquidShadow").getAsBoolean();
         if (obj.has("enableOrbInnerShadow")) enableOrbInnerShadow = obj.get("enableOrbInnerShadow").getAsBoolean();
@@ -166,6 +168,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("enableBossPortalMarker", enableBossPortalMarker);
         obj.addProperty("showEmptySkillSlots", showEmptySkillSlots);
         obj.addProperty("showSkillCooldownNumber", showSkillCooldownNumber);
+        obj.addProperty("showSkillSummonCount", showSkillSummonCount);
         obj.addProperty("enableOrbNoise", enableOrbNoise);
         obj.addProperty("enableLiquidShadow", enableLiquidShadow);
         obj.addProperty("enableOrbInnerShadow", enableOrbInnerShadow);
@@ -244,6 +247,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isShowSkillCooldownNumber() { return showSkillCooldownNumber; }
     public void setShowSkillCooldownNumber(boolean show) { this.showSkillCooldownNumber = show; }
 
+    public boolean isShowSkillSummonCount() { return showSkillSummonCount; }
+    public void setShowSkillSummonCount(boolean show) { this.showSkillSummonCount = show; }
+
     public boolean isEnableOrbNoise() { return enableOrbNoise; }
     public void setEnableOrbNoise(boolean enable) { this.enableOrbNoise = enable; }
 
@@ -293,6 +299,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.enableBossPortalMarker = false;
         this.showEmptySkillSlots = false;
         this.showSkillCooldownNumber = true;
+        this.showSkillSummonCount = true;
         this.enableOrbNoise = true;
         this.enableLiquidShadow = false;
         this.enableOrbInnerShadow = true;

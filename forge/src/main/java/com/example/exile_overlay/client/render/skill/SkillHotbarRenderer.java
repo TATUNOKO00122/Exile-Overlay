@@ -369,9 +369,11 @@ public class SkillHotbarRenderer implements IRenderCommand {
                     }
                 }
 
-                int summonCount = MethodHandlesUtil.getSummonCount(player, slot);
-                if (summonCount > 0) {
-                    drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleKeybind);
+                if (EquipmentDisplayConfig.getInstance().isShowSkillSummonCount()) {
+                    int summonCount = MethodHandlesUtil.getSummonCount(player, slot);
+                    if (summonCount > 0) {
+                        drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleKeybind);
+                    }
                 }
 
                 if (MethodHandlesUtil.getSpellUsesCharges(player, slot)) {

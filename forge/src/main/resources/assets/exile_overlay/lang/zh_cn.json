@@ -60,6 +60,8 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "在HUD上显示未设置的空技能栏",
   "exile_overlay.config.show_skill_cooldown_number": "技能冷却倒计时数字: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "在技能栏图标上显示剩余冷却时间（秒）",
+  "exile_overlay.config.show_skill_summon_count": "显示技能召唤物数量: %s",
+  "exile_overlay.config.show_skill_summon_count.tooltip": "在召唤类技能图标上显示当前召唤物数量",
   "exile_overlay.config.cooldown_display_type": "冷却显示类型: %s",
   "exile_overlay.config.cooldown_display_type.tooltip": "切换技能冷却覆盖渲染样式",
   "exile_overlay.config.cooldown_display_type.radial": "扇形",

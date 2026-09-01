@@ -60,6 +60,8 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "설정되지 않은 빈 스킬 슬롯도 HUD에 표시합니다",
   "exile_overlay.config.show_skill_cooldown_number": "스킬 재사용 대기시간 숫자 표시: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "스킬 핫바 아이콘 위에 남은 재사용 대기시간(초)을 표시합니다",
+  "exile_overlay.config.show_skill_summon_count": "스킬 소환수 수 표시: %s",
+  "exile_overlay.config.show_skill_summon_count.tooltip": "소환 스킬 아이콘 위에 현재 소환된 개체 수를 표시합니다",
   "exile_overlay.config.cooldown_display_type": "재사용 대기시간 표시 유형: %s",
   "exile_overlay.config.cooldown_display_type.tooltip": "스킬 재사용 대기시간 표시 방식을 변경합니다",
   "exile_overlay.config.cooldown_display_type.radial": "부채꼴",

@@ -139,6 +139,12 @@ public class HudDisplayTab implements IConfigTab {
                 equipConfig::setShowEmptySkillSlots
         ));
 
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.show_skill_summon_count",
+                equipConfig::isShowSkillSummonCount,
+                equipConfig::setShowSkillSummonCount
+        ));
+
         // 4. レベル表示
         entries.add(new SectionHeaderEntry("section.exile_overlay.level_display"));
 

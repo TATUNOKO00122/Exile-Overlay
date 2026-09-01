@@ -60,6 +60,8 @@
   "exile_overlay.config.show_empty_skill_slots.tooltip": "未設定のスキルスロットもHUDに表示します",
   "exile_overlay.config.show_skill_cooldown_number": "スキルのクールダウン数値表示: %s",
   "exile_overlay.config.show_skill_cooldown_number.tooltip": "スキルホットバーのアイコン上に残りクールダウン秒数を表示します",
+  "exile_overlay.config.show_skill_summon_count": "スキルの召喚数表示: %s",
+  "exile_overlay.config.show_skill_summon_count.tooltip": "召喚スキルアイコン上に現在の召喚数を表示します",
   "exile_overlay.config.cooldown_display_type": "クールダウン表示タイプ: %s",
   "exile_overlay.config.cooldown_display_type.tooltip": "スキルのクールダウン表示アニメーションを切り替えます",
   "exile_overlay.config.cooldown_display_type.radial": "扇形",
