@@ -148,6 +148,8 @@ public class ConfigScreen extends Screen {
         equipConfig.setCancelMnsCastBar(false);
         equipConfig.setCancelMnsStatusEffects(false);
         equipConfig.setCancelMnsExpActionBar(false);
+        equipConfig.setDisableMnsHpBar(false);
+        MethodHandlesUtil.setNeatHpBarEnabled(true);
         equipConfig.setCancelBotaniaMana(false);
         equipConfig.setCancelDungeonRealmScoreboard(false);
         equipConfig.save();
