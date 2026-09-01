@@ -42,6 +42,26 @@ public class SkillHotbarRenderer implements IRenderCommand {
     private static final ResourceLocation CHARGE_BADGE_TEXTURE = ResourceLocation.tryParse(
             "exile_overlay:textures/gui/skill_slot_charge_badge.png");
 
+    private static final class SlotRenderData {
+        int slot;
+        int slotX;
+        int slotY;
+        int iconX;
+        int iconY;
+        ResourceLocation icon;
+        float renderPercent;
+        float smoothedRegen;
+        float smoothedCd;
+    }
+
+    private final SlotRenderData[] slotDataCache = new SlotRenderData[SLOT_COUNT];
+
+    public SkillHotbarRenderer() {
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            slotDataCache[i] = new SlotRenderData();
+        }
+    }
+
     private static final int COOLDOWN_OVERLAY_COLOR = 0xAA000000;
     private static final int SUMMON_TEXT_COLOR = 0xFFFF5555;
     private static final int CHARGE_COLOR_FULL = 0xFF00FF00;
@@ -153,7 +173,8 @@ public class SkillHotbarRenderer implements IRenderCommand {
         int gcdLeft = MethodHandlesUtil.getGlobalCooldownTicks(player);
         float smoothedGcd = CooldownSmoothedValue.getSmoothedGcd(gcdPercent, gcdNeededTicks);
 
-        int visibleIndex = 0;
+        // Pass 1: スロット背景・アイコンの描画とデータ収集
+        int visibleCount = 0;
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
             ResourceLocation icon = MethodHandlesUtil.getSpellIcon(player, slot);
 
@@ -163,16 +184,26 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
             int slotX, slotY;
             if (horizontal) {
-                slotX = offsetX + visibleIndex * (SLOT_SIZE + SLOT_SPACING);
+                slotX = offsetX + visibleCount * (SLOT_SIZE + SLOT_SPACING);
                 slotY = offsetY;
             } else {
                 slotX = offsetX;
-                slotY = offsetY + visibleIndex * (SLOT_SIZE + SLOT_SPACING);
+                slotY = offsetY + visibleCount * (SLOT_SIZE + SLOT_SPACING);
             }
-            visibleIndex++;
 
             int iconX = slotX + ICON_OFFSET;
             int iconY = slotY + ICON_OFFSET;
+
+            SlotRenderData data = slotDataCache[visibleCount];
+            data.slot = slot;
+            data.slotX = slotX;
+            data.slotY = slotY;
+            data.iconX = iconX;
+            data.iconY = iconY;
+            data.icon = icon;
+            data.renderPercent = 0.0f;
+            data.smoothedRegen = 0.0f;
+            data.smoothedCd = 0.0f;
 
             RenderSystem.enableBlend();
             graphics.blit(SLOT_BG_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
@@ -184,74 +215,80 @@ public class SkillHotbarRenderer implements IRenderCommand {
                 if (MethodHandlesUtil.getSpellUsesCharges(player, slot)) {
                     int charges = MethodHandlesUtil.getSpellCharges(player, slot);
                     int maxCharges = MethodHandlesUtil.getSpellMaxCharges(player, slot);
-                    float smoothedRegen = 0f;
 
                     if (charges < maxCharges) {
                         float regenPercent = MethodHandlesUtil.getSpellChargeRegenPercent(player, slot);
-                        smoothedRegen = CooldownSmoothedValue.getSmoothedChargeRegen(slot, regenPercent);
+                        data.smoothedRegen = CooldownSmoothedValue.getSmoothedChargeRegen(slot, regenPercent);
                     } else {
                         CooldownSmoothedValue.getSmoothedChargeRegen(slot, 0.0f);
-                        smoothedRegen = 0.0f;
                     }
 
                     if (smoothedGcd > 0) {
-                        drawCooldownOverlay(graphics, iconX, iconY, smoothedGcd);
-                    }
-
-                    if (smoothedRegen > 0) {
-                        drawChargeRegenBar(graphics, iconX, iconY, smoothedRegen);
+                        data.renderPercent = smoothedGcd;
                     }
                 } else {
                     float cdPercent = MethodHandlesUtil.getSpellCooldownPercent(player, slot);
                     int cdLeft = MethodHandlesUtil.getSpellCooldownTicks(player, slot);
                     int cdNeed = MethodHandlesUtil.getSpellNeededTicks(player, slot);
-                    float smoothedCd = CooldownSmoothedValue.getSmoothedCooldown(slot, cdPercent, cdNeed);
+                    data.smoothedCd = CooldownSmoothedValue.getSmoothedCooldown(slot, cdPercent, cdNeed);
 
-                    float renderPercent = 0f;
                     int longestLeft = 0;
-
                     if (cdLeft > 1 && cdNeed > 0 && cdLeft > longestLeft) {
                         longestLeft = cdLeft;
-                        renderPercent = smoothedCd;
+                        data.renderPercent = data.smoothedCd;
                     }
 
                     if (gcdLeft > 1 && gcdNeededTicks > 0 && gcdLeft > longestLeft) {
                         longestLeft = gcdLeft;
-                        renderPercent = smoothedGcd;
-                    }
-
-                    if (renderPercent > 0) {
-                        drawCooldownOverlay(graphics, iconX, iconY, renderPercent);
-                    }
-
-                    if (smoothedCd > 0 && EquipmentDisplayConfig.getInstance().isShowSkillCooldownNumber()) {
-                        int seconds = MethodHandlesUtil.getSpellCooldownSeconds(player, slot);
-                        if (seconds > 0) {
-                            String text = String.valueOf(seconds);
-                            float cdTextScale = 1.5f;
-                            int textWidth = HudFontHelper.getTextWidth(mc.font, text);
-                            float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
-                            float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
-                            graphics.pose().pushPose();
-                            try {
-                                graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
-                                HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
-                                HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
-                            } finally {
-                                graphics.pose().popPose();
-                            }
-                        }
+                        data.renderPercent = smoothedGcd;
                     }
                 }
             }
 
+            visibleCount++;
+        }
+
+        // アイコンまでの描画を確実にGPUへフラッシュ
+        graphics.flush();
+
+        // Pass 2: クールダウンオーバーレイ & チャージ回復バー描画（アイコンの前、枠の後ろ）
+        for (int i = 0; i < visibleCount; i++) {
+            SlotRenderData data = slotDataCache[i];
+            if (data.icon != null) {
+                if (data.renderPercent > 0) {
+                    drawCooldownOverlay(graphics, data.iconX, data.iconY, data.renderPercent);
+                }
+                if (data.smoothedRegen > 0) {
+                    drawChargeRegenBar(graphics, data.iconX, data.iconY, data.smoothedRegen);
+                }
+            }
+        }
+
+        // クールダウン描画を確実にフラッシュ
+        graphics.flush();
+
+        // Pass 3: スロット枠の描画（クールダウンの前）
+        for (int i = 0; i < visibleCount; i++) {
+            SlotRenderData data = slotDataCache[i];
+            RenderSystem.enableBlend();
+            graphics.blit(BASE_FRAME_TEXTURE, data.slotX, data.slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
+        }
+
+        // 枠描画を確実にフラッシュ
+        graphics.flush();
+
+        // Pass 4: キーバインド枠、キーバインド文字、クールダウン数値、バッジ（枠の前）
+        boolean isSimpleKeybind = EquipmentDisplayConfig.getInstance().isSimpleSkillKeybindDisplay();
+        for (int i = 0; i < visibleCount; i++) {
+            SlotRenderData data = slotDataCache[i];
+            int slot = data.slot;
+            int slotX = data.slotX;
+            int slotY = data.slotY;
+            int iconX = data.iconX;
+            int iconY = data.iconY;
+
             String rawKeyText = SpellKeyHelper.getSpellKeyText(slot);
             String displayKey = abbreviateKeyText(rawKeyText);
-
-            boolean isSimpleKeybind = EquipmentDisplayConfig.getInstance().isSimpleSkillKeybindDisplay();
-
-            RenderSystem.enableBlend();
-            graphics.blit(BASE_FRAME_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
 
             if (!displayKey.isEmpty() && !isSimpleKeybind) {
                 RenderSystem.enableBlend();
@@ -266,7 +303,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
                 float keyX, keyY;
                 if (isSimpleKeybind) {
                     keyX = slotX + 3.0f;
-                    keyY = slotY + 20.0f; // Adjusted up slightly to compensate for larger scale
+                    keyY = slotY + 20.0f;
                 } else {
                     float frameCenterX = displayKey.length() >= 2 ? 20.5f : 24.5f;
                     keyX = slotX + frameCenterX - fullTextWidth * textScale / 2.0f;
@@ -312,7 +349,26 @@ public class SkillHotbarRenderer implements IRenderCommand {
                 graphics.pose().popPose();
             }
 
-            if (icon != null) {
+            if (data.icon != null) {
+                if (data.smoothedCd > 0 && EquipmentDisplayConfig.getInstance().isShowSkillCooldownNumber()) {
+                    int seconds = MethodHandlesUtil.getSpellCooldownSeconds(player, slot);
+                    if (seconds > 0) {
+                        String text = String.valueOf(seconds);
+                        float cdTextScale = 1.5f;
+                        int textWidth = HudFontHelper.getTextWidth(mc.font, text);
+                        float textX = (iconX + ICON_SIZE / 2.0f - textWidth * cdTextScale / 2.0f + 1) / cdTextScale;
+                        float textY = (iconY + ICON_SIZE / 2.0f - mc.font.lineHeight * cdTextScale / 2.0f) / cdTextScale;
+                        graphics.pose().pushPose();
+                        try {
+                            graphics.pose().scale(cdTextScale, cdTextScale, 1.0f);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX + 1, (int) textY + 1, 0xFF000000, false);
+                            HudFontHelper.drawString(graphics, mc.font, text, (int) textX, (int) textY, 0xFFFFFF00, false);
+                        } finally {
+                            graphics.pose().popPose();
+                        }
+                    }
+                }
+
                 int summonCount = MethodHandlesUtil.getSummonCount(player, slot);
                 if (summonCount > 0) {
                     drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleKeybind);
@@ -437,7 +493,8 @@ public class SkillHotbarRenderer implements IRenderCommand {
     }
 
     private void drawCooldownOverlay(GuiGraphics graphics, int x, int y, float percent) {
-        CooldownRenderHelper.drawRadialCooldown(graphics, x, y, ICON_SIZE, ICON_SIZE, percent, COOLDOWN_OVERLAY_COLOR);
+        CooldownRenderHelper.drawCooldown(graphics, x, y, ICON_SIZE, ICON_SIZE, percent,
+                COOLDOWN_OVERLAY_COLOR, EquipmentDisplayConfig.getInstance().getCooldownDisplayType());
     }
 
     private void drawChargeRegenBar(GuiGraphics graphics, int iconX, int iconY, float percent) {

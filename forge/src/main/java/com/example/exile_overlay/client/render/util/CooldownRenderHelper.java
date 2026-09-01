@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.render.util;
 
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -139,8 +140,84 @@ public final class CooldownRenderHelper {
         tesselator.end();
 
         RenderSystem.depthMask(true);
-        RenderSystem.enableDepthTest();
+        RenderSystem.disableDepthTest();
         RenderSystem.enableCull();
-        RenderSystem.disableBlend();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+    }
+
+    /**
+     * 垂直下降型（上から下へ水平線が下がる）クールダウンオーバーレイを描画。
+     * 残り割合 (percent: 1.0 -> 0.0) に応じて暗色矩形の上端が上から下へと下降し、
+     * アイコンが上から下へと露出（アンカバー）されていく。
+     *
+     * @param graphics     描画用GuiGraphics
+     * @param x            アイコン左上X座標
+     * @param y            アイコン左上Y座標
+     * @param width        アイコン幅
+     * @param height       アイコン高さ
+     * @param percent      残りクールダウン割合 (0.0 = 完了, 1.0 = 開始直後)
+     * @param overlayColor 暗色オーバーレイのARGBカラー (例: 0xAA000000)
+     */
+    public static void drawVerticalCooldown(GuiGraphics graphics, int x, int y, int width, int height,
+                                            float percent, int overlayColor) {
+        if (percent <= 0.0f) {
+            return;
+        }
+
+        graphics.flush();
+
+        float clampedPercent = Math.min(1.0f, Math.max(0.0f, percent));
+        float topY = y + height * (1.0f - clampedPercent);
+        float bottomY = y + height;
+        float leftX = x;
+        float rightX = x + width;
+
+        float a = ((overlayColor >> 24) & 0xFF) / 255.0f;
+        float r = ((overlayColor >> 16) & 0xFF) / 255.0f;
+        float g = ((overlayColor >> 8) & 0xFF) / 255.0f;
+        float b = (overlayColor & 0xFF) / 255.0f;
+
+        Matrix4f matrix = graphics.pose().last().pose();
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableCull();
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        buffer.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+
+        buffer.vertex(matrix, leftX, topY, 0.0f).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, leftX, bottomY, 0.0f).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, rightX, bottomY, 0.0f).color(r, g, b, a).endVertex();
+
+        buffer.vertex(matrix, leftX, topY, 0.0f).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, rightX, bottomY, 0.0f).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, rightX, topY, 0.0f).color(r, g, b, a).endVertex();
+
+        tesselator.end();
+
+        RenderSystem.depthMask(true);
+        RenderSystem.disableDepthTest();
+        RenderSystem.enableCull();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+    }
+
+    /**
+     * 表示タイプに応じたクールダウンオーバーレイを描画
+     */
+    public static void drawCooldown(GuiGraphics graphics, int x, int y, int width, int height,
+                                    float percent, int overlayColor,
+                                    EquipmentDisplayConfig.CooldownDisplayType type) {
+        if (type == EquipmentDisplayConfig.CooldownDisplayType.VERTICAL) {
+            drawVerticalCooldown(graphics, x, y, width, height, percent, overlayColor);
+        } else {
+            drawRadialCooldown(graphics, x, y, width, height, percent, overlayColor);
+        }
     }
 }

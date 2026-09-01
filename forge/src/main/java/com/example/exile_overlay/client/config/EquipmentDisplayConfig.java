@@ -27,6 +27,15 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         VANILLA_ONLY
     }
 
+    /**
+     * スキルクールダウンの表示モード。
+     * RADIAL: 時計回りに開く扇形（ラジアルスイープ）、VERTICAL: 上から下に水平線が下がっていく垂直降下型。
+     */
+    public enum CooldownDisplayType {
+        RADIAL,
+        VERTICAL
+    }
+
     private boolean usePercentage = true;
     private boolean enableShadow = true;
     private boolean quickLootEnabled = false;
@@ -56,6 +65,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean simpleSkillKeybindDisplay = false;
     private boolean simpleSkillChargeMaxDisplay = false;
     private boolean simpleBuffStackDisplay = false;
+    private CooldownDisplayType cooldownDisplayType = CooldownDisplayType.VERTICAL;
 
     private EquipmentDisplayConfig() {
         super(SECTION_ID, FILE_NAME, true);
@@ -122,6 +132,13 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("simpleSkillKeybindDisplay")) simpleSkillKeybindDisplay = obj.get("simpleSkillKeybindDisplay").getAsBoolean();
         if (obj.has("simpleSkillChargeMaxDisplay")) simpleSkillChargeMaxDisplay = obj.get("simpleSkillChargeMaxDisplay").getAsBoolean();
         if (obj.has("simpleBuffStackDisplay")) simpleBuffStackDisplay = obj.get("simpleBuffStackDisplay").getAsBoolean();
+        if (obj.has("cooldownDisplayType")) {
+            try {
+                cooldownDisplayType = CooldownDisplayType.valueOf(obj.get("cooldownDisplayType").getAsString());
+            } catch (IllegalArgumentException ignored) {
+                cooldownDisplayType = CooldownDisplayType.VERTICAL;
+            }
+        }
     }
 
     @Override
@@ -155,6 +172,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("simpleSkillKeybindDisplay", simpleSkillKeybindDisplay);
         obj.addProperty("simpleSkillChargeMaxDisplay", simpleSkillChargeMaxDisplay);
         obj.addProperty("simpleBuffStackDisplay", simpleBuffStackDisplay);
+        obj.addProperty("cooldownDisplayType", cooldownDisplayType.name());
     }
 
     public boolean isUsePercentage() { return usePercentage; }
@@ -244,6 +262,13 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isSimpleBuffStackDisplay() { return simpleBuffStackDisplay; }
     public void setSimpleBuffStackDisplay(boolean simple) { this.simpleBuffStackDisplay = simple; }
 
+    public CooldownDisplayType getCooldownDisplayType() { return cooldownDisplayType; }
+    public void setCooldownDisplayType(CooldownDisplayType type) {
+        if (type != null) {
+            this.cooldownDisplayType = type;
+        }
+    }
+
     public void resetToDefaults() {
         this.usePercentage = true;
         this.enableShadow = true;
@@ -274,5 +299,6 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.simpleSkillKeybindDisplay = false;
         this.simpleSkillChargeMaxDisplay = false;
         this.simpleBuffStackDisplay = false;
+        this.cooldownDisplayType = CooldownDisplayType.VERTICAL;
     }
 }

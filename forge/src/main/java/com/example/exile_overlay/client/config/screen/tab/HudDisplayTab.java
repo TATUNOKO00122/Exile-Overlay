@@ -113,6 +113,20 @@ public class HudDisplayTab implements IConfigTab {
             ));
         }
 
+        entries.add(new CycleConfigEntry<>(
+                Arrays.asList(EquipmentDisplayConfig.CooldownDisplayType.values()),
+                equipConfig::getCooldownDisplayType,
+                equipConfig::setCooldownDisplayType,
+                type -> {
+                    String typeKey = switch (type) {
+                        case RADIAL -> "exile_overlay.config.cooldown_display_type.radial";
+                        case VERTICAL -> "exile_overlay.config.cooldown_display_type.vertical";
+                    };
+                    return Component.translatable("exile_overlay.config.cooldown_display_type", Component.translatable(typeKey));
+                },
+                Component.translatable("exile_overlay.config.cooldown_display_type.tooltip")
+        ));
+
         entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.show_skill_cooldown_number",
                 equipConfig::isShowSkillCooldownNumber,
