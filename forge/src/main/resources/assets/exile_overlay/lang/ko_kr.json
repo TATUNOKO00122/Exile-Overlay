@@ -156,7 +156,7 @@
   "category.exile_overlay.general": "Exile Overlay",
   "hud.exile_overlay.hotbar": "단축바",
   "hud.exile_overlay.buff_overlay": "버프 오버레이",
-  "hud.exile_overlay.minion_overlay": "소환수 오버레이",
+  "hud.exile_overlay.minion_overlay": "용병 UI",
   "hud.exile_overlay.vanilla_air": "산소 게이지",
   "hud.exile_overlay.vanilla_food": "허기 게이지",
   "hud.exile_overlay.skill_hotbar": "스펠 단축바",

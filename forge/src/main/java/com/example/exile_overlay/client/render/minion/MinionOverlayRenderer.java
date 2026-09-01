@@ -9,6 +9,7 @@ import com.example.exile_overlay.api.data.MercenarySkillInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
+import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
 import com.example.exile_overlay.client.render.HudFontHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -56,7 +57,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
     private static final int SPACING_VERTICAL = FRAME_HEIGHT - 2;
 
     // 傭兵フレーム定数 (mercenary_ui.png アトラス)
-    private static final int MERC_BAR_OFFSET_X = 33;
+    private static final int MERC_BAR_OFFSET_X = 34;
     private static final float MERC_BAR_SCALE = 0.5f;
     private static final int MERC_UI_TEX_SIZE = 256;
     private static final int MERC_ICON_FRAME_U = 1;
@@ -72,6 +73,24 @@ public class MinionOverlayRenderer implements IRenderCommand {
     private static final int MERC_BAR_INNER_W = 191;
     private static final int MERC_BAR_INNER_H = 10;
     private static final int MERC_BAR_WIDTH = (int) Math.round(MERC_BAR_FRAME_W * MERC_BAR_SCALE);
+    private static final int MERC_TOTAL_WIDTH = MERC_BAR_OFFSET_X + MERC_BAR_WIDTH;
+    private static final int MERC_TOTAL_HEIGHT = 33;
+
+    // 傭兵UI移動画面用ダミープレビュー
+    private static final MercenaryDisplayInfo DUMMY_MERCENARY = new MercenaryDisplayInfo(
+            "dummy",
+            "Mercenary",
+            DEFAULT_MINION_ICON,
+            1,
+            100.0f,
+            100.0f,
+            20.0f,
+            20.0f,
+            List.of(
+                    new MercenarySkillInfo("dummy_skill_1", DEFAULT_MINION_ICON, false, 0.0f, 0, 0),
+                    new MercenarySkillInfo("dummy_skill_2", DEFAULT_MINION_ICON, true, 0.4f, 8, 20)
+            )
+    );
 
     // アニメーション設定
     private static final float ANIMATION_SPEED = 0.2f;
@@ -86,14 +105,12 @@ public class MinionOverlayRenderer implements IRenderCommand {
         public float currentY;
         public float alpha;
         public float offsetX;
-        public int maxDuration;
 
         public VisualState(float startX, float startY) {
             this.currentX = startX;
             this.currentY = startY;
             this.alpha = 0.0f;
             this.offsetX = SLIDE_DISTANCE;
-            this.maxDuration = -1;
         }
     }
 
@@ -107,13 +124,20 @@ public class MinionOverlayRenderer implements IRenderCommand {
         if (mc.player == null) return;
 
         MercenaryDisplayInfo merc = MethodHandlesUtil.getActiveMercenary(mc.player);
+        if (merc == null && mc.screen instanceof DraggableHudConfigScreen) {
+            merc = DUMMY_MERCENARY;
+        }
+
+        // 独立した召喚数表示（将来再利用する可能性があるためコメントアウトで無効化）
+        /*
         List<MinionDisplayInfo> minions = MethodHandlesUtil.getActiveMinions(mc.player);
         minionCache.clear();
         if (minions != null) {
             minionCache.addAll(minions);
         }
+        */
 
-        if (merc != null || !minionCache.isEmpty()) {
+        if (merc != null /* || !minionCache.isEmpty() */) {
             int screenWidth = ctx.getScreenWidth();
             int screenHeight = ctx.getScreenHeight();
             HudPosition position = POSITION_MANAGER.getPosition(CONFIG_KEY);
@@ -135,21 +159,28 @@ public class MinionOverlayRenderer implements IRenderCommand {
             graphics.pose().translate(listX, listY, 0);
             graphics.pose().scale((float) scale, (float) scale, 1.0f);
 
+            /*
             int minionStartX = 0;
             int minionStartY = 0;
+            */
 
             if (merc != null) {
                 renderMercenaryFrame(graphics, mc, merc, 0, 0);
+                /*
                 if (horizontal) {
                     minionStartX = MERC_BAR_OFFSET_X + MERC_BAR_WIDTH + 8;
                 } else {
                     minionStartY = 37;
                 }
+                */
             }
 
+            // 独立した召喚数表示（将来再利用する可能性があるためコメントアウトで無効化）
+            /*
             if (!minions.isEmpty()) {
                 renderMinionListInternal(graphics, mc, minions, minionStartX, minionStartY, horizontal);
             }
+            */
         } finally {
             graphics.pose().popPose();
         }
@@ -185,19 +216,25 @@ public class MinionOverlayRenderer implements IRenderCommand {
                 MERC_ICON_FRAME_SIZE, MERC_ICON_FRAME_SIZE,
                 MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
 
-        // 4. HPバー枠 & スキルアイコン座標設定
+        // 4. HP / ES バー座標 & スキルアイコン座標設定
+        boolean hasES = merc.maxEnergyShield() > 0;
+        int barShift = hasES ? 6 : 0;
+
         int barFrameX = x + MERC_BAR_OFFSET_X;
-        int barFrameY = drawY + 22;
-        int scaledBarW = MERC_BAR_WIDTH;
+        int hpBarFrameY = drawY + 22 - barShift;
+        int esBarFrameY = hpBarFrameY + 8;
 
         // 5. 装備スキルアイコン (HPバー枠の上側に配置)
         if (merc.skills() != null && !merc.skills().isEmpty()) {
             int skillIconSize = 12;
-            int skillY = barFrameY - 2 - skillIconSize;
+            int skillY = hpBarFrameY - 2 - skillIconSize;
+
+            long lastUpdateTime = MercenaryClientCache.getLastUpdatedTime();
+            float elapsedSeconds = lastUpdateTime > 0 ? (System.currentTimeMillis() - lastUpdateTime) / 1000.0f : 0.0f;
 
             for (int i = 0; i < merc.skills().size(); i++) {
                 MercenarySkillInfo skill = merc.skills().get(i);
-                int skillX = barFrameX + 3 + i * (skillIconSize + 2);
+                int skillX = barFrameX + 1 + i * (skillIconSize + 2);
 
                 // アイコン背景
                 graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + skillIconSize, 0xAA000000);
@@ -207,9 +244,16 @@ public class MinionOverlayRenderer implements IRenderCommand {
                 RenderSystem.setShaderTexture(0, skillIcon);
                 graphics.blit(skillIcon, skillX, skillY, skillIconSize, skillIconSize, 0, 0, 16, 16, 16, 16);
 
-                // クールダウンオーバーレイ
+                // クールダウンオーバーレイ（パケット受信からの経過時間を補間して滑らかに描画）
                 if (skill.onCooldown()) {
-                    float cdPct = Math.max(0.0f, Math.min(1.0f, skill.cooldownProgress()));
+                    float totalSeconds = skill.totalTicks() / 20.0f;
+                    float remainingSeconds = (skill.remainingTicks() / 20.0f) - elapsedSeconds;
+                    float cdPct;
+                    if (totalSeconds > 0) {
+                        cdPct = Math.max(0.0f, Math.min(1.0f, remainingSeconds / totalSeconds));
+                    } else {
+                        cdPct = Math.max(0.0f, Math.min(1.0f, skill.cooldownProgress()));
+                    }
                     int cdH = (int) Math.ceil(skillIconSize * cdPct);
                     if (cdH > 0) {
                         graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + cdH, 0xB0000000);
@@ -218,10 +262,10 @@ public class MinionOverlayRenderer implements IRenderCommand {
             }
         }
 
-        // 6. HP / ES バー描画（mercenary_ui.png のバー枠を縦横比1:1で縮小描画）
+        // 6. HP バー描画（上段）
         graphics.pose().pushPose();
         try {
-            graphics.pose().translate(barFrameX, barFrameY, 0);
+            graphics.pose().translate(barFrameX, hpBarFrameY, 0);
             graphics.pose().scale(MERC_BAR_SCALE, MERC_BAR_SCALE, 1.0f);
 
             // バー背景
@@ -238,18 +282,6 @@ public class MinionOverlayRenderer implements IRenderCommand {
                         0xFF43A047);
             }
 
-            // ES（Energy Shield）オーバーレイ
-            boolean hasES = merc.maxEnergyShield() > 0;
-            if (hasES) {
-                float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
-                int esFillW = (int) (MERC_BAR_INNER_W * esPct);
-                if (esFillW > 0) {
-                    graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
-                            MERC_BAR_INNER_X + esFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
-                            0xAA00B0FF);
-                }
-            }
-
             // HPBar枠テクスチャ描画
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
@@ -261,8 +293,41 @@ public class MinionOverlayRenderer implements IRenderCommand {
             graphics.pose().popPose();
         }
 
-        // 7. HP数値テキスト（バー右上肩にTargetInfo風に配置）
-        boolean hasES = merc.maxEnergyShield() > 0;
+        // 7. ES（Energy Shield）バー描画（下段、二段表示）
+        if (hasES) {
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().translate(barFrameX, esBarFrameY, 0);
+                graphics.pose().scale(MERC_BAR_SCALE, MERC_BAR_SCALE, 1.0f);
+
+                // バー背景
+                graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
+                        MERC_BAR_INNER_X + MERC_BAR_INNER_W, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                        0x80000000);
+
+                // 現在ESバー
+                float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
+                int esFillW = (int) (MERC_BAR_INNER_W * esPct);
+                if (esFillW > 0) {
+                    graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
+                            MERC_BAR_INNER_X + esFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                            0xFF00B0FF);
+                }
+
+                // ESBar枠テクスチャ描画
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                graphics.blit(MERCENARY_UI, 0, 0, MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
+                        (float) MERC_BAR_FRAME_U, (float) MERC_BAR_FRAME_V,
+                        MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
+                        MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
+            } finally {
+                graphics.pose().popPose();
+            }
+        }
+
+        // 8. HP数値テキスト（一旦無効化）
+        /*
         if (merc.maxHealth() > 0) {
             int curHp = (int) Math.ceil(merc.health());
             int maxHp = (int) Math.ceil(merc.maxHealth());
@@ -276,8 +341,8 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
             float hpScale = 0.7f;
             float textW = HudFontHelper.getTextWidth(mc.font, hpText) * hpScale;
-            float textX = barFrameX + scaledBarW - textW - 2;
-            float textY = barFrameY - mc.font.lineHeight * hpScale - 1.0f;
+            float textX = barFrameX + MERC_BAR_WIDTH - textW - 2;
+            float textY = hpBarFrameY - mc.font.lineHeight * hpScale - 1.0f;
 
             graphics.pose().pushPose();
             graphics.pose().translate(textX, textY, 0);
@@ -285,6 +350,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
             HudFontHelper.drawString(graphics, mc.font, hpText, 0, 0, 0xFFFFFFFF, true);
             graphics.pose().popPose();
         }
+        */
     }
 
     private static void renderMinionListInternal(GuiGraphics graphics, Minecraft mc,
@@ -299,7 +365,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
             float targetX = horizontal ? startX + i * spacing : startX;
             float targetY = horizontal ? startY : startY + i * spacing;
 
-            VisualState state = getVisualState(minion.spellId(), targetX, targetY, minion.durationTicks());
+            VisualState state = getVisualState(minion.spellId(), targetX, targetY);
             updateFadeIn(state);
 
             float currentPosX = updatePositionX(state, targetX);
@@ -344,32 +410,19 @@ public class MinionOverlayRenderer implements IRenderCommand {
             graphics.pose().popPose();
         }
 
-        // 3. 残り時間プログレスバー
+        // 3. HPプログレスバー（最低HPミニオンの残量を表示）
         int barMaxWidth = 22;
         int barHeight = 3;
         int barX = x + 4;
         int barY = y + FRAME_HEIGHT - 6 - barHeight;
-        int barColor = 0xFF4CAF50; // ミニオン用グリーン
+        int barColor = 0xFF4CAF50; // ミニオン用グリーン固定
 
-        if (!minion.isInfinite()) {
-            int currentDuration = minion.durationTicks();
-            int maxDur = state.maxDuration;
+        float hpRatio = Math.max(0.0f, Math.min(1.0f, minion.healthRatio()));
+        int barWidth = (int) (barMaxWidth * hpRatio);
 
-            if (maxDur <= 0 || currentDuration > maxDur) {
-                maxDur = currentDuration;
-                state.maxDuration = maxDur;
-            }
-
-            float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
-            progress = Math.max(0.0f, Math.min(1.0f, progress));
-            int barWidth = (int) (barMaxWidth * progress);
-
-            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
-            if (barWidth > 0) {
-                graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
-            }
-        } else {
-            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
+        graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
+        if (barWidth > 0) {
+            graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
         }
 
         // 4. 外枠フレーム
@@ -400,7 +453,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
             }
         }
 
-        // 6. 残り時間テキスト（下部）
+        // 6. 残り時間テキスト（下部、空文字・∞の場合は非表示）
         String durationText = minion.durationText();
         if (durationText != null && !durationText.isEmpty()) {
             float textScale = 0.5f;
@@ -412,23 +465,18 @@ public class MinionOverlayRenderer implements IRenderCommand {
                 float textY = (float) ((y + 29) + 0.4) / textScale;
 
                 graphics.pose().scale(textScale, textScale, 1.0f);
-
-                int textColor = minion.isInfinite() ? 0xFF88FF88 : 0xFFFFFFFF;
-                HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, textColor, false);
+                HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, 0xFFFFFFFF, false);
             } finally {
                 graphics.pose().popPose();
             }
         }
     }
 
-    private static VisualState getVisualState(String id, float targetX, float targetY, int duration) {
+    private static VisualState getVisualState(String id, float targetX, float targetY) {
         VisualState state = displayStates.get(id);
         if (state == null) {
             state = new VisualState(targetX, targetY);
-            state.maxDuration = duration;
             displayStates.put(id, state);
-        } else if (duration > state.maxDuration) {
-            state.maxDuration = duration;
         }
         return state;
     }
@@ -481,12 +529,12 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
     @Override
     public int getWidth() {
-        return FRAME_WIDTH;
+        return MERC_TOTAL_WIDTH;
     }
 
     @Override
     public int getHeight() {
-        return FRAME_HEIGHT;
+        return MERC_TOTAL_HEIGHT;
     }
 
     @Override
@@ -501,6 +549,8 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
     @Override
     public int getConfigWidth() {
+        return MERC_TOTAL_WIDTH;
+        /*
         Minecraft mc = Minecraft.getInstance();
         int count = 2;
         if (mc.player != null) {
@@ -515,10 +565,13 @@ public class MinionOverlayRenderer implements IRenderCommand {
         } else {
             return FRAME_WIDTH;
         }
+        */
     }
 
     @Override
     public int getConfigHeight() {
+        return MERC_TOTAL_HEIGHT;
+        /*
         Minecraft mc = Minecraft.getInstance();
         int count = 2;
         if (mc.player != null) {
@@ -533,6 +586,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
         } else {
             return FRAME_HEIGHT + (count - 1) * SPACING_VERTICAL;
         }
+        */
     }
 
     @Override

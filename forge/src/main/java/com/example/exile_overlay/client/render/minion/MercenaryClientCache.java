@@ -42,4 +42,9 @@ public final class MercenaryClientCache {
         }
         return entry.displayInfo();
     }
+
+    public static long getLastUpdatedTime() {
+        CacheEntry entry = CACHE.get();
+        return entry != null ? entry.timestamp() : 0L;
+    }
 }

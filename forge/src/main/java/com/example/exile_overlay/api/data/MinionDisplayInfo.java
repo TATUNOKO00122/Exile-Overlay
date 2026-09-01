@@ -13,12 +13,19 @@ public record MinionDisplayInfo(
         int durationTicks,
         int maxDurationTicks,
         boolean isInfinite,
-        String durationText
+        String durationText,
+        float healthRatio
 ) {
     public static MinionDisplayInfo of(String spellId, String name, ResourceLocation icon,
+                                      int count, int durationTicks, int maxDurationTicks, boolean isInfinite,
+                                      float healthRatio) {
+        String durText = isInfinite ? "" : formatDuration(Math.max(0, durationTicks / 20));
+        return new MinionDisplayInfo(spellId, name, icon, count, durationTicks, maxDurationTicks, isInfinite, durText, healthRatio);
+    }
+
+    public static MinionDisplayInfo of(String spellId, String name, ResourceLocation icon,
                                       int count, int durationTicks, int maxDurationTicks, boolean isInfinite) {
-        String durText = isInfinite ? "∞" : formatDuration(Math.max(0, durationTicks / 20));
-        return new MinionDisplayInfo(spellId, name, icon, count, durationTicks, maxDurationTicks, isInfinite, durText);
+        return of(spellId, name, icon, count, durationTicks, maxDurationTicks, isInfinite, 1.0f);
     }
 
     private static String formatDuration(int seconds) {

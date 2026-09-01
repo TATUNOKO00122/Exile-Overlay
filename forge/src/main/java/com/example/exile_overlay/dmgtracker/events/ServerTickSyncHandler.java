@@ -9,15 +9,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerTickSyncHandler {
     private static int fallbackCounter = 0;
     private static final int FALLBACK_INTERVAL_TICKS = 300; // 15秒ごとに延長
     private static int syncCounter = 0; // 同期頻度を制限するカウンター
-    private static final Set<UUID> playersWithActiveMerc = new HashSet<>();
+    private static final Set<UUID> playersWithActiveMerc = ConcurrentHashMap.newKeySet();
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {

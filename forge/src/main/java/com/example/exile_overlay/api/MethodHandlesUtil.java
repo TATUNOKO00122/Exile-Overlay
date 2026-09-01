@@ -1571,66 +1571,76 @@ public class MethodHandlesUtil {
             Object summonedData = GET_SUMMONED_DATA.invoke(playerData);
             if (summonedData == null) return Collections.emptyList();
 
-            // 1. 周囲のミニオンエンティティから残り寿命情報をマップ化
-            Map<String, Integer> minTicksMap = new HashMap<>();
-            if (player.level() != null && summonEntityClass != null) {
-                net.minecraft.world.phys.AABB searchBox = player.getBoundingBox().inflate(64.0);
-                List<? extends Entity> entities = player.level().getEntitiesOfClass(LivingEntity.class, searchBox);
-                for (Entity entity : entities) {
-                    if (summonEntityClass.isInstance(entity) && entity.isAlive() && !entity.isRemoved()) {
-                        if (entity instanceof net.minecraft.world.entity.TamableAnimal tamable && tamable.getOwner() == player) {
-                            try {
-                                Object unitData = LOAD_UNIT.invoke(entity);
-                                if (unitData != null && GET_SUMMONED_PET_DATA != null) {
-                                    Object petData = GET_SUMMONED_PET_DATA.invoke(unitData);
-                                    if (petData != null && PET_SPELL_FIELD != null && PET_TICKS_FIELD != null) {
-                                        String spell = (String) PET_SPELL_FIELD.get(petData);
-                                        int ticks = PET_TICKS_FIELD.getInt(petData);
-                                        if (spell != null && !spell.isEmpty()) {
-                                            minTicksMap.compute(spell, (k, v) -> v == null ? ticks : Math.min(v, ticks));
-                                        }
-                                    }
-                                }
-                            } catch (Throwable ignored) {}
+            // 1. SummonedData から全召喚スペルとUUIDマップを取得
+            Map<String, List<UUID>> summonedMap = null;
+            if (SUMMONED_TYPES_FIELD != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, List<UUID>> rawMap = (Map<String, List<UUID>>) SUMMONED_TYPES_FIELD.get(summonedData);
+                summonedMap = rawMap;
+            }
+
+            // UUID -> spellGuid の逆引きマップを構築
+            Map<UUID, String> uuidToSpell = new HashMap<>();
+            if (summonedMap != null) {
+                for (Map.Entry<String, List<UUID>> entry : summonedMap.entrySet()) {
+                    String spell = entry.getKey();
+                    List<UUID> uuids = entry.getValue();
+                    if (spell != null && uuids != null) {
+                        for (UUID uuid : uuids) {
+                            if (uuid != null) {
+                                uuidToSpell.put(uuid, spell);
+                            }
                         }
                     }
                 }
             }
 
-            // 2. SummonedData から全召喚スペルとUUID数を取得
-            if (SUMMONED_TYPES_FIELD != null) {
-                @SuppressWarnings("unchecked")
-                Map<String, List<UUID>> map = (Map<String, List<UUID>>) SUMMONED_TYPES_FIELD.get(summonedData);
-                if (map != null) {
-                    for (Map.Entry<String, List<UUID>> entry : map.entrySet()) {
-                        String spellGuid = entry.getKey();
-                        List<UUID> uuids = entry.getValue();
-                        int count = uuids != null ? uuids.size() : 0;
-                        if (count > 0 && spellGuid != null && !spellGuid.isEmpty()) {
-                            Object spell = getSpellByGuid(spellGuid);
-                            ResourceLocation icon = null;
-                            String spellName = spellGuid;
-                            if (spell != null) {
-                                if (GET_SPELL_ICON_LOC != null) {
-                                    try {
-                                        icon = (ResourceLocation) GET_SPELL_ICON_LOC.invoke(spell);
-                                    } catch (Throwable ignored) {}
-                                }
-                            }
-
-                            int ticks = minTicksMap.getOrDefault(spellGuid, -1);
-                            boolean isInfinite = (ticks == -1 || (ticks <= 0 && !minTicksMap.containsKey(spellGuid)));
-
-                            result.add(MinionDisplayInfo.of(
-                                    spellGuid,
-                                    spellName,
-                                    icon,
-                                    count,
-                                    ticks,
-                                    ticks > 0 ? ticks : -1,
-                                    isInfinite
-                            ));
+            // 2. 周囲のミニオンエンティティから最低HP割合を取得
+            Map<String, Float> minHpRatioMap = new HashMap<>();
+            if (!uuidToSpell.isEmpty() && player.level() != null) {
+                net.minecraft.world.phys.AABB searchBox = player.getBoundingBox().inflate(64.0);
+                List<LivingEntity> entities = player.level().getEntitiesOfClass(LivingEntity.class, searchBox);
+                for (LivingEntity living : entities) {
+                    if (living.isAlive() && !living.isRemoved()) {
+                        String spell = uuidToSpell.get(living.getUUID());
+                        if (spell != null) {
+                            float curHp = living.getHealth();
+                            float maxHp = living.getMaxHealth();
+                            float ratio = maxHp > 0.0f ? Math.max(0.0f, Math.min(1.0f, curHp / maxHp)) : 1.0f;
+                            minHpRatioMap.compute(spell, (k, v) -> v == null ? ratio : Math.min(v, ratio));
                         }
+                    }
+                }
+            }
+
+            // 3. MinionDisplayInfo のリストを生成
+            if (summonedMap != null) {
+                for (Map.Entry<String, List<UUID>> entry : summonedMap.entrySet()) {
+                    String spellGuid = entry.getKey();
+                    List<UUID> uuids = entry.getValue();
+                    int count = uuids != null ? uuids.size() : 0;
+                    if (count > 0 && spellGuid != null && !spellGuid.isEmpty()) {
+                        Object spell = getSpellByGuid(spellGuid);
+                        ResourceLocation icon = null;
+                        String spellName = spellGuid;
+                        if (spell != null && GET_SPELL_ICON_LOC != null) {
+                            try {
+                                icon = (ResourceLocation) GET_SPELL_ICON_LOC.invoke(spell);
+                            } catch (Throwable ignored) {}
+                        }
+
+                        float healthRatio = minHpRatioMap.getOrDefault(spellGuid, 1.0f);
+
+                        result.add(MinionDisplayInfo.of(
+                                spellGuid,
+                                spellName,
+                                icon,
+                                count,
+                                -1,
+                                -1,
+                                true,
+                                healthRatio
+                        ));
                     }
                 }
             }
@@ -2428,12 +2438,12 @@ public class MethodHandlesUtil {
                                     int gcdLeft = (int) GET_COOLDOWN_TICKS.invoke(cooldowns, "global_cooldown");
                                     int gcdNeed = (int) GET_NEEDED_TICKS.invoke(cooldowns, "global_cooldown");
 
-                                    if (spellLeft > 0 && spellNeed > 0) {
+                                    if (spellLeft > 0) {
                                         remainingTicks = spellLeft;
-                                        totalTicks = spellNeed;
-                                    } else if (gcdLeft > 0 && gcdNeed > 0) {
+                                        totalTicks = spellNeed > 0 ? spellNeed : spellLeft;
+                                    } else if (gcdLeft > 0) {
                                         remainingTicks = gcdLeft;
-                                        totalTicks = gcdNeed;
+                                        totalTicks = gcdNeed > 0 ? gcdNeed : gcdLeft;
                                     }
 
                                     if (remainingTicks > 0) {
