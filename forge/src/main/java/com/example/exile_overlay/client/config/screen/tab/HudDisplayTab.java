@@ -5,7 +5,6 @@ import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
-import com.example.exile_overlay.client.config.screen.entry.ActionConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.BooleanConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.ConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.CycleConfigEntry;
@@ -21,8 +20,6 @@ import java.util.List;
  * ターゲット情報、装備耐久度HUD、スキルホットバー、レベル表示モード等を管理する。
  */
 public class HudDisplayTab implements IConfigTab {
-
-    private boolean buffFilterCollapsed = true;
 
     @Override
     public Component getTitle() {
@@ -184,49 +181,18 @@ public class HudDisplayTab implements IConfigTab {
                 buffFilter::setSortByDuration
         ));
 
-        Component buffToggleText = Component.literal(buffFilterCollapsed ? "\u25B6 " : "\u25BC ")
-                .append(Component.translatable("exile_overlay.config.filter_settings"));
-        entries.add(new ActionConfigEntry(
-                buffToggleText,
-                Component.translatable("exile_overlay.config.filter_settings.tooltip"),
-                btn -> {
-                    buffFilterCollapsed = !buffFilterCollapsed;
-                    screen.rebuildCurrentTab();
-                }
-        ));
-
-        if (!buffFilterCollapsed) {
+        if (MethodHandlesUtil.isAvailable()) {
             entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.buff_filter_vanilla_buffs",
-                    buffFilter::isShowVanillaBuffs,
-                    buffFilter::setShowVanillaBuffs
+                    "exile_overlay.config.buff_filter_minions",
+                    buffFilter::isShowMinions,
+                    buffFilter::setShowMinions
             ));
 
             entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.buff_filter_vanilla_debuffs",
-                    buffFilter::isShowVanillaDebuffs,
-                    buffFilter::setShowVanillaDebuffs
+                    "exile_overlay.config.buff_filter_mercenary",
+                    buffFilter::isShowMercenary,
+                    buffFilter::setShowMercenary
             ));
-
-            if (MethodHandlesUtil.isAvailable()) {
-                entries.add(new BooleanConfigEntry(
-                        "exile_overlay.config.buff_filter_mns_buffs",
-                        buffFilter::isShowMnsBuffs,
-                        buffFilter::setShowMnsBuffs
-                ));
-
-                entries.add(new BooleanConfigEntry(
-                        "exile_overlay.config.buff_filter_mns_debuffs",
-                        buffFilter::isShowMnsDebuffs,
-                        buffFilter::setShowMnsDebuffs
-                ));
-
-                entries.add(new BooleanConfigEntry(
-                        "exile_overlay.config.buff_filter_minions",
-                        buffFilter::isShowMinions,
-                        buffFilter::setShowMinions
-                ));
-            }
         }
 
         return entries;

@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.render.effect;
 import com.example.exile_overlay.api.IRenderCommand;
 import com.example.exile_overlay.api.RenderContext;
 import com.example.exile_overlay.api.RenderLayer;
+import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
@@ -32,6 +33,8 @@ public class BuffOverlayRenderer implements IRenderCommand {
             "textures/gui/effect_frame_background.png");
     private static final ResourceLocation EFFECT_STACK_BADGE = new ResourceLocation("exile_overlay",
             "textures/gui/effect_stack_badge.png");
+    private static final ResourceLocation MERCENARY_BUFF_FRAME = new ResourceLocation("exile_overlay",
+            "textures/gui/mercenary_buff_frame.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -113,6 +116,11 @@ public class BuffOverlayRenderer implements IRenderCommand {
     private static void renderSingleEffect(GuiGraphics graphics, Minecraft mc,
             EffectRenderHelper.DisplayableEffect effect,
             int x, int y, EffectRenderHelper.VisualState state) {
+        if (effect.isMercenary()) {
+            renderMercenaryEffect(graphics, mc, effect, x, y);
+            return;
+        }
+
         RenderSystem.enableBlend();
         RenderSystem.setShaderTexture(0, EFFECT_FRAME_BACKGROUND);
         graphics.blit(EFFECT_FRAME_BACKGROUND, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
@@ -159,48 +167,8 @@ public class BuffOverlayRenderer implements IRenderCommand {
         RenderSystem.setShaderTexture(0, EFFECT_FRAME);
         graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-        int stacks = effect.getStacks();
         if (effect.showStackCount()) {
-            boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
-            String customStackText = effect.getCustomStackText();
-            String stackText = customStackText != null ? customStackText : toRoman(stacks);
-            float stackScale = isSimple ? 0.9f : 0.7f;
-            int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
-
-            float badgeCenterX = x + FRAME_WIDTH - 5;
-            float badgeCenterY = y + 7;
-
-            if (isSimple) {
-                float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
-                float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
-
-                graphics.pose().pushPose();
-                graphics.pose().translate(textX, textY, 0);
-                graphics.pose().scale(stackScale, stackScale, 1.0f);
-                for (int dx = -1; dx <= 1; dx++) {
-                    for (int dy = -1; dy <= 1; dy++) {
-                        if (dx != 0 || dy != 0) {
-                            HudFontHelper.drawString(graphics, mc.font, stackText, dx, dy, 0xFF000000, false);
-                        }
-                    }
-                }
-                HudFontHelper.drawString(graphics, mc.font, stackText, 0, 0, 0xFFFFFFFF, false);
-                graphics.pose().popPose();
-            } else {
-                RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
-                graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
-
-                float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
-                float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
-
-                graphics.pose().pushPose();
-                try {
-                    graphics.pose().scale(stackScale, stackScale, 1.0f);
-                    HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
-                } finally {
-                    graphics.pose().popPose();
-                }
-            }
+            renderStackBadge(graphics, mc, effect, x, y);
         }
 
         String durationText = effect.getDurationText();
@@ -217,6 +185,120 @@ public class BuffOverlayRenderer implements IRenderCommand {
 
                 int textColor = effect.isInfinite() ? 0xFF88FF88 : 0xFFFFFFFF;
                 HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, textColor, false);
+            } finally {
+                graphics.pose().popPose();
+            }
+        }
+    }
+
+    private static void renderMercenaryEffect(GuiGraphics graphics, Minecraft mc,
+            EffectRenderHelper.DisplayableEffect effect,
+            int x, int y) {
+        RenderSystem.enableBlend();
+
+        // 1. 背景描画
+        RenderSystem.setShaderTexture(0, EFFECT_FRAME_BACKGROUND);
+        graphics.blit(EFFECT_FRAME_BACKGROUND, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+        // 2. 傭兵アイコン描画 (通常のバフ表示と同じサイズ・配置)
+        int iconOffset = 3;
+        int iconX = x + iconOffset;
+        int iconY = y + iconOffset;
+        graphics.pose().pushPose();
+        try {
+            graphics.pose().translate(-1.0f, -1.0f, 0);
+            effect.renderIcon(graphics, iconX, iconY, ICON_SIZE + 4);
+        } finally {
+            graphics.pose().popPose();
+        }
+
+        // アイコン描画をフラッシュして確実にプログレスバーの背面に配置
+        graphics.flush();
+
+        // 3. プログレスバー描画 (高さ2px, 左右1px拡大して幅26px, アイコンの手前・枠より後ろに描画)
+        MercenaryDisplayInfo merc = effect.getMercenaryInfo();
+        boolean hasES = merc != null && merc.maxEnergyShield() > 0;
+
+        int barX = x + 2;
+        int barMaxW = 26;
+
+        if (hasES) {
+            // ESが存在する場合: プログレスバーを二本で表示 (各2px)
+            // 上段 HPバー (元の位置: y+28..29, 高さ2px)
+            int hpBarY = y + 28;
+            graphics.fill(barX, hpBarY, barX + barMaxW, hpBarY + 2, 0x80000000);
+            float hpPct = merc.maxHealth() > 0 ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
+            int hpW = (int) (barMaxW * hpPct);
+            if (hpW > 0) {
+                graphics.fill(barX, hpBarY, barX + hpW, hpBarY + 2, 0xFF43A047);
+            }
+
+            // 下段 ESバー (y+31..32, 高さ2px)
+            int esBarY = y + 31;
+            graphics.fill(barX, esBarY, barX + barMaxW, esBarY + 2, 0x80000000);
+            float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
+            int esW = (int) (barMaxW * esPct);
+            if (esW > 0) {
+                graphics.fill(barX, esBarY, barX + esW, esBarY + 2, 0xFF00B0FF);
+            }
+        } else {
+            // ESが存在しない場合: HPバーを下に+2px拡大 (y+28..31, 高さ4px)
+            int hpBarY = y + 28;
+            graphics.fill(barX, hpBarY, barX + barMaxW, hpBarY + 4, 0x80000000);
+            float hpPct = (merc != null && merc.maxHealth() > 0) ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
+            int hpW = (int) (barMaxW * hpPct);
+            if (hpW > 0) {
+                graphics.fill(barX, hpBarY, barX + hpW, hpBarY + 4, 0xFF43A047);
+            }
+        }
+
+        // プログレスバー描画をフラッシュして確実に枠の背面に配置
+        graphics.flush();
+
+        // 4. 外枠フレーム描画 (mercenary_buff_frame.png, バーの手前に被せて描画)
+        RenderSystem.setShaderTexture(0, MERCENARY_BUFF_FRAME);
+        graphics.blit(MERCENARY_BUFF_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+    }
+
+    private static void renderStackBadge(GuiGraphics graphics, Minecraft mc,
+            EffectRenderHelper.DisplayableEffect effect, int x, int y) {
+        int stacks = effect.getStacks();
+        boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
+        String customStackText = effect.getCustomStackText();
+        String stackText = customStackText != null ? customStackText : toRoman(stacks);
+        float stackScale = isSimple ? 0.9f : 0.7f;
+        int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
+
+        float badgeCenterX = x + FRAME_WIDTH - 5;
+        float badgeCenterY = y + 7;
+
+        if (isSimple) {
+            float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
+            float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
+
+            graphics.pose().pushPose();
+            graphics.pose().translate(textX, textY, 0);
+            graphics.pose().scale(stackScale, stackScale, 1.0f);
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    if (dx != 0 || dy != 0) {
+                        HudFontHelper.drawString(graphics, mc.font, stackText, dx, dy, 0xFF000000, false);
+                    }
+                }
+            }
+            HudFontHelper.drawString(graphics, mc.font, stackText, 0, 0, 0xFFFFFFFF, false);
+            graphics.pose().popPose();
+        } else {
+            RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
+            graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+
+            float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
+            float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
+
+            graphics.pose().pushPose();
+            try {
+                graphics.pose().scale(stackScale, stackScale, 1.0f);
+                HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
             } finally {
                 graphics.pose().popPose();
             }

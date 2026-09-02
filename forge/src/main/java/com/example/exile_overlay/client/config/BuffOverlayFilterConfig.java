@@ -17,11 +17,8 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
     private OverlayFilter skillBuffOverlay = OverlayFilter.createDefaultSkillOnly();
 
     public static class OverlayFilter {
-        public boolean showVanillaBuffs = true;
-        public boolean showVanillaDebuffs = true;
-        public boolean showMnsBuffs = true;
-        public boolean showMnsDebuffs = true;
         public boolean showMinions = true;
+        public boolean showMercenary = true;
         public boolean sortByDuration = false;
 
         public static OverlayFilter createDefaultAll() {
@@ -30,27 +27,18 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
 
         public static OverlayFilter createDefaultSkillOnly() {
             OverlayFilter f = new OverlayFilter();
-            f.showVanillaBuffs = false;
-            f.showVanillaDebuffs = false;
-            f.showMnsBuffs = true;
-            f.showMnsDebuffs = false;
             f.showMinions = true;
+            f.showMercenary = false;
             f.sortByDuration = false;
             return f;
         }
 
-        public boolean isShowVanillaBuffs() { return showVanillaBuffs; }
-        public boolean isShowVanillaDebuffs() { return showVanillaDebuffs; }
-        public boolean isShowMnsBuffs() { return showMnsBuffs; }
-        public boolean isShowMnsDebuffs() { return showMnsDebuffs; }
         public boolean isShowMinions() { return showMinions; }
+        public boolean isShowMercenary() { return showMercenary; }
         public boolean isSortByDuration() { return sortByDuration; }
 
-        public void setShowVanillaBuffs(boolean v) { showVanillaBuffs = v; }
-        public void setShowVanillaDebuffs(boolean v) { showVanillaDebuffs = v; }
-        public void setShowMnsBuffs(boolean v) { showMnsBuffs = v; }
-        public void setShowMnsDebuffs(boolean v) { showMnsDebuffs = v; }
         public void setShowMinions(boolean v) { showMinions = v; }
+        public void setShowMercenary(boolean v) { showMercenary = v; }
         public void setSortByDuration(boolean v) { sortByDuration = v; }
     }
 
@@ -95,22 +83,16 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
 
     private static OverlayFilter deserializeFilter(JsonObject o) {
         OverlayFilter filter = new OverlayFilter();
-        if (o.has("showVanillaBuffs")) filter.showVanillaBuffs = o.get("showVanillaBuffs").getAsBoolean();
-        if (o.has("showVanillaDebuffs")) filter.showVanillaDebuffs = o.get("showVanillaDebuffs").getAsBoolean();
-        if (o.has("showMnsBuffs")) filter.showMnsBuffs = o.get("showMnsBuffs").getAsBoolean();
-        if (o.has("showMnsDebuffs")) filter.showMnsDebuffs = o.get("showMnsDebuffs").getAsBoolean();
         if (o.has("showMinions")) filter.showMinions = o.get("showMinions").getAsBoolean();
+        if (o.has("showMercenary")) filter.showMercenary = o.get("showMercenary").getAsBoolean();
         if (o.has("sortByDuration")) filter.sortByDuration = o.get("sortByDuration").getAsBoolean();
         return filter;
     }
 
     private static JsonObject serializeFilter(OverlayFilter filter) {
         JsonObject o = new JsonObject();
-        o.addProperty("showVanillaBuffs", filter.showVanillaBuffs);
-        o.addProperty("showVanillaDebuffs", filter.showVanillaDebuffs);
-        o.addProperty("showMnsBuffs", filter.showMnsBuffs);
-        o.addProperty("showMnsDebuffs", filter.showMnsDebuffs);
         o.addProperty("showMinions", filter.showMinions);
+        o.addProperty("showMercenary", filter.showMercenary);
         o.addProperty("sortByDuration", filter.sortByDuration);
         return o;
     }

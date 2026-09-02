@@ -270,18 +270,12 @@ public class ConfigScreen extends Screen {
 
         BuffOverlayFilterConfig buffFilter = BuffOverlayFilterConfig.getInstance();
         BuffOverlayFilterConfig.OverlayFilter defaultAll = BuffOverlayFilterConfig.OverlayFilter.createDefaultAll();
-        buffFilter.getBuffOverlay().setShowVanillaBuffs(defaultAll.isShowVanillaBuffs());
-        buffFilter.getBuffOverlay().setShowVanillaDebuffs(defaultAll.isShowVanillaDebuffs());
-        buffFilter.getBuffOverlay().setShowMnsBuffs(defaultAll.isShowMnsBuffs());
-        buffFilter.getBuffOverlay().setShowMnsDebuffs(defaultAll.isShowMnsDebuffs());
         buffFilter.getBuffOverlay().setShowMinions(defaultAll.isShowMinions());
+        buffFilter.getBuffOverlay().setShowMercenary(defaultAll.isShowMercenary());
         buffFilter.getBuffOverlay().setSortByDuration(defaultAll.isSortByDuration());
         BuffOverlayFilterConfig.OverlayFilter defaultSkill = BuffOverlayFilterConfig.OverlayFilter.createDefaultSkillOnly();
-        buffFilter.getSkillBuffOverlay().setShowVanillaBuffs(defaultSkill.isShowVanillaBuffs());
-        buffFilter.getSkillBuffOverlay().setShowVanillaDebuffs(defaultSkill.isShowVanillaDebuffs());
-        buffFilter.getSkillBuffOverlay().setShowMnsBuffs(defaultSkill.isShowMnsBuffs());
-        buffFilter.getSkillBuffOverlay().setShowMnsDebuffs(defaultSkill.isShowMnsDebuffs());
         buffFilter.getSkillBuffOverlay().setShowMinions(defaultSkill.isShowMinions());
+        buffFilter.getSkillBuffOverlay().setShowMercenary(defaultSkill.isShowMercenary());
         buffFilter.getSkillBuffOverlay().setSortByDuration(defaultSkill.isSortByDuration());
         buffFilter.save();
 

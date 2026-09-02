@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.render.effect;
 import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.data.ExileEffectInfo;
+import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -77,6 +78,8 @@ public class EffectRenderHelper {
         default String getCustomStackText() { return null; }
         String getDurationText();
         void renderIcon(GuiGraphics graphics, int x, int y, int size);
+        default boolean isMercenary() { return false; }
+        default MercenaryDisplayInfo getMercenaryInfo() { return null; }
     }
 
     public static class VanillaEffectWrapper implements DisplayableEffect {
@@ -283,7 +286,95 @@ public class EffectRenderHelper {
         }
     }
 
+    public static class MercenaryEffectWrapper implements DisplayableEffect {
+        private MercenaryDisplayInfo merc;
+
+        public MercenaryEffectWrapper(MercenaryDisplayInfo merc) {
+            this.merc = merc;
+        }
+
+        public void updateInfo(MercenaryDisplayInfo merc) {
+            this.merc = merc;
+        }
+
+        @Override
+        public boolean isMercenary() {
+            return true;
+        }
+
+        @Override
+        public MercenaryDisplayInfo getMercenaryInfo() {
+            return merc;
+        }
+
+        @Override
+        public String getId() {
+            return "mns:mercenary:" + (merc != null ? merc.classId() : "none");
+        }
+
+        @Override
+        public ResourceLocation getTexture() {
+            return merc != null && merc.icon() != null ? merc.icon() : DEFAULT_MINION_ICON;
+        }
+
+        @Override
+        public TextureAtlasSprite getSprite() {
+            return null;
+        }
+
+        @Override
+        public boolean isBeneficial() {
+            return true;
+        }
+
+        @Override
+        public boolean isInfinite() {
+            return true;
+        }
+
+        @Override
+        public int getDuration() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public int getMaxDuration() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public int getStacks() {
+            return merc != null ? merc.level() : 1;
+        }
+
+        @Override
+        public boolean showStackCount() {
+            return false;
+        }
+
+        @Override
+        public String getCustomStackText() {
+            return merc != null ? String.valueOf(merc.level()) : null;
+        }
+
+        @Override
+        public String getDurationText() {
+            return null;
+        }
+
+        @Override
+        public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
+            ResourceLocation icon = getTexture();
+            if (icon != null) {
+                int srcSize = (icon.getPath().contains("summon_zombie") || icon.getPath().contains("skill_slot_summon_badge")) ? 16 : 36;
+                RenderSystem.setShaderTexture(0, icon);
+                graphics.blit(icon, x, y, size, size, 0, 0, srcSize, srcSize, srcSize, srcSize);
+            }
+        }
+    }
+
     private static final BlockCooldownEffectWrapper blockCooldownWrapper = new BlockCooldownEffectWrapper();
+    private static final MercenaryEffectWrapper mercenaryWrapper = new MercenaryEffectWrapper(null);
 
     private static final java.util.Comparator<DisplayableEffect> DEFAULT_ORDER_COMPARATOR = (a, b) -> {
         return Long.compare(getOrAssignOrder(a.getId()), getOrAssignOrder(b.getId()));
@@ -314,33 +405,26 @@ public class EffectRenderHelper {
         filteredEffectsCache.clear();
 
         for (MobEffectInstance effect : player.getActiveEffects()) {
-            boolean isBeneficial = effect.getEffect().getCategory() == MobEffectCategory.BENEFICIAL;
-            if (isBeneficial && !filter.isShowVanillaBuffs()) continue;
-            if (!isBeneficial && !filter.isShowVanillaDebuffs()) continue;
             addVanillaEffect(mc, effect);
         }
 
-        if (filter.isShowMnsBuffs() || filter.isShowMnsDebuffs()) {
+        if (MethodHandlesUtil.isAvailable()) {
             for (ExileEffectInfo info : MethodHandlesUtil.getPlayerExileEffects(player)) {
-                if (info.isBeneficial && !filter.isShowMnsBuffs()) continue;
-                if (!info.isBeneficial && !filter.isShowMnsDebuffs()) continue;
                 addMnsEffect(info);
             }
-        }
 
-        if (filter.isShowMinions() && MethodHandlesUtil.isAvailable()) {
-            for (MinionDisplayInfo minion : MethodHandlesUtil.getActiveMinions(player)) {
-                addMinionEffect(minion);
-            }
-        }
-
-        if (filter.isShowMnsDebuffs()) {
             if (MethodHandlesUtil.isBlockOnCooldown(player)) {
                 int blockCdTicks = MethodHandlesUtil.getBlockCooldownTicks(player);
                 int blockCdNeeded = MethodHandlesUtil.getBlockCooldownNeededTicks(player);
                 if (blockCdTicks <= 0) blockCdTicks = 1;
                 blockCooldownWrapper.update(blockCdTicks, blockCdNeeded);
                 filteredEffectsCache.add(blockCooldownWrapper);
+            }
+        }
+
+        if (filter.isShowMinions() && MethodHandlesUtil.isAvailable()) {
+            for (MinionDisplayInfo minion : MethodHandlesUtil.getActiveMinions(player)) {
+                addMinionEffect(minion);
             }
         }
 
@@ -354,6 +438,17 @@ public class EffectRenderHelper {
         } else {
             filteredEffectsCache.sort(DEFAULT_ORDER_COMPARATOR);
         }
+
+        // 傭兵はトラックの先頭に常駐（M&S本家の仕様に準拠）
+        if (filter.isShowMercenary() && MethodHandlesUtil.isAvailable()) {
+            MercenaryDisplayInfo merc = MethodHandlesUtil.getActiveMercenary(player);
+            if (merc != null && merc.isAlive()) {
+                mercenaryWrapper.updateInfo(merc);
+                getOrAssignOrder(mercenaryWrapper.getId());
+                filteredEffectsCache.add(0, mercenaryWrapper);
+            }
+        }
+
         return filteredEffectsCache;
     }
 
