@@ -36,5 +36,11 @@ public class NetworkHandler {
                 MercenarySyncS2C::encode,
                 MercenarySyncS2C::decode,
                 MercenarySyncS2C::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                AilmentSyncS2C.class,
+                AilmentSyncS2C::encode,
+                AilmentSyncS2C::decode,
+                AilmentSyncS2C::handle);
     }
 }

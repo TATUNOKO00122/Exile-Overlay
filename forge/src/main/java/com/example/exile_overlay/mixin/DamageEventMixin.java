@@ -40,6 +40,9 @@ public class DamageEventMixin implements IDamageEventAccessor {
             try {
                 if (event.target != null) {
                     String ailmentId = event.data.getString(com.robertx22.mine_and_slash.uncommon.effectdatas.rework.EventData.AILMENT);
+                    if (!ailmentId.isEmpty()) {
+                        com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker.track(event.target);
+                    }
                     if ("bleed".equalsIgnoreCase(ailmentId)) {
                         com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
                                 .recordBleedDamage(event.target, event.data.getNumber());

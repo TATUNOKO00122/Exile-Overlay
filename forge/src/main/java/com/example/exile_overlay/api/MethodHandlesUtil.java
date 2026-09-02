@@ -3,8 +3,11 @@ package com.example.exile_overlay.api;
 import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.example.exile_overlay.client.render.minion.MercenaryClientCache;
+import com.example.exile_overlay.dmgtracker.network.AilmentSyncS2C;
 import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -2169,6 +2172,30 @@ public class MethodHandlesUtil {
         } catch (Throwable t) {
             LOGGER.debug("Failed to get mob status effects: {}", t.getMessage());
         }
+
+        // 状態異常（Ailments）のアイコン追加（クライアント同期 + シングルプレイフォールバック）
+        try {
+            var trackerEffects = com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance().getAilmentEffects(entity);
+            if (!trackerEffects.isEmpty()) {
+                result.addAll(trackerEffects);
+            } else {
+                LivingEntity serverEntity = resolveServerEntity(entity);
+                if (serverEntity != null) {
+                    var entries = extractAilmentEntries(serverEntity);
+                    for (var entry : entries) {
+                        if (entry.ticksLeft() > 0 || entry.strength() > 0.0f) {
+                            ResourceLocation icon = com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.resolveElementIcon(entry.id());
+                            String name = net.minecraft.network.chat.Component.translatable("mmorpg.ailment." + entry.id()).getString();
+                            result.add(new com.example.exile_overlay.api.data.MobEffectInfo(
+                                    "ailment:" + entry.id(), name, icon, entry.ticksLeft(), entry.stacks(), false, true));
+                        }
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("Failed to get mob ailment effects: {}", t.getMessage());
+        }
+
         return result;
     }
 
@@ -2223,11 +2250,38 @@ public class MethodHandlesUtil {
     }
 
     /**
+     * クライアント側エンティティから統合サーバー上の対応エンティティを解決
+     */
+    public static LivingEntity resolveServerEntity(LivingEntity entity) {
+        if (entity == null) return null;
+        if (!entity.level().isClientSide()) {
+            return entity;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.hasSingleplayerServer() && mc.getSingleplayerServer() != null) {
+            try {
+                ServerLevel serverLevel = mc.getSingleplayerServer().getLevel(entity.level().dimension());
+                if (serverLevel != null) {
+                    Entity serverEntity = serverLevel.getEntity(entity.getUUID());
+                    if (serverEntity instanceof LivingEntity living) {
+                        return living;
+                    }
+                }
+            } catch (Throwable ignore) {}
+        }
+        return null;
+    }
+
+    /**
      * エンティティがMine and Slashの毒(Ailments.POISON)にかかっているかを判定
      */
     public static boolean isEntityPoisoned(LivingEntity entity) {
         if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
             return false;
+        }
+        LivingEntity resolved = resolveServerEntity(entity);
+        if (resolved != null) {
+            entity = resolved;
         }
         try {
             Object entityData = getEntityData(entity);
@@ -2258,11 +2312,128 @@ public class MethodHandlesUtil {
     }
 
     /**
+     * エンティティの EntityAilmentData から全 Ailment 状態（残りTick、スタック数、強度、ダメージ）を抽出
+     */
+    public static List<AilmentSyncS2C.AilmentEntry> extractAilmentEntries(LivingEntity entity) {
+        List<AilmentSyncS2C.AilmentEntry> list = new ArrayList<>();
+        if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
+            return list;
+        }
+        try {
+            Object entityData = getEntityData(entity);
+            if (entityData == null) return list;
+            Object ailmentData = GET_AILMENT_DATA.invoke(entityData);
+            if (ailmentData == null) return list;
+            Object datasObj = GET_DOT_MAP.invoke(ailmentData);
+            if (!(datasObj instanceof Map<?, ?> datasMap) || datasMap.isEmpty()) {
+                return list;
+            }
+
+            Map<String, int[]> dotStats = new HashMap<>(); // [maxTicks, totalStacks]
+            Map<String, float[]> dotDmg = new HashMap<>(); // [totalDmg]
+            Map<String, Float> strStats = new HashMap<>();
+            Map<String, Float> dmgStats = new HashMap<>();
+
+            for (Object oneData : datasMap.values()) {
+                if (oneData == null) continue;
+                Class<?> oneClass = oneData.getClass();
+
+                // 1. dotMap (DoT系: bleed, poison, burn)
+                try {
+                    java.lang.reflect.Field fDot = oneClass.getField("dotMap");
+                    Object dotMapObj = fDot.get(oneData);
+                    if (dotMapObj instanceof Map<?, ?> dotMap) {
+                        for (Map.Entry<?, ?> entry : dotMap.entrySet()) {
+                            String ailId = String.valueOf(entry.getKey());
+                            if (entry.getValue() instanceof List<?> dotList) {
+                                for (Object dot : dotList) {
+                                    if (dot != null) {
+                                        java.lang.reflect.Field fTicks = dot.getClass().getField("ticks");
+                                        java.lang.reflect.Field fDmg = dot.getClass().getField("dmg");
+                                        float ticks = fTicks.getFloat(dot);
+                                        float dmg = fDmg.getFloat(dot);
+                                        if (ticks > 0) {
+                                            int[] stat = dotStats.computeIfAbsent(ailId, k -> new int[2]);
+                                            stat[0] = Math.max(stat[0], (int) ticks);
+                                            stat[1]++;
+                                            float[] d = dotDmg.computeIfAbsent(ailId, k -> new float[1]);
+                                            d[0] += dmg;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Throwable ignore) {}
+
+                // 2. strMap (強度系: freeze, electrify)
+                try {
+                    java.lang.reflect.Field fStr = oneClass.getField("strMap");
+                    Object strMapObj = fStr.get(oneData);
+                    if (strMapObj instanceof Map<?, ?> strMap) {
+                        for (Map.Entry<?, ?> entry : strMap.entrySet()) {
+                            String ailId = String.valueOf(entry.getKey());
+                            if (entry.getValue() instanceof Number n) {
+                                float v = n.floatValue();
+                                if (v > 0.001f) {
+                                    strStats.merge(ailId, v, Math::max);
+                                }
+                            }
+                        }
+                    }
+                } catch (Throwable ignore) {}
+
+                // 3. dmgMap (蓄積ダメージ系)
+                try {
+                    java.lang.reflect.Field fDmg = oneClass.getField("dmgMap");
+                    Object dmgMapObj = fDmg.get(oneData);
+                    if (dmgMapObj instanceof Map<?, ?> dmgMap) {
+                        for (Map.Entry<?, ?> entry : dmgMap.entrySet()) {
+                            String ailId = String.valueOf(entry.getKey());
+                            if (entry.getValue() instanceof Number n) {
+                                float v = n.floatValue();
+                                if (v > 0.001f) {
+                                    dmgStats.merge(ailId, v, Float::sum);
+                                }
+                            }
+                        }
+                    }
+                } catch (Throwable ignore) {}
+            }
+
+            for (Map.Entry<String, int[]> e : dotStats.entrySet()) {
+                String id = e.getKey();
+                int ticks = e.getValue()[0];
+                int stacks = e.getValue()[1];
+                float dmg = dotDmg.containsKey(id) ? dotDmg.get(id)[0] : 0.0f;
+                float str = strStats.getOrDefault(id, 0.0f);
+                list.add(new AilmentSyncS2C.AilmentEntry(id, ticks, stacks, str, dmg));
+            }
+
+            for (Map.Entry<String, Float> e : strStats.entrySet()) {
+                String id = e.getKey();
+                if (!dotStats.containsKey(id)) {
+                    float str = e.getValue();
+                    float accDmg = dmgStats.getOrDefault(id, 0.0f);
+                    list.add(new AilmentSyncS2C.AilmentEntry(id, 0, 1, str, accDmg));
+                }
+            }
+        } catch (Throwable t) {
+            // non-critical
+        }
+        return list;
+    }
+
+    /**
      * エンティティがMine and Slashの出血(Ailments.BLEED)にかかっているかを判定
      */
     public static boolean isEntityBleeding(LivingEntity entity) {
         if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
             return false;
+        }
+        LivingEntity resolved = resolveServerEntity(entity);
+        if (resolved != null) {
+            entity = resolved;
         }
         try {
             Object entityData = getEntityData(entity);

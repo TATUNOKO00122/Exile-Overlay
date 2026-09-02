@@ -4,6 +4,7 @@ import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
 import com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C;
 import com.example.exile_overlay.dmgtracker.tracking.DamageTrackerManager;
+import com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
@@ -25,6 +26,8 @@ public class ServerTickSyncHandler {
 
         MinecraftServer server = event.getServer();
         if (server == null) return;
+
+        ServerAilmentTracker.tick(server);
 
         syncCounter++;
 
