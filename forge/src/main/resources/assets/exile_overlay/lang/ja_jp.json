@@ -195,7 +195,7 @@
   "exile_overlay.config.hp_bar_show_poison.tooltip": "毒状態時にHPバーを深緑色に変更",
   "exile_overlay.config.hp_bar_show_bleed": "出血表示: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "出血による失血蓄積バー（暗赤色）を表示",
-  "exile_overlay.config.hp_bar_show_friendly": "非敵対MOBの緑化: %s",
+  "exile_overlay.config.hp_bar_show_friendly": "非敵対MOB: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "非敵対MOBのHPバーを緑色で表示",
   "exile_overlay.config.max_distance": "最大距離: %s",
   "exile_overlay.config.max_distance.tooltip": "HPバーを表示する最大距離",

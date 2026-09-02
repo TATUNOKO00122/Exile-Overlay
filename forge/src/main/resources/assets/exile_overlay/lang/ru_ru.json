@@ -191,7 +191,7 @@
   "exile_overlay.config.hp_bar_show_poison.tooltip": "Изменять цвет полосы здоровья на темно-зеленый при отравлении",
   "exile_overlay.config.hp_bar_show_bleed": "Отображение кровотечения: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "Отображать полосу накопления кровопотери (темно-красный) при кровотечении",
-  "exile_overlay.config.hp_bar_show_friendly": "Зеленая полоса для мирных мобов: %s",
+  "exile_overlay.config.hp_bar_show_friendly": "Мирные мобы: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "Отображать полосу здоровья мирных/нейтральных мобов зеленым цветом",
   "exile_overlay.config.max_distance": "Макс. расстояние: %s",
   "exile_overlay.config.max_distance.tooltip": "Максимальное расстояние для отображения полос здоровья",

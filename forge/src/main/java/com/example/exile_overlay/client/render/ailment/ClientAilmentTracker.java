@@ -50,20 +50,23 @@ public final class ClientAilmentTracker {
 
     public static final class BloodLossEntry {
         public float accumulatedDamage;
-        public long lastUpdatedTime;
+        public long lastActiveMs;
+        public float displayedEndRatio = -1.0f;
+        public long lastRenderTime;
 
-        public BloodLossEntry(float initialDamage, long time) {
-            this.accumulatedDamage = initialDamage;
-            this.lastUpdatedTime = time;
+        public BloodLossEntry(float damage, long time) {
+            this.accumulatedDamage = damage;
+            this.lastActiveMs = time;
+            this.lastRenderTime = time;
         }
     }
 
-    // entityId -> Ailment一覧
     private final Map<Integer, List<SyncedAilment>> entityAilmentsMap = new ConcurrentHashMap<>();
     private final Map<UUID, BloodLossEntry> bloodLossMap = new ConcurrentHashMap<>();
     private final Map<UUID, Long> poisonExpiryMap = new ConcurrentHashMap<>();
 
-    private static final long BLOOD_LOSS_HOLD_MS = 3000L;
+    private static final long BLOOD_LOSS_HOLD_MS = 2500L;
+    private static final long BLOOD_LOSS_DECAY_MS = 1000L;
     private static final long POISON_HOLD_MS = 2500L;
 
     private ClientAilmentTracker() {}
@@ -188,7 +191,7 @@ public final class ClientAilmentTracker {
             return false;
         }
 
-        // 1. 同期パケットデータ
+        // 1. 同期パケットデータ（持続時間の残存を厳格に確認）
         List<SyncedAilment> list = entityAilmentsMap.get(entity.getId());
         if (list != null) {
             for (SyncedAilment a : list) {
@@ -199,55 +202,107 @@ public final class ClientAilmentTracker {
         }
 
         // 2. M&S Ailment 連携 (シングルプレイ直接参照)
-        if (MethodHandlesUtil.isEntityBleeding(entity)) {
-            return true;
-        }
-
-        BloodLossEntry entry = bloodLossMap.get(entity.getUUID());
-        return entry != null && entry.accumulatedDamage > 0.0f;
+        return MethodHandlesUtil.isEntityBleeding(entity);
     }
 
     /**
-     * 対象エンティティが出血によって削られた累積HP（Blood Loss）の量を取得する。
+     * 減衰を考慮した実効失血ダメージ量を計算
      */
-    public float getBloodLoss(LivingEntity entity) {
-        if (entity == null || !entity.isAlive()) {
-            return 0.0f;
-        }
-
-        // 同期パケットに出血ダメージがあれば優先
-        List<SyncedAilment> list = entityAilmentsMap.get(entity.getId());
-        if (list != null) {
-            for (SyncedAilment a : list) {
-                if ("bleed".equalsIgnoreCase(a.id) && a.damage > 0.0f) {
-                    return a.damage;
-                }
-            }
-        }
-
-        BloodLossEntry entry = bloodLossMap.get(entity.getUUID());
+    private float getEffectiveBloodLoss(BloodLossEntry entry, long now, boolean isBleeding) {
         if (entry == null || entry.accumulatedDamage <= 0.0f) {
             return 0.0f;
         }
 
-        long now = System.currentTimeMillis();
-        long elapsed = now - entry.lastUpdatedTime;
-
-        if (elapsed > BLOOD_LOSS_HOLD_MS) {
-            float decayFactor = 1.0f - Math.min(1.0f, (elapsed - BLOOD_LOSS_HOLD_MS) / 2000.0f);
-            float decayedDamage = entry.accumulatedDamage * decayFactor;
-            if (decayedDamage <= 0.5f) {
-                bloodLossMap.remove(entity.getUUID());
-                return 0.0f;
-            }
-            return decayedDamage;
+        if (isBleeding) {
+            return entry.accumulatedDamage;
         }
 
-        return entry.accumulatedDamage;
+        long elapsed = now - entry.lastActiveMs;
+        if (elapsed <= BLOOD_LOSS_HOLD_MS) {
+            return entry.accumulatedDamage;
+        }
+
+        float decayProgress = (elapsed - BLOOD_LOSS_HOLD_MS) / (float) BLOOD_LOSS_DECAY_MS;
+        if (decayProgress >= 1.0f) {
+            return 0.0f;
+        }
+
+        return entry.accumulatedDamage * (1.0f - decayProgress);
     }
 
     /**
-     * 出血DoTダメージの発生を記録し、失血量を蓄積する。
+     * PoE2仕様: HPバー上の失血バー（暗赤色）の終了位置比率 (0.0F ~ 1.0F) を返す。
+     * 出血DoTによって削られた実ダメージのみを失血バーとして蓄積・表示し、通常攻撃ダメージと明確に分離する。
+     * また、DoT被弾時のHP更新パケット遅延による右端の突発的な飛び出し（脈動）を完全に防止する。
+     */
+    public float getBloodLossEndRatio(LivingEntity entity, float currentHpRatio, float maxHp) {
+        if (entity == null || !entity.isAlive() || maxHp <= 0.0f) {
+            return currentHpRatio;
+        }
+
+        BloodLossEntry entry = bloodLossMap.get(entity.getUUID());
+        if (entry == null) {
+            return currentHpRatio;
+        }
+
+        long now = System.currentTimeMillis();
+        boolean bleeding = isBleeding(entity);
+        float bloodLoss = getEffectiveBloodLoss(entry, now, bleeding);
+        if (bloodLoss <= 0.0f) {
+            bloodLossMap.remove(entity.getUUID());
+            return currentHpRatio;
+        }
+
+        // 失血量は、失われたHP総量 (maxHp - currentHp) を上限とする
+        float currentHp = currentHpRatio * maxHp;
+        float maxLostHp = Math.max(0.0f, maxHp - currentHp);
+        float cappedBloodLoss = Math.min(bloodLoss, maxLostHp);
+        float bloodLossRatio = cappedBloodLoss / maxHp;
+
+        float calculatedEnd = Math.min(1.0f, currentHpRatio + bloodLossRatio);
+
+        if (entry.displayedEndRatio < 0.0f) {
+            // 付与された瞬間の現在HPを右端の初期位置とする（右側への突発的な跳ね上がりを防止）
+            entry.displayedEndRatio = currentHpRatio;
+            entry.lastRenderTime = now;
+            return currentHpRatio;
+        }
+
+        long dt = Math.min(100L, Math.max(1L, now - entry.lastRenderTime));
+        entry.lastRenderTime = now;
+
+        // 目標右端の決定:
+        // 出血DoT被弾時、HP減少パケットの到着ラグによって右端が直前の右端より右へ飛び出す（脈動）のを防止
+        float targetEndRatio;
+        if (bleeding) {
+            if (currentHpRatio > entry.displayedEndRatio) {
+                // 回復等で現在HPが右端を押し上げた場合
+                targetEndRatio = calculatedEnd;
+            } else {
+                // DoT被弾ラグによる右飛び出しを抑制: 直前の右端を上限とする
+                targetEndRatio = Math.min(calculatedEnd, entry.displayedEndRatio);
+                targetEndRatio = Math.max(currentHpRatio, targetEndRatio);
+            }
+        } else {
+            targetEndRatio = calculatedEnd;
+        }
+
+        // スムージング追従
+        float speed = 8.0f;
+        float factor = (float) (1.0 - Math.exp(-speed * (dt / 1000.0)));
+        entry.displayedEndRatio = entry.displayedEndRatio + (targetEndRatio - entry.displayedEndRatio) * factor;
+
+        if (Math.abs(entry.displayedEndRatio - targetEndRatio) < 0.001f) {
+            entry.displayedEndRatio = targetEndRatio;
+        }
+
+        entry.displayedEndRatio = Math.max(currentHpRatio, Math.min(1.0f, entry.displayedEndRatio));
+        return entry.displayedEndRatio;
+    }
+
+    /**
+     * 出血DoTダメージの発生を記録し、失血量（Blood Loss）を蓄積する。
+     * 通常攻撃ダメージは加算されず、出血DoTダメージのみが蓄積される。
      */
     public void recordBleedDamage(LivingEntity target, float damage) {
         if (target == null || !target.isAlive() || damage <= 0.0f) {
@@ -255,12 +310,23 @@ public final class ClientAilmentTracker {
         }
 
         long now = System.currentTimeMillis();
+        boolean bleeding = isBleeding(target);
+
+        float maxHp = target.getMaxHealth();
+        float currentHpRatio = (maxHp > 0.0f) ? Math.min(1.0f, target.getHealth() / maxHp) : 1.0f;
+
         bloodLossMap.compute(target.getUUID(), (k, existing) -> {
             if (existing == null) {
-                return new BloodLossEntry(damage, now);
+                BloodLossEntry entry = new BloodLossEntry(damage, now);
+                entry.displayedEndRatio = currentHpRatio;
+                return entry;
             } else {
-                existing.accumulatedDamage += damage;
-                existing.lastUpdatedTime = now;
+                float baseDamage = getEffectiveBloodLoss(existing, now, bleeding);
+                existing.accumulatedDamage = baseDamage + damage;
+                existing.lastActiveMs = now;
+                if (existing.displayedEndRatio < 0.0f) {
+                    existing.displayedEndRatio = currentHpRatio;
+                }
                 return existing;
             }
         });
@@ -292,7 +358,8 @@ public final class ClientAilmentTracker {
      */
     public void cleanup() {
         long now = System.currentTimeMillis();
-        bloodLossMap.entrySet().removeIf(e -> (now - e.getValue().lastUpdatedTime) > 10000L);
+        long bloodLossExpiry = BLOOD_LOSS_HOLD_MS + BLOOD_LOSS_DECAY_MS + 1000L;
+        bloodLossMap.entrySet().removeIf(e -> (now - e.getValue().lastActiveMs) > bloodLossExpiry);
         poisonExpiryMap.entrySet().removeIf(e -> now > e.getValue());
         entityAilmentsMap.entrySet().removeIf(e -> {
             for (SyncedAilment a : e.getValue()) {

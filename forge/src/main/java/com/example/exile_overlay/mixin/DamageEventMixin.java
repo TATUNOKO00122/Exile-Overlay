@@ -44,8 +44,12 @@ public class DamageEventMixin implements IDamageEventAccessor {
                         com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker.track(event.target);
                     }
                     if ("bleed".equalsIgnoreCase(ailmentId)) {
+                        float bleedDmg = event.getActualDamage();
+                        if (bleedDmg <= 0.0f) {
+                            bleedDmg = event.data.getNumber();
+                        }
                         com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
-                                .recordBleedDamage(event.target, event.data.getNumber());
+                                .recordBleedDamage(event.target, bleedDmg);
                     } else if ("poison".equalsIgnoreCase(ailmentId)) {
                         com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance()
                                 .recordPoisonDamage(event.target);

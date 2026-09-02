@@ -191,7 +191,7 @@
   "exile_overlay.config.hp_bar_show_poison.tooltip": "중독 상태일 때 HP 바 색상을 짙은 녹색으로 변경",
   "exile_overlay.config.hp_bar_show_bleed": "출혈 표시: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "출혈 시 손실 체력 누적 바(어두운 빨간색) 표시",
-  "exile_overlay.config.hp_bar_show_friendly": "비적대 MOB 녹색 HP 바: %s",
+  "exile_overlay.config.hp_bar_show_friendly": "비적대 MOB: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "비적대/중립 몹의 HP 바를 녹색으로 표시",
   "exile_overlay.config.max_distance": "최대 거리: %s",
   "exile_overlay.config.max_distance.tooltip": "HP 바를 표시할 최대 거리",

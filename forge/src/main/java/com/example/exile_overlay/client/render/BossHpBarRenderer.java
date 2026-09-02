@@ -259,8 +259,9 @@ public class BossHpBarRenderer implements IRenderCommand {
         boolean isPoisoned = hpBarConfig.isShowPoison() && bossEntity != null && ClientAilmentTracker.getInstance().isPoisoned(bossEntity);
         int barColor = isPoisoned ? hpBarConfig.getPoisonBarColorHex() : hpBarConfig.getHostileBarColorHex();
 
-        float bloodLoss = (hpBarConfig.isShowBleed() && bossEntity != null) ? ClientAilmentTracker.getInstance().getBloodLoss(bossEntity) : 0.0f;
-        float bloodLossRatio = (maxHealth > 0.0f && bloodLoss > 0.0f) ? Mth.clamp(bloodLoss / maxHealth, 0.0f, 1.0f) : 0.0f;
+        float bloodLossEndRatio = (hpBarConfig.isShowBleed() && bossEntity != null)
+                ? ClientAilmentTracker.getInstance().getBloodLossEndRatio(bossEntity, progress, maxHealth)
+                : progress;
 
         graphics.pose().pushPose();
         try {
@@ -270,7 +271,7 @@ public class BossHpBarRenderer implements IRenderCommand {
             RenderSystem.defaultBlendFunc();
 
             graphics.blit(BACKGROUND_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
-            renderHpBar(graphics, progress, bloodLossRatio, barColor);
+            renderHpBar(graphics, progress, bloodLossEndRatio, barColor);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             graphics.blit(FROST_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
@@ -288,13 +289,12 @@ public class BossHpBarRenderer implements IRenderCommand {
         }
     }
 
-    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossRatio, int barColor) {
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossEndRatio, int barColor) {
         graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
         int currentHpWidth = (int) (BAR_WIDTH * hpRatio);
-        int bloodLossWidth = (int) (BAR_WIDTH * bloodLossRatio);
-        int bloodEndWidth = Math.min(BAR_WIDTH, currentHpWidth + bloodLossWidth);
+        int bloodEndWidth = (int) (BAR_WIDTH * bloodLossEndRatio);
 
-        // 出血（失血）蓄積バー
+        // PoE2仕様: 出血（失血）蓄積バー (暗赤色)
         if (bloodEndWidth > currentHpWidth) {
             graphics.fill(BAR_X + currentHpWidth, BAR_Y, BAR_X + bloodEndWidth, BAR_Y + BAR_HEIGHT, hpBarConfig.getBleedBarColorHex());
         }

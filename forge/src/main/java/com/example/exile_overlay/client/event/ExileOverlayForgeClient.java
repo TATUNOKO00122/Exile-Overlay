@@ -9,6 +9,7 @@ import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
 import com.example.exile_overlay.client.render.DayCounterRenderer;
 import com.example.exile_overlay.client.render.HudRenderManager;
+import com.example.exile_overlay.client.render.ailment.ClientAilmentTracker;
 // import com.example.exile_overlay.client.render.kill.KillCountManager;
 import com.example.exile_overlay.client.render.orb.OrbShaderRenderer;
 import com.example.exile_overlay.client.render.orb.OrbSmoothedValue;
@@ -152,6 +153,9 @@ public class ExileOverlayForgeClient {
             if (hudConfigKey != null && hudConfigKey.consumeClick()) {
                 LOGGER.info("HUD config key pressed on Forge, opening config screen");
                 ModMenuApi.openConfigScreen();
+            }
+            if (mc.player.tickCount % 40 == 0) {
+                ClientAilmentTracker.getInstance().cleanup();
             }
             if (TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
                 while (toggleOverlayKey != null && toggleOverlayKey.consumeClick()) {

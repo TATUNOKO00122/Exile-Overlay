@@ -158,14 +158,14 @@ public final class EntityHealthBarRenderer {
         boolean isPoisoned = config.isShowPoison() && ClientAilmentTracker.getInstance().isPoisoned(living);
         int effectiveColorHealth = isPoisoned ? config.getPoisonBarColorHex(0xCC) : colorHealth;
 
-        float bloodLoss = config.isShowBleed() ? ClientAilmentTracker.getInstance().getBloodLoss(living) : 0.0F;
-        float bloodLossRatio = (maxHp > 0.0F && bloodLoss > 0.0F) ? Math.min(bloodLoss / maxHp, 1.0F) : 0.0F;
+        float bloodLossEndRatio = config.isShowBleed()
+                ? ClientAilmentTracker.getInstance().getBloodLossEndRatio(living, hpRatio, maxHp)
+                : hpRatio;
         int colorBloodLoss = config.getBleedBarColorHex(0xCC);
 
         float halfWidth = barWidth / 2.0F;
         float filledWidth = barWidth * hpRatio;
-        float bloodLossWidth = barWidth * bloodLossRatio;
-        float bloodEndWidth = Math.min(barWidth, filledWidth + bloodLossWidth);
+        float bloodEndWidth = barWidth * bloodLossEndRatio;
 
         VertexConsumer builder = buffers.getBuffer(HealthBarRenderType.BAR_TYPE);
 

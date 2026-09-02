@@ -181,8 +181,9 @@ public class TargetInfoRenderer implements IRenderCommand {
         int nameColor = rarity != null ? (0xFF000000 | rarity.color) : 0xFFFFFFFF;
         int barColor = resolveBarColor(rarity, target);
         float hpRatio = (maxHealth > 0.0f && !Float.isNaN(health) && !Float.isNaN(maxHealth)) ? Mth.clamp(health / maxHealth, 0.0f, 1.0f) : 0.0f;
-        float bloodLoss = hpBarConfig.isShowBleed() ? ClientAilmentTracker.getInstance().getBloodLoss(target) : 0.0f;
-        float bloodLossRatio = (maxHealth > 0.0f && bloodLoss > 0.0f) ? Mth.clamp(bloodLoss / maxHealth, 0.0f, 1.0f) : 0.0f;
+        float bloodLossEndRatio = hpBarConfig.isShowBleed()
+                ? ClientAilmentTracker.getInstance().getBloodLossEndRatio(target, hpRatio, maxHealth)
+                : hpRatio;
 
         int screenWidth = ctx.getScreenWidth();
         int screenHeight = ctx.getScreenHeight();
@@ -204,7 +205,7 @@ public class TargetInfoRenderer implements IRenderCommand {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
 
-            renderHpBar(graphics, hpRatio, bloodLossRatio, barColor);
+            renderHpBar(graphics, hpRatio, bloodLossEndRatio, barColor);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             graphics.blit(FRAME_TEXTURE, 0, 0, 0, 0, TEX_WIDTH, TEX_HEIGHT, TEX_WIDTH, TEX_HEIGHT);
@@ -224,14 +225,13 @@ public class TargetInfoRenderer implements IRenderCommand {
         }
     }
 
-    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossRatio, int barColor) {
+    private void renderHpBar(GuiGraphics graphics, float hpRatio, float bloodLossEndRatio, int barColor) {
         graphics.fill(BAR_X, BAR_Y, BAR_X + BAR_WIDTH, BAR_Y + BAR_HEIGHT, HP_BG_COLOR);
 
         int currentHpWidth = (int) (BAR_WIDTH * hpRatio);
-        int bloodLossWidth = (int) (BAR_WIDTH * bloodLossRatio);
-        int bloodEndWidth = Math.min(BAR_WIDTH, currentHpWidth + bloodLossWidth);
+        int bloodEndWidth = (int) (BAR_WIDTH * bloodLossEndRatio);
 
-        // 出血（失血）蓄積バー: 現在HPの終端から削れた累積量までを暗赤色で描画
+        // PoE2仕様: 出血（失血）蓄積バー (暗赤色)
         if (bloodEndWidth > currentHpWidth) {
             graphics.fill(BAR_X + currentHpWidth, BAR_Y, BAR_X + bloodEndWidth, BAR_Y + BAR_HEIGHT, hpBarConfig.getBleedBarColorHex());
         }
