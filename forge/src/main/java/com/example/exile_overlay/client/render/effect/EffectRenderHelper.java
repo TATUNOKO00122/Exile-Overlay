@@ -46,6 +46,9 @@ public class EffectRenderHelper {
     private static final Map<String, Long> effectOrderMap = new HashMap<>();
     private static long nextOrderSequence = 0L;
 
+    private static final int HYSTERESIS_SECONDS = 2;
+    private static final Map<String, List<String>> overlayOrderMap = new HashMap<>();
+
     private static long getOrAssignOrder(String id) {
         return effectOrderMap.computeIfAbsent(id, k -> ++nextOrderSequence);
     }
@@ -390,10 +393,99 @@ public class EffectRenderHelper {
         if (aInf && !bInf) return -1;
         if (!aInf && bInf) return 1;
         if (aInf && bInf) return Long.compare(getOrAssignOrder(a.getId()), getOrAssignOrder(b.getId()));
-        int durCmp = Integer.compare(b.getDuration(), a.getDuration());
+        int aSec = Math.max(0, a.getDuration() / 20);
+        int bSec = Math.max(0, b.getDuration() / 20);
+        int durCmp = Integer.compare(bSec, aSec);
         if (durCmp != 0) return durCmp;
         return Long.compare(getOrAssignOrder(a.getId()), getOrAssignOrder(b.getId()));
     };
+
+    /**
+     * 秒単位ソートおよびヒステリシス（閾値2秒）を用いたバフ並び順の安定化
+     */
+    private static void sortWithHysteresis(List<DisplayableEffect> effects, String overlayId) {
+        if (effects.size() <= 1) return;
+
+        List<String> orderList = overlayOrderMap.computeIfAbsent(overlayId, k -> new ArrayList<>());
+        Set<String> currentIds = new HashSet<>(effects.size());
+        Map<String, DisplayableEffect> effectMap = new HashMap<>(effects.size());
+
+        for (DisplayableEffect e : effects) {
+            currentIds.add(e.getId());
+            effectMap.put(e.getId(), e);
+        }
+
+        // 消失したエフェクトを順序リストから削除
+        orderList.removeIf(id -> !currentIds.contains(id));
+
+        // 新規エフェクトを適切な位置に挿入
+        for (DisplayableEffect e : effects) {
+            if (!orderList.contains(e.getId())) {
+                int insertIdx = findInitialInsertIndex(orderList, effectMap, e);
+                orderList.add(insertIdx, e.getId());
+            }
+        }
+
+        // 隣接スワップによるヒステリシス整列（後ろのバフが前を抜くには+2秒以上の差が必要）
+        boolean changed;
+        int maxPasses = orderList.size();
+        for (int pass = 0; pass < maxPasses; pass++) {
+            changed = false;
+            for (int i = 0; i < orderList.size() - 1; i++) {
+                DisplayableEffect a = effectMap.get(orderList.get(i));
+                DisplayableEffect b = effectMap.get(orderList.get(i + 1));
+                if (a == null || b == null) continue;
+
+                if (shouldOvertake(a, b)) {
+                    String temp = orderList.get(i);
+                    orderList.set(i, orderList.get(i + 1));
+                    orderList.set(i + 1, temp);
+                    changed = true;
+                }
+            }
+            if (!changed) break;
+        }
+
+        effects.sort(Comparator.comparingInt(e -> orderList.indexOf(e.getId())));
+    }
+
+    private static int findInitialInsertIndex(List<String> orderList, Map<String, DisplayableEffect> effectMap, DisplayableEffect newEffect) {
+        boolean newInf = newEffect.isInfinite();
+        int newSec = Math.max(0, newEffect.getDuration() / 20);
+
+        for (int i = 0; i < orderList.size(); i++) {
+            DisplayableEffect other = effectMap.get(orderList.get(i));
+            if (other == null) continue;
+
+            if (newInf) {
+                if (!other.isInfinite()) return i;
+                if (getOrAssignOrder(newEffect.getId()) < getOrAssignOrder(other.getId())) return i;
+            } else {
+                if (other.isInfinite()) continue;
+                int otherSec = Math.max(0, other.getDuration() / 20);
+                if (newSec > otherSec) {
+                    return i;
+                } else if (newSec == otherSec && getOrAssignOrder(newEffect.getId()) < getOrAssignOrder(other.getId())) {
+                    return i;
+                }
+            }
+        }
+        return orderList.size();
+    }
+
+    private static boolean shouldOvertake(DisplayableEffect front, DisplayableEffect back) {
+        boolean frontInf = front.isInfinite();
+        boolean backInf = back.isInfinite();
+
+        if (backInf && !frontInf) return true;
+        if (!backInf && frontInf) return false;
+        if (frontInf && backInf) return false;
+
+        int frontSec = Math.max(0, front.getDuration() / 20);
+        int backSec = Math.max(0, back.getDuration() / 20);
+
+        return backSec >= frontSec + HYSTERESIS_SECONDS;
+    }
 
     /**
      * 指定オーバーレイのフィルタ設定に基づいてエフェクトを取得する統一メソッド
@@ -438,7 +530,7 @@ public class EffectRenderHelper {
         }
 
         if (filter.isSortByDuration()) {
-            filteredEffectsCache.sort(EFFECT_COMPARATOR);
+            sortWithHysteresis(filteredEffectsCache, overlayId);
         } else {
             filteredEffectsCache.sort(DEFAULT_ORDER_COMPARATOR);
         }
@@ -576,6 +668,7 @@ public class EffectRenderHelper {
         minionWrapperCache.clear();
         displayStates.clear();
         effectOrderMap.clear();
+        overlayOrderMap.clear();
         nextOrderSequence = 0L;
         cachedBuffs.clear();
         cachedDebuffs.clear();

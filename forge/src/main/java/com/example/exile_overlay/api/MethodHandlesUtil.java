@@ -140,6 +140,7 @@ public class MethodHandlesUtil {
     private static volatile java.lang.reflect.Method spellsRegistryMethod = null;
     private static volatile Object spellsRegistry = null;
     private static volatile java.lang.reflect.Method spellsRegistryGetMethod = null;
+    private static volatile java.lang.reflect.Method spellsRegistryIsRegisteredMethod = null;
 
     // === Skill Hotbar MethodHandles ===
     private static Class<?> playerDataClass = null;
@@ -1545,11 +1546,21 @@ public class MethodHandlesUtil {
                         spellsRegistry = spellsRegistryMethod.invoke(null);
                         if (spellsRegistry != null) {
                             spellsRegistryGetMethod = spellsRegistry.getClass().getMethod("get", String.class);
+                            try {
+                                spellsRegistryIsRegisteredMethod = spellsRegistry.getClass().getMethod("isRegistered", String.class);
+                            } catch (NoSuchMethodException ignored) {
+                            }
                         }
                     }
                 }
             }
             if (spellsRegistry != null && spellsRegistryGetMethod != null) {
+                if (spellsRegistryIsRegisteredMethod != null) {
+                    Object isReg = spellsRegistryIsRegisteredMethod.invoke(spellsRegistry, guid);
+                    if (Boolean.FALSE.equals(isReg)) {
+                        return null;
+                    }
+                }
                 return spellsRegistryGetMethod.invoke(spellsRegistry, guid);
             }
         } catch (Throwable t) {

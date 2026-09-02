@@ -40,24 +40,27 @@ public class SkillIdResolver {
         String ailmentId = event.data.getString(EventData.AILMENT);
         if (!ailmentId.isEmpty()) {
             try {
-                var ailment = ExileDB.Ailments().get(ailmentId);
-                if (ailment != null) {
-                    boolean isProc = event.data.getBoolean("is_ailment_proc");
-                    if (isProc) {
-                        if (!ailmentProcMethodSearched) {
-                            ailmentProcMethodSearched = true;
-                            try {
-                                ailmentProcNameMethod = ailment.getClass().getMethod("procNameWord");
-                            } catch (Exception ignored) { }
-                        }
-                        if (ailmentProcNameMethod != null) {
-                            Object wordsEnum = ailmentProcNameMethod.invoke(ailment);
-                            if (wordsEnum instanceof com.robertx22.mine_and_slash.uncommon.localization.Words) {
-                                return ((com.robertx22.mine_and_slash.uncommon.localization.Words) wordsEnum).locNameLangFileGUID();
+                var ailments = ExileDB.Ailments();
+                if (ailments != null && ailments.isRegistered(ailmentId)) {
+                    var ailment = ailments.get(ailmentId);
+                    if (ailment != null) {
+                        boolean isProc = event.data.getBoolean("is_ailment_proc");
+                        if (isProc) {
+                            if (!ailmentProcMethodSearched) {
+                                ailmentProcMethodSearched = true;
+                                try {
+                                    ailmentProcNameMethod = ailment.getClass().getMethod("procNameWord");
+                                } catch (Exception ignored) { }
+                            }
+                            if (ailmentProcNameMethod != null) {
+                                Object wordsEnum = ailmentProcNameMethod.invoke(ailment);
+                                if (wordsEnum instanceof com.robertx22.mine_and_slash.uncommon.localization.Words) {
+                                    return ((com.robertx22.mine_and_slash.uncommon.localization.Words) wordsEnum).locNameLangFileGUID();
+                                }
                             }
                         }
+                        return ailment.locNameLangFileGUID();
                     }
-                    return ailment.locNameLangFileGUID();
                 }
             } catch (Exception ignored) {
             }

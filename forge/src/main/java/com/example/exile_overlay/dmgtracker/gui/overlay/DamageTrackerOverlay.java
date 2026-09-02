@@ -141,7 +141,7 @@ public class DamageTrackerOverlay implements IRenderCommand {
             dps = TrackerSyncS2C.ClientTrackerData.getLiveOverallDps();
         } else if (isConfig) {
             TrackerSyncS2C.SkillStatsEntry dummy = new TrackerSyncS2C.SkillStatsEntry(
-                "exile_overlay:dummy_skill", "Preview Skill", "dummy_spell", 12345.0,
+                "exile_overlay:dummy_skill", "Preview Skill", "", 12345.0,
                 10, 2, 0, 1500.0f, 800.0f, 0, 1234.5f, 0.2f, Map.of(), ""
             );
             rows = List.of(dummy);
@@ -355,9 +355,12 @@ public class DamageTrackerOverlay implements IRenderCommand {
         // 3. rawId が判明した場合、M&S DB から loc_name を取得（リソースパック翻訳がない環境向け）
         if (rawId != null) {
             try {
-                var spell = com.robertx22.mine_and_slash.database.registry.ExileDB.Spells().get(rawId);
-                if (spell != null && spell.loc_name != null && !spell.loc_name.isEmpty()) {
-                    return spell.loc_name;
+                var spells = com.robertx22.mine_and_slash.database.registry.ExileDB.Spells();
+                if (spells != null && spells.isRegistered(rawId)) {
+                    var spell = spells.get(rawId);
+                    if (spell != null && spell.loc_name != null && !spell.loc_name.isEmpty()) {
+                        return spell.loc_name;
+                    }
                 }
             } catch (Throwable ignored) {
             }
@@ -367,10 +370,13 @@ public class DamageTrackerOverlay implements IRenderCommand {
         if (entry.skillId != null && entry.skillId.startsWith("ailment:")) {
             String ailmentId = entry.skillId.substring(8);
             try {
-                var ailment = com.robertx22.mine_and_slash.database.registry.ExileDB.Ailments().get(ailmentId);
-                if (ailment != null) {
-                    String name = ailment.locNameForLangFile();
-                    if (name != null && !name.isEmpty()) return name;
+                var ailments = com.robertx22.mine_and_slash.database.registry.ExileDB.Ailments();
+                if (ailments != null && ailments.isRegistered(ailmentId)) {
+                    var ailment = ailments.get(ailmentId);
+                    if (ailment != null) {
+                        String name = ailment.locNameForLangFile();
+                        if (name != null && !name.isEmpty()) return name;
+                    }
                 }
             } catch (Throwable ignored) {
             }
