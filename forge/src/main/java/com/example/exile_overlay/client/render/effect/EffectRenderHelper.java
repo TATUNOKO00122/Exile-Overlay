@@ -80,6 +80,7 @@ public class EffectRenderHelper {
         void renderIcon(GuiGraphics graphics, int x, int y, int size);
         default boolean isMercenary() { return false; }
         default MercenaryDisplayInfo getMercenaryInfo() { return null; }
+        default boolean isMinion() { return false; }
     }
 
     public static class VanillaEffectWrapper implements DisplayableEffect {
@@ -284,6 +285,9 @@ public class EffectRenderHelper {
                 graphics.blit(icon, x, y, size, size, 0, 0, 16, 16, 16, 16);
             }
         }
+
+        @Override
+        public boolean isMinion() { return true; }
     }
 
     public static class MercenaryEffectWrapper implements DisplayableEffect {

@@ -77,7 +77,7 @@ public class HudDisplayTab implements IConfigTab {
         ));
 
         entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.enable_shadow",
+                "exile_overlay.config.equipment_shadow",
                 equipConfig::isEnableShadow,
                 equipConfig::setEnableShadow
         ));
@@ -101,14 +101,6 @@ public class HudDisplayTab implements IConfigTab {
                 Component.translatable("exile_overlay.config.simple_skill_keybind.tooltip"),
                 screen::rebuildCurrentTab
         ));
-
-        if (equipConfig.isSimpleSkillKeybindDisplay()) {
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.simple_skill_charge_max_display",
-                    equipConfig::isSimpleSkillChargeMaxDisplay,
-                    equipConfig::setSimpleSkillChargeMaxDisplay
-            ));
-        }
 
         entries.add(new CycleConfigEntry<>(
                 Arrays.asList(EquipmentDisplayConfig.CooldownDisplayType.values()),
@@ -141,6 +133,14 @@ public class HudDisplayTab implements IConfigTab {
                 equipConfig::isShowSkillSummonCount,
                 equipConfig::setShowSkillSummonCount
         ));
+
+        if (equipConfig.isSimpleSkillKeybindDisplay()) {
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.simple_skill_charge_max_display",
+                    equipConfig::isSimpleSkillChargeMaxDisplay,
+                    equipConfig::setSimpleSkillChargeMaxDisplay
+            ));
+        }
 
         // 4. レベル表示
         entries.add(new SectionHeaderEntry("section.exile_overlay.level_display"));

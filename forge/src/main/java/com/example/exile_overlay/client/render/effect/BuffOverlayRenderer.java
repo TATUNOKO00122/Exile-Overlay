@@ -35,6 +35,10 @@ public class BuffOverlayRenderer implements IRenderCommand {
             "textures/gui/effect_stack_badge.png");
     private static final ResourceLocation MERCENARY_BUFF_FRAME = new ResourceLocation("exile_overlay",
             "textures/gui/mercenary_buff_frame.png");
+    private static final ResourceLocation SUMMON_FRAME = new ResourceLocation("exile_overlay",
+            "textures/gui/summon_frame.png");
+    private static final ResourceLocation SUMMON_FRAME_BACKGROUND = new ResourceLocation("exile_overlay",
+            "textures/gui/summon_frame_background.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -122,8 +126,9 @@ public class BuffOverlayRenderer implements IRenderCommand {
         }
 
         RenderSystem.enableBlend();
-        RenderSystem.setShaderTexture(0, EFFECT_FRAME_BACKGROUND);
-        graphics.blit(EFFECT_FRAME_BACKGROUND, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+        ResourceLocation bgTex = effect.isMinion() ? SUMMON_FRAME_BACKGROUND : EFFECT_FRAME_BACKGROUND;
+        RenderSystem.setShaderTexture(0, bgTex);
+        graphics.blit(bgTex, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
         int iconOffset = 3;
         int iconX = x + iconOffset;
@@ -136,36 +141,39 @@ public class BuffOverlayRenderer implements IRenderCommand {
             graphics.pose().popPose();
         }
 
-        int barMaxWidth = 22;
-        int barHeight = 3;
-        int barX = x + 4;
-        int barY = y + FRAME_HEIGHT - 6 - barHeight;
-        int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
+        if (!effect.isMinion()) {
+            int barMaxWidth = 22;
+            int barHeight = 3;
+            int barX = x + 4;
+            int barY = y + FRAME_HEIGHT - 6 - barHeight;
+            int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
 
-        if (!effect.isInfinite()) {
-            int currentDuration = effect.getDuration();
-            int maxDur = state.maxDuration;
-            int effectMax = effect.getMaxDuration();
+            if (!effect.isInfinite()) {
+                int currentDuration = effect.getDuration();
+                int maxDur = state.maxDuration;
+                int effectMax = effect.getMaxDuration();
 
-            if (maxDur <= 0 || effectMax > maxDur) {
-                maxDur = effectMax;
-                state.maxDuration = maxDur;
+                if (maxDur <= 0 || effectMax > maxDur) {
+                    maxDur = effectMax;
+                    state.maxDuration = maxDur;
+                }
+
+                float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
+                progress = Math.max(0.0f, Math.min(1.0f, progress));
+                int barWidth = (int) (barMaxWidth * progress);
+
+                graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
+                if (barWidth > 0) {
+                    graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
+                }
+            } else {
+                graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
             }
-
-            float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
-            progress = Math.max(0.0f, Math.min(1.0f, progress));
-            int barWidth = (int) (barMaxWidth * progress);
-
-            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
-            if (barWidth > 0) {
-                graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
-            }
-        } else {
-            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
         }
 
-        RenderSystem.setShaderTexture(0, EFFECT_FRAME);
-        graphics.blit(EFFECT_FRAME, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
+        ResourceLocation frameTex = effect.isMinion() ? SUMMON_FRAME : EFFECT_FRAME;
+        RenderSystem.setShaderTexture(0, frameTex);
+        graphics.blit(frameTex, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
         if (effect.showStackCount()) {
             renderStackBadge(graphics, mc, effect, x, y);
