@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.BossHealthOverlay;
 import net.minecraft.client.gui.components.LerpingBossEvent;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -88,9 +89,10 @@ public class BossHpBarRenderer implements IRenderCommand {
     private static final int BOSS_EFFECT_PADDING_Y = 2;
     private static final int BOSS_MAX_EFFECTS_PER_ROW = 20;
 
-    private static final double BOSS_SCAN_RANGE = 40.0;
+    private static final double BOSS_SCAN_RANGE = 64.0;
     private static final double BOSS_SCAN_RANGE_SQ = BOSS_SCAN_RANGE * BOSS_SCAN_RANGE;
     private static final double CLOSE_COMBAT_RANGE_SQ = 144.0; // 12ブロック以内は近接交戦として背後でも認識
+    private static final long SCAN_INTERVAL_MS = 200;
 
     private final EquipmentDisplayConfig equipConfig = EquipmentDisplayConfig.getInstance();
     private final EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
@@ -98,6 +100,8 @@ public class BossHpBarRenderer implements IRenderCommand {
     private static WeakReference<LivingEntity> combatMsBoss = new WeakReference<>(null);
     private static WeakReference<LivingEntity> combatVanillaBoss = new WeakReference<>(null);
     private static UUID lastTrackedBossEventId = null;
+    private static long lastMsScanTime = 0;
+    private static long lastVanillaScanTime = 0;
 
     @Override
     public String getId() {
@@ -424,7 +428,7 @@ public class BossHpBarRenderer implements IRenderCommand {
 
         List<LivingEntity> bossCandidates = mc.level.getEntitiesOfClass(
                 LivingEntity.class, searchBox,
-                e -> e != null && e.isAlive() && isAnyBoss(e) && e.distanceToSqr(mc.player) <= BOSS_SCAN_RANGE_SQ);
+                e -> e != null && e.isAlive() && (isAnyBoss(e) || matchesBossEvent(e, bossEvent)) && e.distanceToSqr(mc.player) <= BOSS_SCAN_RANGE_SQ);
 
         if (bossCandidates.isEmpty()) {
             return null;
@@ -435,6 +439,23 @@ public class BossHpBarRenderer implements IRenderCommand {
                         .comparingDouble((LivingEntity e) -> getHpProgressDiff(e, targetProgress))
                         .thenComparingDouble(e -> e.distanceToSqr(mc.player)))
                 .orElse(null);
+    }
+
+    static boolean matchesBossEvent(LivingEntity entity, LerpingBossEvent bossEvent) {
+        if (entity == null || bossEvent == null) return false;
+        String eventName = bossEvent.getName().getString().trim();
+        if (eventName.isEmpty()) return false;
+
+        String displayName = entity.getDisplayName().getString().trim();
+        if (eventName.equalsIgnoreCase(displayName)) return true;
+
+        String name = entity.getName().getString().trim();
+        if (eventName.equalsIgnoreCase(name)) return true;
+
+        String typeName = entity.getType().getDescription().getString().trim();
+        if (eventName.equalsIgnoreCase(typeName)) return true;
+
+        return false;
     }
 
     private static double getHpProgressDiff(LivingEntity entity, float targetProgress) {
@@ -474,6 +495,12 @@ public class BossHpBarRenderer implements IRenderCommand {
             combatMsBoss = new WeakReference<>(null);
         }
 
+        long now = System.currentTimeMillis();
+        if (now - lastMsScanTime < SCAN_INTERVAL_MS) {
+            return null;
+        }
+        lastMsScanTime = now;
+
         AABB searchBox = mc.player.getBoundingBox().inflate(BOSS_SCAN_RANGE);
         List<LivingEntity> bosses = mc.level.getEntitiesOfClass(
                 LivingEntity.class, searchBox,
@@ -499,16 +526,20 @@ public class BossHpBarRenderer implements IRenderCommand {
         }
 
         try {
-            String className = entity.getClass().getName().toLowerCase();
-            if (className.contains("blue_skies") && className.contains("boss")) {
+            EntityType<?> type = entity.getType();
+            if (type.is(TAG_BLUE_SKIES_BOSSES) || type.is(TAG_FORGE_BOSSES) || type.is(TAG_FABRIC_BOSSES)) {
+                return true;
+            }
+            ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+            if (key != null && key.getPath().contains("boss")) {
                 return true;
             }
         } catch (Throwable ignored) {
         }
 
         try {
-            EntityType<?> type = entity.getType();
-            if (type.is(TAG_BLUE_SKIES_BOSSES) || type.is(TAG_FORGE_BOSSES) || type.is(TAG_FABRIC_BOSSES)) {
+            String className = entity.getClass().getName().toLowerCase();
+            if (className.contains("boss")) {
                 return true;
             }
         } catch (Throwable ignored) {
@@ -615,8 +646,16 @@ public class BossHpBarRenderer implements IRenderCommand {
         if (mc.player == null || mc.level == null || target == null) return false;
         Vec3 playerEye = mc.player.getEyePosition(1.0f);
         Vec3 targetEye = target.getEyePosition(1.0f);
+        if (checkRaycast(mc, playerEye, targetEye)) {
+            return true;
+        }
+        Vec3 targetCenter = target.position().add(0, target.getBbHeight() * 0.5, 0);
+        return checkRaycast(mc, playerEye, targetCenter);
+    }
+
+    private static boolean checkRaycast(Minecraft mc, Vec3 from, Vec3 to) {
         ClipContext context = new ClipContext(
-                playerEye, targetEye,
+                from, to,
                 ClipContext.Block.COLLIDER,
                 ClipContext.Fluid.NONE,
                 mc.player
@@ -639,6 +678,12 @@ public class BossHpBarRenderer implements IRenderCommand {
             }
             combatVanillaBoss = new WeakReference<>(null);
         }
+
+        long now = System.currentTimeMillis();
+        if (now - lastVanillaScanTime < SCAN_INTERVAL_MS) {
+            return false;
+        }
+        lastVanillaScanTime = now;
 
         LerpingBossEvent event = getFirstBossEvent(mc);
         if (event == null) {
