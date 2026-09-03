@@ -3,12 +3,10 @@ package com.example.exile_overlay.mixin;
 import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.sound.CustomSoundManager;
 import com.example.exile_overlay.client.sound.ExileAudioPlayer;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.example.exile_overlay.util.ItemRarityResolver;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
@@ -57,7 +55,7 @@ public abstract class ItemEntityMixin extends Entity {
 
     /**
      * SynchedEntityData の更新時（onSyncedDataUpdated）にフック。
-     * サーバーから ItemStack（mmorpg_gear NBT 含む）が同期された瞬間にドロップ音を再生する。
+     * サーバーから ItemStack が同期された瞬間にドロップ音を再生する。
      */
     @Unique
     private static java.util.Set<java.util.UUID> exileOverlay$PLAYED_UUIDS;
@@ -88,52 +86,36 @@ public abstract class ItemEntityMixin extends Entity {
         }
 
         try {
-            ItemStack stack = this.getItem();
-            if (stack == null || stack.isEmpty()) {
+            if (this.exileOverlay$hasPlayedDropSound || this.tickCount > 5) {
                 return;
             }
 
-            CompoundTag tag = stack.getTag();
-            if (tag == null) {
-                return;
-            }
-
-            if (!tag.contains("mmorpg_gear")) {
-                return;
-            }
-
-            int entityId = this.getId();
-            
             // UI用などのダミーエンティティを除外する (無重力や透明化が設定されていることが多い)
             if (this.isNoGravity() || this.isInvisible() || this.isPassenger()) {
                 return;
             }
 
-            String gearJson = tag.getString("mmorpg_gear");
-            JsonObject gearObj = JsonParser.parseString(gearJson).getAsJsonObject();
-            String rarity = gearObj.has("rar") ? gearObj.get("rar").getAsString() : "unknown";
-
-            if (this.exileOverlay$hasPlayedDropSound) {
-                return;
-            }
-
-            if (this.tickCount > 5) {
-                return;
-            }
-            
             if (exileOverlay$getPlayedUuids().contains(this.getUUID())) {
                 return;
             }
 
-            this.exileOverlay$hasPlayedDropSound = true;
-
             DropSoundConfig config = DropSoundConfig.getInstance();
-            if (!config.isEnabled()) return;
-
-            if (!gearObj.has("rar")) {
-                EXILE_LOGGER.debug("[exile_overlay] No 'rar' field in mmorpg_gear JSON: {}", gearJson);
+            if (!config.isEnabled()) {
                 return;
             }
+
+            ItemStack stack = this.getItem();
+            if (stack == null || stack.isEmpty()) {
+                return;
+            }
+
+            String rarity = ItemRarityResolver.resolveRarity(stack);
+            if (rarity == null) {
+                return;
+            }
+
+            int entityId = this.getId();
+            this.exileOverlay$hasPlayedDropSound = true;
 
             DropSoundConfig.RaritySound raritySound = config.getRaritySound(rarity);
             if (raritySound == null || !raritySound.isEnabled()) return;

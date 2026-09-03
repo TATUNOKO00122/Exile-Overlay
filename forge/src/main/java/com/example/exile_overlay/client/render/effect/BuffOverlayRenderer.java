@@ -35,10 +35,10 @@ public class BuffOverlayRenderer implements IRenderCommand {
             "textures/gui/effect_stack_badge.png");
     private static final ResourceLocation MERCENARY_BUFF_FRAME = new ResourceLocation("exile_overlay",
             "textures/gui/mercenary_buff_frame.png");
-    private static final ResourceLocation SUMMON_FRAME = new ResourceLocation("exile_overlay",
-            "textures/gui/summon_frame.png");
-    private static final ResourceLocation SUMMON_FRAME_BACKGROUND = new ResourceLocation("exile_overlay",
-            "textures/gui/summon_frame_background.png");
+    private static final ResourceLocation EFFECT_FRAME_NO_BAR = new ResourceLocation("exile_overlay",
+            "textures/gui/effect_frame_no_bar.png");
+    private static final ResourceLocation EFFECT_FRAME_NO_BAR_BACKGROUND = new ResourceLocation("exile_overlay",
+            "textures/gui/effect_frame_no_bar_background.png");
 
     // フレームサイズ定数
     private static final int FRAME_WIDTH = 30;
@@ -126,7 +126,8 @@ public class BuffOverlayRenderer implements IRenderCommand {
         }
 
         RenderSystem.enableBlend();
-        ResourceLocation bgTex = effect.isMinion() ? SUMMON_FRAME_BACKGROUND : EFFECT_FRAME_BACKGROUND;
+        boolean noBar = effect.isMinion() || effect.isInfinite();
+        ResourceLocation bgTex = noBar ? EFFECT_FRAME_NO_BAR_BACKGROUND : EFFECT_FRAME_BACKGROUND;
         RenderSystem.setShaderTexture(0, bgTex);
         graphics.blit(bgTex, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
@@ -141,37 +142,33 @@ public class BuffOverlayRenderer implements IRenderCommand {
             graphics.pose().popPose();
         }
 
-        if (!effect.isMinion()) {
+        if (!noBar) {
             int barMaxWidth = 22;
             int barHeight = 3;
             int barX = x + 4;
             int barY = y + FRAME_HEIGHT - 6 - barHeight;
             int barColor = effect.isBeneficial() ? 0xFF4CAF50 : 0xFFF44336;
 
-            if (!effect.isInfinite()) {
-                int currentDuration = effect.getDuration();
-                int maxDur = state.maxDuration;
-                int effectMax = effect.getMaxDuration();
+            int currentDuration = effect.getDuration();
+            int maxDur = state.maxDuration;
+            int effectMax = effect.getMaxDuration();
 
-                if (maxDur <= 0 || effectMax > maxDur) {
-                    maxDur = effectMax;
-                    state.maxDuration = maxDur;
-                }
+            if (maxDur <= 0 || effectMax > maxDur) {
+                maxDur = effectMax;
+                state.maxDuration = maxDur;
+            }
 
-                float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
-                progress = Math.max(0.0f, Math.min(1.0f, progress));
-                int barWidth = (int) (barMaxWidth * progress);
+            float progress = maxDur > 0 ? (float) currentDuration / maxDur : 1.0f;
+            progress = Math.max(0.0f, Math.min(1.0f, progress));
+            int barWidth = (int) (barMaxWidth * progress);
 
-                graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
-                if (barWidth > 0) {
-                    graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
-                }
-            } else {
-                graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, barColor);
+            graphics.fill(barX, barY, barX + barMaxWidth, barY + barHeight, 0x80000000);
+            if (barWidth > 0) {
+                graphics.fill(barX, barY, barX + barWidth, barY + barHeight, barColor);
             }
         }
 
-        ResourceLocation frameTex = effect.isMinion() ? SUMMON_FRAME : EFFECT_FRAME;
+        ResourceLocation frameTex = noBar ? EFFECT_FRAME_NO_BAR : EFFECT_FRAME;
         RenderSystem.setShaderTexture(0, frameTex);
         graphics.blit(frameTex, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
@@ -179,22 +176,23 @@ public class BuffOverlayRenderer implements IRenderCommand {
             renderStackBadge(graphics, mc, effect, x, y);
         }
 
-        String durationText = effect.getDurationText();
-        if (durationText != null && !durationText.isEmpty()) {
-            float textScale = 0.5f;
-            int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
+        if (!effect.isInfinite()) {
+            String durationText = effect.getDurationText();
+            if (durationText != null && !durationText.isEmpty()) {
+                float textScale = 0.5f;
+                int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
-            graphics.pose().pushPose();
-            try {
-                float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2) / textScale;
-                float textY = (float) ((y + 29) + 0.4) / textScale;
+                graphics.pose().pushPose();
+                try {
+                    float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2) / textScale;
+                    float textY = (float) ((y + 29) + 0.4) / textScale;
 
-                graphics.pose().scale(textScale, textScale, 1.0f);
+                    graphics.pose().scale(textScale, textScale, 1.0f);
 
-                int textColor = effect.isInfinite() ? 0xFF88FF88 : 0xFFFFFFFF;
-                HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, textColor, false);
-            } finally {
-                graphics.pose().popPose();
+                    HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, 0xFFFFFFFF, false);
+                } finally {
+                    graphics.pose().popPose();
+                }
             }
         }
     }
