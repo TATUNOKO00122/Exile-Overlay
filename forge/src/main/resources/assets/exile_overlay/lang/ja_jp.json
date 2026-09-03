@@ -381,5 +381,18 @@
   "exile_overlay.jei.category.enchants": "M&S エンチャント (注入効果)",
   "exile_overlay.jei.applicable_gears": "付与可能な装備:",
   "exile_overlay.jei.only_one_per_item": "1つのアイテムにつき1つのみ付与可能",
-  "exile_overlay.jei.one_of_a_kind": "同グループ(%s)のAffixと重複不可"
+  "exile_overlay.jei.one_of_a_kind": "同グループ(%s)のAffixと重複不可",
+  "section.exile_overlay.loot_journal": "Loot Journal 連携",
+  "exile_overlay.config.loot_journal_enable_compat": "連携機能を有効化: %s",
+  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Loot Journal と Mine and Slash の連携機能（レアリティ色・フルネーム・特大表示等）を有効化します",
+  "exile_overlay.config.loot_journal_only_ms_items": "MSアイテムのみ表示: %s",
+  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "バニラの土や石などの通常アイテムを除外し、M&S 関連アイテムのみを HUD に表示します",
+  "exile_overlay.config.loot_journal_show_full_affix_name": "接頭辞・接尾辞フルネーム表示: %s",
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "装備品の接頭辞・接尾辞を含む正式名称（例: Rusty Iron Sword of Agility）を表示します",
+  "exile_overlay.config.loot_journal_auto_scale_by_weight": "重みによる自動特大表示: %s",
+  "exile_overlay.config.loot_journal_auto_scale_by_weight.tooltip": "ドロップ重み（Weight）に応じて、Mirror of Kalandra 等の貴重品を自動で特大表示します",
+  "exile_overlay.config.loot_journal_mirror_scale": "Mirror 拡大倍率: %.1fx",
+  "exile_overlay.config.loot_journal_mirror_scale.tooltip": "Mirror of Kalandra (Weight=1) の拡大倍率を調整します",
+  "exile_overlay.config.loot_journal_mega_uber_scale": "Mega Uber 拡大倍率: %.1fx",
+  "exile_overlay.config.loot_journal_mega_uber_scale.tooltip": "Mega Uber カレンシー (Weight<=10 または 0) の拡大倍率を調整します"
 }

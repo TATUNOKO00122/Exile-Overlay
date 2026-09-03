@@ -42,5 +42,11 @@ public class NetworkHandler {
                 AilmentSyncS2C::encode,
                 AilmentSyncS2C::decode,
                 AilmentSyncS2C::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                BackpackPickupNotifyS2C.class,
+                BackpackPickupNotifyS2C::encode,
+                BackpackPickupNotifyS2C::decode,
+                BackpackPickupNotifyS2C::handle);
     }
 }

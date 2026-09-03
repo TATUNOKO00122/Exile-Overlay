@@ -381,5 +381,18 @@
   "exile_overlay.jei.category.enchants": "M&S Enchants",
   "exile_overlay.jei.applicable_gears": "Applicable Gears:",
   "exile_overlay.jei.only_one_per_item": "Only 1 of this affix per item",
-  "exile_overlay.jei.one_of_a_kind": "Exclusive with other %s affixes"
+  "exile_overlay.jei.one_of_a_kind": "Exclusive with other %s affixes",
+  "section.exile_overlay.loot_journal": "Loot Journal Integration",
+  "exile_overlay.config.loot_journal_enable_compat": "Enable Integration: %s",
+  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Enable Loot Journal and Mine and Slash integration (rarity colors, full affix names, scaling, etc.)",
+  "exile_overlay.config.loot_journal_only_ms_items": "Show Only M&S Items: %s",
+  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "Hide vanilla common blocks/items and only show M&S related items on HUD",
+  "exile_overlay.config.loot_journal_show_full_affix_name": "Show Full Affix Names: %s",
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "Display full gear names including prefixes and suffixes (e.g. Rusty Iron Sword of Agility)",
+  "exile_overlay.config.loot_journal_auto_scale_by_weight": "Auto-scale by Weight: %s",
+  "exile_overlay.config.loot_journal_auto_scale_by_weight.tooltip": "Automatically enlarge valuable items like Mirror of Kalandra based on drop weight",
+  "exile_overlay.config.loot_journal_mirror_scale": "Mirror Scale: %.1fx",
+  "exile_overlay.config.loot_journal_mirror_scale.tooltip": "Scale multiplier for Mirror of Kalandra (Weight=1)",
+  "exile_overlay.config.loot_journal_mega_uber_scale": "Mega Uber Scale: %.1fx",
+  "exile_overlay.config.loot_journal_mega_uber_scale.tooltip": "Scale multiplier for Mega Uber currencies (Weight<=10 or 0)"
 }

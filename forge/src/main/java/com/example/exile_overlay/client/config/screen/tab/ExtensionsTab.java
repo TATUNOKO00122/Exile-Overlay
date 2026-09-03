@@ -3,6 +3,7 @@ package com.example.exile_overlay.client.config.screen.tab;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
+import com.example.exile_overlay.client.config.LootJournalCompatConfig;
 import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import com.example.exile_overlay.client.config.screen.entry.ActionConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.BooleanConfigEntry;
@@ -15,12 +16,14 @@ import com.example.exile_overlay.client.sound.DropFilterManager;
 import com.example.exile_overlay.compat.BotaniaCompat;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
-import java.io.File;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.fml.ModList;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 「拡張・連携 (Extensions)」タブ。
@@ -149,6 +152,60 @@ public class ExtensionsTab implements IConfigTab {
                     "exile_overlay.config.auto_sort_lootr_chest",
                     config::isAutoSortLootrChest,
                     config::setAutoSortLootrChest
+            ));
+        }
+
+        // 5. Loot Journal 連携
+        if (ModList.get().isLoaded("loot_journal")) {
+            hasAnyCompat = true;
+            entries.add(new SectionHeaderEntry("section.exile_overlay.loot_journal"));
+
+            LootJournalCompatConfig ljConfig = LootJournalCompatConfig.getInstance();
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.loot_journal_enable_compat",
+                    ljConfig::isEnableCompat,
+                    ljConfig::setEnableCompat,
+                    Component.translatable("exile_overlay.config.loot_journal_enable_compat.tooltip")
+            ));
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.loot_journal_only_ms_items",
+                    ljConfig::isOnlyMsItems,
+                    ljConfig::setOnlyMsItems,
+                    Component.translatable("exile_overlay.config.loot_journal_only_ms_items.tooltip")
+            ));
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.loot_journal_show_full_affix_name",
+                    ljConfig::isShowFullAffixName,
+                    ljConfig::setShowFullAffixName,
+                    Component.translatable("exile_overlay.config.loot_journal_show_full_affix_name.tooltip")
+            ));
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.loot_journal_auto_scale_by_weight",
+                    ljConfig::isAutoScaleByWeight,
+                    ljConfig::setAutoScaleByWeight,
+                    Component.translatable("exile_overlay.config.loot_journal_auto_scale_by_weight.tooltip")
+            ));
+
+            entries.add(new FloatSliderConfigEntry(
+                    "exile_overlay.config.loot_journal_mirror_scale",
+                    ljConfig::getMirrorScale,
+                    ljConfig::setMirrorScale,
+                    1.0f,
+                    3.0f,
+                    val -> Component.translatable("exile_overlay.config.loot_journal_mirror_scale", String.format(Locale.ROOT, "%.1f", val))
+            ));
+
+            entries.add(new FloatSliderConfigEntry(
+                    "exile_overlay.config.loot_journal_mega_uber_scale",
+                    ljConfig::getMegaUberScale,
+                    ljConfig::setMegaUberScale,
+                    1.0f,
+                    3.0f,
+                    val -> Component.translatable("exile_overlay.config.loot_journal_mega_uber_scale", String.format(Locale.ROOT, "%.1f", val))
             ));
         }
 
