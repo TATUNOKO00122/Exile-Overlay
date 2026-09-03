@@ -38,8 +38,14 @@ public class MinionOverlayRenderer implements IRenderCommand {
             "textures/gui/effect_frame_background.png");
     private static final ResourceLocation EFFECT_STACK_BADGE = new ResourceLocation("exile_overlay",
             "textures/gui/effect_stack_badge.png");
-    private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("exile_overlay",
-            "textures/gui/skill_slot_summon_badge.png");
+    private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("mmorpg",
+            "textures/gui/spells/icons/summon_zombie.png");
+    private static final ResourceLocation DEFAULT_MERCENARY_ICON = new ResourceLocation("mmorpg",
+            "textures/gui/mercenary/classes/fighter.png");
+    private static final ResourceLocation DUMMY_SKILL_1_ICON = new ResourceLocation("mmorpg",
+            "textures/gui/spells/icons/charge.png");
+    private static final ResourceLocation DUMMY_SKILL_2_ICON = new ResourceLocation("mmorpg",
+            "textures/gui/spells/icons/circle_of_healing.png");
     private static final ResourceLocation SKILL_SLOT_BASE = new ResourceLocation("exile_overlay",
             "textures/gui/skill_slot_base.png");
     private static final ResourceLocation SKILL_SLOT_BG = new ResourceLocation("exile_overlay",
@@ -80,15 +86,15 @@ public class MinionOverlayRenderer implements IRenderCommand {
     private static final MercenaryDisplayInfo DUMMY_MERCENARY = new MercenaryDisplayInfo(
             "dummy",
             "Mercenary",
-            DEFAULT_MINION_ICON,
+            DEFAULT_MERCENARY_ICON,
             1,
             100.0f,
             100.0f,
             20.0f,
             20.0f,
             List.of(
-                    new MercenarySkillInfo("dummy_skill_1", DEFAULT_MINION_ICON, false, 0.0f, 0, 0),
-                    new MercenarySkillInfo("dummy_skill_2", DEFAULT_MINION_ICON, true, 0.4f, 8, 20)
+                    new MercenarySkillInfo("dummy_skill_1", DUMMY_SKILL_1_ICON, false, 0.0f, 0, 0),
+                    new MercenarySkillInfo("dummy_skill_2", DUMMY_SKILL_2_ICON, true, 0.4f, 8, 20)
             )
     );
 
@@ -204,7 +210,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
         int iconX = x + iconOffset;
         int iconY = drawY + iconOffset;
         ResourceLocation icon = merc.icon() != null ? merc.icon() : DEFAULT_MINION_ICON;
-        int srcSize = (icon.getPath().contains("summon_zombie") || icon.getPath().contains("skill_slot_summon_badge")) ? 16 : 36;
+        int srcSize = icon.getPath().contains("summon_zombie") ? 16 : 36;
 
         RenderSystem.setShaderTexture(0, icon);
         graphics.blit(icon, iconX, iconY, iconSize, iconSize, 0, 0, srcSize, srcSize, srcSize, srcSize);
@@ -222,7 +228,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
         int barFrameX = x + MERC_BAR_OFFSET_X;
         int hpBarFrameY = drawY + 22 - barShift;
-        int esBarFrameY = hpBarFrameY + 8;
+        float esBarFrameY = hpBarFrameY + 7.5f;
 
         // 5. 装備スキルアイコン (HPバー枠の上側に配置)
         if (merc.skills() != null && !merc.skills().isEmpty()) {

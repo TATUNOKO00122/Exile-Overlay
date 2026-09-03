@@ -27,8 +27,8 @@ import java.util.*;
 public class EffectRenderHelper {
 
     private static final BuffOverlayFilterConfig FILTER_CONFIG = BuffOverlayFilterConfig.getInstance();
-    private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("exile_overlay",
-            "textures/gui/skill_slot_summon_badge.png");
+    private static final ResourceLocation DEFAULT_MINION_ICON = new ResourceLocation("mmorpg",
+            "textures/gui/spells/icons/summon_zombie.png");
     private static final float ANIMATION_SPEED = 0.2f;
     private static final float FADE_IN_SPEED = 0.06f;
     private static final float SLIDE_DISTANCE = 30.0f;
@@ -373,7 +373,7 @@ public class EffectRenderHelper {
         public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
             ResourceLocation icon = getTexture();
             if (icon != null) {
-                int srcSize = (icon.getPath().contains("summon_zombie") || icon.getPath().contains("skill_slot_summon_badge")) ? 16 : 36;
+                int srcSize = icon.getPath().contains("summon_zombie") ? 16 : 36;
                 RenderSystem.setShaderTexture(0, icon);
                 graphics.blit(icon, x, y, size, size, 0, 0, srcSize, srcSize, srcSize, srcSize);
             }

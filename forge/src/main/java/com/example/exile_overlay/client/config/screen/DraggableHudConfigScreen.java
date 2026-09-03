@@ -159,7 +159,7 @@ public class DraggableHudConfigScreen extends Screen {
                 continue;
             }
 
-            if ("skill_hotbar".equals(key) || "buff_overlay".equals(key) || "skill_buff_overlay".equals(key)) {
+            if ("skill_hotbar".equals(key) || "buff_overlay".equals(key) || "skill_buff_overlay".equals(key) || "minion_overlay".equals(key)) {
                 if (!net.minecraftforge.fml.ModList.get().isLoaded("mmorpg")) continue;
             }
 
