@@ -2,10 +2,12 @@ package com.example.exile_overlay.client;
 
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.event.ExileOverlayGui;
+import com.example.exile_overlay.client.event.ItemCopyKeyHandler;
 import com.example.exile_overlay.client.render.exp.ExpAccumulatorEventHandler;
 // import com.example.exile_overlay.client.render.kill.KillCounterEventHandler;
 import com.example.exile_overlay.client.render.orb.OrbDataProviders;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
+import com.example.exile_overlay.client.sound.DropFilterManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
@@ -29,5 +31,7 @@ public final class ClientSetup {
         MinecraftForge.EVENT_BUS.register(ExileOverlayGui.class);
         // MinecraftForge.EVENT_BUS.register(KillCounterEventHandler.class);
         MinecraftForge.EVENT_BUS.register(ExpAccumulatorEventHandler.class);
+        MinecraftForge.EVENT_BUS.register(ItemCopyKeyHandler.class);
+        DropFilterManager.init();
     }
 }

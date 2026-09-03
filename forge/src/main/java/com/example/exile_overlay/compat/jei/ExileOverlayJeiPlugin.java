@@ -88,4 +88,51 @@ public class ExileOverlayJeiPlugin implements IModPlugin {
             registration.addRecipes(ENCHANTS_TYPE, recipes.enchants);
         }
     }
+
+    private static mezz.jei.api.runtime.IJeiRuntime jeiRuntime;
+
+    @Override
+    public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime runtime) {
+        jeiRuntime = runtime;
+    }
+
+    @Override
+    public void onRuntimeUnavailable() {
+        jeiRuntime = null;
+    }
+
+    public static ItemStack getItemStackUnderMouse(double mouseX, double mouseY) {
+        if (jeiRuntime == null) {
+            return ItemStack.EMPTY;
+        }
+
+        try {
+            var overlay = jeiRuntime.getIngredientListOverlay();
+            if (overlay != null) {
+                java.util.Optional<mezz.jei.api.ingredients.ITypedIngredient<?>> underMouse = overlay.getIngredientUnderMouse();
+                if (underMouse.isPresent()) {
+                    java.util.Optional<ItemStack> stack = underMouse.get().getItemStack();
+                    if (stack.isPresent() && !stack.get().isEmpty()) {
+                        return stack.get();
+                    }
+                }
+            }
+
+            var screenHelper = jeiRuntime.getScreenHelper();
+            var mc = net.minecraft.client.Minecraft.getInstance();
+            if (screenHelper != null && mc.screen != null) {
+                var clicked = screenHelper.getClickableIngredientUnderMouse(mc.screen, mouseX, mouseY).findFirst();
+                if (clicked.isPresent()) {
+                    mezz.jei.api.ingredients.ITypedIngredient<?> typed = clicked.get().getTypedIngredient();
+                    java.util.Optional<ItemStack> stack = typed.getItemStack();
+                    if (stack.isPresent() && !stack.get().isEmpty()) {
+                        return stack.get();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return ItemStack.EMPTY;
+    }
 }

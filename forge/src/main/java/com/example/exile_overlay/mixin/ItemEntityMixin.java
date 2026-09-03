@@ -2,8 +2,10 @@ package com.example.exile_overlay.mixin;
 
 import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.sound.CustomSoundManager;
+import com.example.exile_overlay.client.sound.DropFilter;
+import com.example.exile_overlay.client.sound.DropFilterManager;
 import com.example.exile_overlay.client.sound.ExileAudioPlayer;
-import com.example.exile_overlay.util.ItemRarityResolver;
+import java.io.File;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
@@ -109,24 +111,22 @@ public abstract class ItemEntityMixin extends Entity {
                 return;
             }
 
-            String rarity = ItemRarityResolver.resolveRarity(stack);
-            if (rarity == null) {
-                return;
-            }
-
             int entityId = this.getId();
             this.exileOverlay$hasPlayedDropSound = true;
 
-            DropSoundConfig.RaritySound raritySound = config.getRaritySound(rarity);
-            if (raritySound == null || !raritySound.isEnabled()) return;
+            DropFilter.SoundRule rule = DropFilterManager.match(stack);
+            if (rule == null || !rule.enabled()) {
+                return;
+            }
 
-            String soundName = raritySound.getSound();
+            String soundName = rule.sound();
             if (soundName == null || soundName.isEmpty()) return;
 
-            java.io.File customSoundFile = CustomSoundManager.getCustomSoundFile(soundName);
+            File customSoundFile = CustomSoundManager.getCustomSoundFile(soundName);
             ResourceLocation soundLoc = customSoundFile == null ? CustomSoundManager.getSafeSoundLocation(soundName) : null;
             if (customSoundFile == null && soundLoc == null) return;
-            float volume = raritySound.getVolume();
+            float volume = Math.max(0.0f, Math.min(2.0f, rule.volume() * config.getMasterVolume()));
+            if (volume <= 0.001f) return;
             
             // ItemPhysicLite 等のMODによって即座にItemEntityが置き換えられる(削除される)場合への対策。
             // 処理をメインスレッドのタスクキューの最後に遅延させ、その時点で isRemoved() なら再生しない。

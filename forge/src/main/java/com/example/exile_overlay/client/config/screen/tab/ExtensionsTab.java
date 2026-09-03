@@ -11,30 +11,22 @@ import com.example.exile_overlay.client.config.screen.entry.CycleConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.FloatSliderConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.SectionHeaderEntry;
 import com.example.exile_overlay.client.sound.CustomSoundManager;
-import com.example.exile_overlay.client.sound.ExileAudioPlayer;
+import com.example.exile_overlay.client.sound.DropFilterManager;
 import com.example.exile_overlay.compat.BotaniaCompat;
 import com.example.exile_overlay.util.InventorySorterHelper;
 import com.example.exile_overlay.util.LootrHelper;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.client.resources.sounds.SoundInstance;
+import java.io.File;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 「拡張・連携 (Extensions)」タブ。
  * 他MOD互換（M&S, Botania, Lootr, Inventory Sorter）およびドロップサウンド設定を管理する。
  */
 public class ExtensionsTab implements IConfigTab {
-
-    private boolean dropSoundCollapsed = true;
 
     @Override
     public Component getTitle() {
@@ -173,132 +165,63 @@ public class ExtensionsTab implements IConfigTab {
                 dropSoundConfig::isEnabled,
                 dropSoundConfig::setEnabled,
                 Component.translatable("exile_overlay.config.drop_sound_enabled.tooltip")
-                        .append("\n")
-                        .append(Component.translatable("exile_overlay.config.experimental").withStyle(s -> s.withColor(0xFFAA00)))
         ));
 
-        Component dropToggleText = Component.literal(dropSoundCollapsed ? "\u25B6 " : "\u25BC ")
-                .append(Component.translatable("exile_overlay.config.drop_sound.collapse"));
+        // 全体音量スライダー（0〜200%）
+        entries.add(new FloatSliderConfigEntry(
+                "exile_overlay.config.drop_sound_master_volume",
+                dropSoundConfig::getMasterVolume,
+                dropSoundConfig::setMasterVolume,
+                0.0f,
+                2.0f,
+                val -> Component.translatable("exile_overlay.config.drop_sound_master_volume", Math.round(val * 100) + "%")
+        ));
+
+        // フィルター選択
         entries.add(new ActionConfigEntry(
-                dropToggleText,
-                Component.translatable("exile_overlay.config.drop_sound.collapse.tooltip"),
+                Component.translatable("exile_overlay.config.drop_sound_filter_select", dropSoundConfig.getActiveFilter()),
+                Component.translatable("exile_overlay.config.drop_sound_filter_select.tooltip"),
                 btn -> {
-                    dropSoundCollapsed = !dropSoundCollapsed;
+                    DropFilterManager.cycleFilter();
+                    btn.setMessage(Component.translatable("exile_overlay.config.drop_sound_filter_select", dropSoundConfig.getActiveFilter()));
+                }
+        ));
+
+        // フィルターフォルダを開く
+        entries.add(new ActionConfigEntry(
+                Component.translatable("exile_overlay.config.drop_sound_open_filters"),
+                Component.translatable("exile_overlay.config.drop_sound_open_filters.tooltip"),
+                btn -> {
+                    File dir = DropFilterManager.getFiltersDir();
+                    if (dir != null && dir.exists()) {
+                        Util.getPlatform().openFile(dir);
+                    }
+                }
+        ));
+
+        // サウンドフォルダを開く
+        entries.add(new ActionConfigEntry(
+                Component.translatable("exile_overlay.config.drop_sound_open_sounds"),
+                Component.translatable("exile_overlay.config.drop_sound_open_sounds.tooltip"),
+                btn -> {
+                    File dir = CustomSoundManager.getSoundDir();
+                    if (dir != null && dir.exists()) {
+                        Util.getPlatform().openFile(dir);
+                    }
+                }
+        ));
+
+        // フィルター・音声リロード
+        entries.add(new ActionConfigEntry(
+                Component.translatable("exile_overlay.config.drop_sound_reload"),
+                Component.translatable("exile_overlay.config.drop_sound_reload.tooltip"),
+                btn -> {
+                    DropFilterManager.reload();
+                    CustomSoundManager.reloadSounds();
                     screen.rebuildCurrentTab();
                 }
         ));
 
-        if (!dropSoundCollapsed) {
-            String[] rarities = {"unique", "mythic", "legendary"};
-            for (String rarity : rarities) {
-                DropSoundConfig.RaritySound raritySound = dropSoundConfig.getRaritySound(rarity);
-                if (raritySound == null) continue;
-
-                String rKey = "exile_overlay.config.rarity." + rarity;
-                int rColor = getRarityColor(rarity);
-
-            // レアリティ有効/無効
-            entries.add(new BooleanConfigEntry(
-                    rKey,
-                    raritySound::isEnabled,
-                    raritySound::setEnabled,
-                    enabled -> {
-                        Component onOff = Component.translatable(enabled ? "exile_overlay.config.on" : "exile_overlay.config.off");
-                        return Component.translatable(rKey).withStyle(s -> s.withColor(rColor))
-                                .append(Component.literal(": ").withStyle(s -> s.withColor(0xFFFFFF)))
-                                .append(onOff.copy().withStyle(s -> s.withColor(rColor)));
-                    },
-                    null,
-                    null
-            ));
-
-            // サウンド選択
-            entries.add(new ActionConfigEntry(
-                    Component.translatable("exile_overlay.config.drop_sound_select", formatSoundName(raritySound.getSound())),
-                    Component.translatable("exile_overlay.config.drop_sound_select.tooltip"),
-                    btn -> {
-                        cycleDropSound(raritySound);
-                        btn.setMessage(Component.translatable("exile_overlay.config.drop_sound_select", formatSoundName(raritySound.getSound())));
-                        playPreviewSound(raritySound);
-                    }
-            ));
-
-            // 音量スライダー（0〜200%）
-            entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.drop_sound_volume",
-                    raritySound::getVolume,
-                    raritySound::setVolume,
-                    0.0f, 2.0f,
-                    val -> Component.translatable("exile_overlay.config.drop_sound_volume", Math.round(val * 100) + "%")
-            ));
-        }
-        }
-
         return entries;
-    }
-
-    private static int getRarityColor(String rarity) {
-        return switch (rarity.toLowerCase(Locale.ROOT)) {
-            case "legendary" -> 0xFFAA00;   // GOLD
-            case "mythic" -> 0xAA00AA;      // DARK_PURPLE
-            case "unique" -> 0xFF5555;      // RED
-            default -> 0xFFFFFF;
-        };
-    }
-
-    private static String formatSoundName(String soundLoc) {
-        if (soundLoc == null || soundLoc.isEmpty()) {
-            return Component.translatable("exile_overlay.config.none").getString();
-        }
-        if (soundLoc.startsWith("exile_overlay:")) {
-            // 識別子から表示名を生成（例: "exile_overlay:name.mp3" → "name.mp3"）
-            return soundLoc.substring(14);
-        }
-        return soundLoc;
-    }
-
-    private static void cycleDropSound(DropSoundConfig.RaritySound config) {
-        List<String> options = new ArrayList<>();
-        List<String> customSounds = CustomSoundManager.getAvailableCustomSounds();
-        for (String custom : customSounds) {
-            options.add("exile_overlay:" + custom);
-        }
-
-        if (options.isEmpty()) {
-            config.setSound("");
-            return;
-        }
-
-        String current = config.getSound();
-        int index = options.indexOf(current);
-        if (index == -1 || index >= options.size() - 1) {
-            config.setSound(options.get(0));
-        } else {
-            config.setSound(options.get(index + 1));
-        }
-    }
-
-    private static void playPreviewSound(DropSoundConfig.RaritySound raritySound) {
-        String soundName = raritySound.getSound();
-        if (soundName == null || soundName.isEmpty()) return;
-
-        // カスタム音（OGG / MP3）は ExileAudioPlayer で PCM 増幅再生（0〜2000%対応）
-        java.io.File customSoundFile = CustomSoundManager.getCustomSoundFile(soundName);
-        if (customSoundFile != null) {
-            ExileAudioPlayer.playCustomSound(customSoundFile, raritySound.getVolume());
-            return;
-        }
-
-        ResourceLocation soundLoc = CustomSoundManager.getSafeSoundLocation(soundName);
-        if (soundLoc != null) {
-            Minecraft.getInstance().getSoundManager().play(new SimpleSoundInstance(
-                    SoundEvent.createVariableRangeEvent(soundLoc).getLocation(),
-                    SoundSource.MASTER,
-                    raritySound.getVolume(), 1.0F,
-                    RandomSource.create(),
-                    false, 0,
-                    SoundInstance.Attenuation.NONE,
-                    0.0, 0.0, 0.0, true));
-        }
     }
 }

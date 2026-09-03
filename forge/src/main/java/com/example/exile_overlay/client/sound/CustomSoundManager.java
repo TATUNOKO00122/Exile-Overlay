@@ -42,6 +42,13 @@ public class CustomSoundManager {
         customSoundPack = new CustomSoundPack("exile_overlay_custom_sounds", soundDir);
     }
 
+    public static File getSoundDir() {
+        if (soundDir == null) {
+            init();
+        }
+        return soundDir;
+    }
+
     @SubscribeEvent
     public static void onAddPackFinders(AddPackFindersEvent event) {
         if (event.getPackType() != net.minecraft.server.packs.PackType.CLIENT_RESOURCES) {

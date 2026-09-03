@@ -29,6 +29,8 @@ public class DropSoundConfig extends AbstractConfigSection {
     }
 
     private boolean enabled = false;
+    private float masterVolume = 1.0f;
+    private String activeFilter = "default.filter";
     private final Map<String, RaritySound> raritySounds = new HashMap<>();
 
     private DropSoundConfig() {
@@ -53,6 +55,12 @@ public class DropSoundConfig extends AbstractConfigSection {
         if (json.has("enabled")) {
             this.enabled = json.get("enabled").getAsBoolean();
         }
+        if (json.has("master_volume")) {
+            this.masterVolume = Math.max(0.0f, Math.min(2.0f, json.get("master_volume").getAsFloat()));
+        }
+        if (json.has("active_filter")) {
+            this.activeFilter = json.get("active_filter").getAsString();
+        }
         if (json.has("rarities")) {
             JsonObject raritiesJson = json.getAsJsonObject("rarities");
             for (Map.Entry<String, com.google.gson.JsonElement> entry : raritiesJson.entrySet()) {
@@ -63,7 +71,6 @@ public class DropSoundConfig extends AbstractConfigSection {
                     if (rJson.has("enabled")) rSound.setEnabled(rJson.get("enabled").getAsBoolean());
                     if (rJson.has("sound")) {
                         String loadedSound = rJson.get("sound").getAsString();
-                        // バニラのデフォルト音（minecraft:...）が残っている場合は空文字にリセット
                         if (loadedSound != null && loadedSound.startsWith("minecraft:")) {
                             rSound.setSound("");
                         } else {
@@ -79,6 +86,8 @@ public class DropSoundConfig extends AbstractConfigSection {
     @Override
     protected void serialize(JsonObject json) {
         json.addProperty("enabled", this.enabled);
+        json.addProperty("master_volume", this.masterVolume);
+        json.addProperty("active_filter", this.activeFilter);
         JsonObject raritiesJson = new JsonObject();
         for (Map.Entry<String, RaritySound> entry : raritySounds.entrySet()) {
             JsonObject rJson = new JsonObject();
@@ -92,6 +101,8 @@ public class DropSoundConfig extends AbstractConfigSection {
 
     public void resetToDefaults() {
         this.enabled = false;
+        this.masterVolume = 1.0f;
+        this.activeFilter = "default.filter";
         this.raritySounds.clear();
         this.raritySounds.put("legendary", new RaritySound(false, "", 1.0f));
         this.raritySounds.put("mythic", new RaritySound(false, "", 1.0f));
@@ -104,6 +115,22 @@ public class DropSoundConfig extends AbstractConfigSection {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public float getMasterVolume() {
+        return masterVolume;
+    }
+
+    public void setMasterVolume(float masterVolume) {
+        this.masterVolume = Math.max(0.0f, Math.min(2.0f, masterVolume));
+    }
+
+    public String getActiveFilter() {
+        return activeFilter;
+    }
+
+    public void setActiveFilter(String activeFilter) {
+        this.activeFilter = activeFilter != null ? activeFilter : "default.filter";
     }
 
     public RaritySound getRaritySound(String rarity) {
