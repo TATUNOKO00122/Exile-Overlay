@@ -26,7 +26,7 @@ public abstract class LootJournalItemPickupEventMixin {
         try {
             LootJournalCompatConfig config = LootJournalCompatConfig.getInstance();
             if (config.isEnableCompat() && DropItemResolver.isMsItem(this.stack)) {
-                Component fullDisplayName = DropItemResolver.resolveDisplayName(this.stack);
+                Component fullDisplayName = DropItemResolver.resolveDisplayName(this.stack, config.isShowFullAffixName());
                 if (fullDisplayName != null && !fullDisplayName.getString().isEmpty()) {
                     this.displayName = fullDisplayName;
                 }

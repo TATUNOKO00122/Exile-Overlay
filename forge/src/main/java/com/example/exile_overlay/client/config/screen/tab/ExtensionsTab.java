@@ -23,7 +23,6 @@ import net.minecraftforge.fml.ModList;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 「拡張・連携 (Extensions)」タブ。
@@ -181,31 +180,6 @@ public class ExtensionsTab implements IConfigTab {
                     ljConfig::isShowFullAffixName,
                     ljConfig::setShowFullAffixName,
                     Component.translatable("exile_overlay.config.loot_journal_show_full_affix_name.tooltip")
-            ));
-
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.loot_journal_auto_scale_by_weight",
-                    ljConfig::isAutoScaleByWeight,
-                    ljConfig::setAutoScaleByWeight,
-                    Component.translatable("exile_overlay.config.loot_journal_auto_scale_by_weight.tooltip")
-            ));
-
-            entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.loot_journal_mirror_scale",
-                    ljConfig::getMirrorScale,
-                    ljConfig::setMirrorScale,
-                    1.0f,
-                    3.0f,
-                    val -> Component.translatable("exile_overlay.config.loot_journal_mirror_scale", String.format(Locale.ROOT, "%.1f", val))
-            ));
-
-            entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.loot_journal_mega_uber_scale",
-                    ljConfig::getMegaUberScale,
-                    ljConfig::setMegaUberScale,
-                    1.0f,
-                    3.0f,
-                    val -> Component.translatable("exile_overlay.config.loot_journal_mega_uber_scale", String.format(Locale.ROOT, "%.1f", val))
             ));
         }
 

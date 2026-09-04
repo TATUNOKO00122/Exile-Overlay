@@ -189,9 +189,9 @@
   "exile_overlay.config.tab.hp_bar": "Полоса здоровья",
   "exile_overlay.config.entity_hp_bar_enabled": "Включено: %s",
   "exile_overlay.config.entity_hp_bar_enabled.tooltip": "Показывать полосы здоровья над сущностями",
-  "exile_overlay.config.hp_bar_show_poison": "Отображение яда: %s",
+  "exile_overlay.config.hp_bar_show_poison": "[Экспериментально] Отображение яда: %s",
   "exile_overlay.config.hp_bar_show_poison.tooltip": "Изменять цвет полосы здоровья на темно-зеленый при отравлении",
-  "exile_overlay.config.hp_bar_show_bleed": "Отображение кровотечения: %s",
+  "exile_overlay.config.hp_bar_show_bleed": "[Экспериментально] Отображение кровотечения: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "Отображать полосу накопления кровопотери (темно-красный) при кровотечении",
   "exile_overlay.config.hp_bar_show_friendly": "Мирные мобы: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "Отображать полосу здоровья мирных/нейтральных мобов зеленым цветом",
@@ -359,5 +359,12 @@
   "exile_overlay.config.smooth_decrease": "Сглаживание при уменьшении: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "Сглаживать визуальные изменения при уменьшении значений (например, при получении урона или использовании навыков)",
   "exile_overlay.config.decrease_speed": "Скорость уменьшения: %.1f",
-  "exile_overlay.config.decrease_speed.tooltip": "Скорость анимации при уменьшении значения"
+  "exile_overlay.config.decrease_speed.tooltip": "Скорость анимации при уменьшении значения",
+  "section.exile_overlay.loot_journal": "Loot Journal",
+  "exile_overlay.config.loot_journal_enable_compat": "Включить: %s",
+  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Включить интеграцию с Loot Journal и Mine and Slash (цвета редкости, полные названия, уведомления о рюкзаке и т.д.)",
+  "exile_overlay.config.loot_journal_only_ms_items": "Только предметы M&S: %s",
+  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "Скрыть обычные блоки и предметы ваниллы (земля, камень и т.д.) и показывать в HUD только предметы M&S",
+  "exile_overlay.config.loot_journal_show_full_affix_name": "Полные названия свойств: %s",
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "Отображать полные названия снаряжения, включая префиксы и суффиксы"
 }

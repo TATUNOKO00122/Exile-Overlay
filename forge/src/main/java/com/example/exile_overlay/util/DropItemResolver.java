@@ -155,11 +155,15 @@ public final class DropItemResolver {
     }
 
     public static Component resolveDisplayName(ItemStack stack) {
+        return resolveDisplayName(stack, true);
+    }
+
+    public static Component resolveDisplayName(ItemStack stack, boolean showFullAffixName) {
         if (stack == null || stack.isEmpty()) {
             return Component.empty();
         }
 
-        if (ModList.get().isLoaded("mmorpg")) {
+        if (showFullAffixName && ModList.get().isLoaded("mmorpg")) {
             try {
                 if (StackSaving.GEARS.has(stack)) {
                     var gearData = StackSaving.GEARS.loadFrom(stack);

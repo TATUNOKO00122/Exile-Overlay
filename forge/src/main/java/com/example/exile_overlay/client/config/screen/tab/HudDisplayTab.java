@@ -51,13 +51,19 @@ public class HudDisplayTab implements IConfigTab {
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.hp_bar_show_poison",
                     hpBarConfig::isShowPoison,
-                    hpBarConfig::setShowPoison
+                    hpBarConfig::setShowPoison,
+                    Component.translatable("exile_overlay.config.hp_bar_show_poison.tooltip")
+                            .append("\n")
+                            .append(Component.translatable("exile_overlay.config.experimental").withStyle(s -> s.withColor(0xFFAA00)))
             ));
 
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.hp_bar_show_bleed",
                     hpBarConfig::isShowBleed,
-                    hpBarConfig::setShowBleed
+                    hpBarConfig::setShowBleed,
+                    Component.translatable("exile_overlay.config.hp_bar_show_bleed.tooltip")
+                            .append("\n")
+                            .append(Component.translatable("exile_overlay.config.experimental").withStyle(s -> s.withColor(0xFFAA00)))
             ));
 
             entries.add(new BooleanConfigEntry(

@@ -189,9 +189,9 @@
   "exile_overlay.config.tab.hp_bar": "HP 바",
   "exile_overlay.config.entity_hp_bar_enabled": "활성화: %s",
   "exile_overlay.config.entity_hp_bar_enabled.tooltip": "개체 머리 위에 HP 바 표시",
-  "exile_overlay.config.hp_bar_show_poison": "독 표시: %s",
+  "exile_overlay.config.hp_bar_show_poison": "[실험적] 독 표시: %s",
   "exile_overlay.config.hp_bar_show_poison.tooltip": "중독 상태일 때 HP 바 색상을 짙은 녹색으로 변경",
-  "exile_overlay.config.hp_bar_show_bleed": "출혈 표시: %s",
+  "exile_overlay.config.hp_bar_show_bleed": "[실험적] 출혈 표시: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "출혈 시 손실 체력 누적 바(어두운 빨간색) 표시",
   "exile_overlay.config.hp_bar_show_friendly": "비적대 MOB: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "비적대/중립 몹의 HP 바를 녹색으로 표시",
@@ -359,5 +359,12 @@
   "exile_overlay.config.smooth_decrease": "감소 시 스무딩: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "수치가 감소할 때(예: 피해를 입거나 스킬 사용 시) 시각적 변화를 부드럽게 합니다",
   "exile_overlay.config.decrease_speed": "감소 속도: %.1f",
-  "exile_overlay.config.decrease_speed.tooltip": "수치가 감소할 때의 애니메이션 속도"
+  "exile_overlay.config.decrease_speed.tooltip": "수치가 감소할 때의 애니메이션 속도",
+  "section.exile_overlay.loot_journal": "Loot Journal",
+  "exile_overlay.config.loot_journal_enable_compat": "활성화: %s",
+  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Loot Journal과 Mine and Slash의 연동 기능(희귀도 색상, 전체 이름, 가방 알림 등)을 활성화합니다",
+  "exile_overlay.config.loot_journal_only_ms_items": "M&S 아이템만 표시: %s",
+  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "바닐라 흙, 돌 등의 일반 아이템을 제외하고 M&S 관련 아이템만 HUD에 표시합니다",
+  "exile_overlay.config.loot_journal_show_full_affix_name": "접두사/접미사 전체 이름 표시: %s",
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "장비의 접두사와 접미사를 포함한 전체 이름을 표시합니다"
 }

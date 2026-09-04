@@ -189,9 +189,9 @@
   "exile_overlay.config.tab.hp_bar": "血条",
   "exile_overlay.config.entity_hp_bar_enabled": "已启用: %s",
   "exile_overlay.config.entity_hp_bar_enabled.tooltip": "在实体头顶显示血条",
-  "exile_overlay.config.hp_bar_show_poison": "显示中毒: %s",
+  "exile_overlay.config.hp_bar_show_poison": "[实验性] 显示中毒: %s",
   "exile_overlay.config.hp_bar_show_poison.tooltip": "中毒时将血条颜色更改为深绿色",
-  "exile_overlay.config.hp_bar_show_bleed": "显示流血: %s",
+  "exile_overlay.config.hp_bar_show_bleed": "[实验性] 显示流血: %s",
   "exile_overlay.config.hp_bar_show_bleed.tooltip": "流血时显示失血累积条（暗红色）",
   "exile_overlay.config.hp_bar_show_friendly": "友好生物: %s",
   "exile_overlay.config.hp_bar_show_friendly.tooltip": "友好/中立生物以绿色显示血条",
@@ -359,5 +359,12 @@
   "exile_overlay.config.smooth_decrease": "平滑减少: %s",
   "exile_overlay.config.smooth_decrease.tooltip": "当数值减少时（例如受到伤害或释放技能时），平滑视觉变化",
   "exile_overlay.config.decrease_speed": "减少速度: %.1f",
-  "exile_overlay.config.decrease_speed.tooltip": "数值减少时的动画速度"
+  "exile_overlay.config.decrease_speed.tooltip": "数值减少时的动画速度",
+  "section.exile_overlay.loot_journal": "Loot Journal",
+  "exile_overlay.config.loot_journal_enable_compat": "启用: %s",
+  "exile_overlay.config.loot_journal_enable_compat.tooltip": "启用 Loot Journal 与 Mine and Slash 的联动功能（稀有度颜色、完整名称、背包通知等）",
+  "exile_overlay.config.loot_journal_only_ms_items": "仅显示MS物品: %s",
+  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "在 HUD 上隐藏原版泥土、石头等普通物品，仅显示 M&S 相关物品",
+  "exile_overlay.config.loot_journal_show_full_affix_name": "显示词缀完整名称: %s",
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "显示包含前缀和后缀的装备完整名称"
 }
