@@ -119,6 +119,9 @@ public final class DropItemResolver {
                             || tag.contains("mmorpg_map")
                             || tag.contains("mmorpg_stat_soul")
                             || tag.contains("mmorpg_loot_crate")
+                            || tag.contains("mmorpg_omen")
+                            || tag.contains("mmorpg_tool_stats")
+                            || tag.contains("mmorpg_loot_chest")
                             || tag.contains("mmorpg_custom_data")) {
                         return true;
                     }

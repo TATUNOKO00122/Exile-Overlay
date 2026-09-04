@@ -23,7 +23,10 @@ public final class ItemRarityResolver {
             "mmorpg_jewel",
             "mmorpg_map",
             "mmorpg_stat_soul",
-            "mmorpg_loot_crate"
+            "mmorpg_loot_crate",
+            "mmorpg_omen",
+            "mmorpg_tool_stats",
+            "mmorpg_loot_chest"
     };
 
     private ItemRarityResolver() {

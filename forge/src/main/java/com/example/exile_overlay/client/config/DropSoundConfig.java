@@ -30,7 +30,7 @@ public class DropSoundConfig extends AbstractConfigSection {
 
     private boolean enabled = false;
     private float masterVolume = 1.0f;
-    private String activeFilter = "default.filter";
+    private String activeFilter = "";
     private final Map<String, RaritySound> raritySounds = new HashMap<>();
 
     private DropSoundConfig() {
@@ -102,7 +102,7 @@ public class DropSoundConfig extends AbstractConfigSection {
     public void resetToDefaults() {
         this.enabled = false;
         this.masterVolume = 1.0f;
-        this.activeFilter = "default.filter";
+        this.activeFilter = "";
         this.raritySounds.clear();
         this.raritySounds.put("legendary", new RaritySound(false, "", 1.0f));
         this.raritySounds.put("mythic", new RaritySound(false, "", 1.0f));
