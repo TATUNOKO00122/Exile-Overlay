@@ -9,8 +9,6 @@ import com.example.exile_overlay.client.config.screen.entry.BooleanConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.ConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.CycleConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.SectionHeaderEntry;
-import com.example.exile_overlay.client.config.position.HudPosition;
-import com.example.exile_overlay.client.config.position.HudPositionManager;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -200,17 +198,6 @@ public class HudDisplayTab implements IConfigTab {
                     "exile_overlay.config.buff_filter_mercenary",
                     buffFilter::isShowMercenary,
                     buffFilter::setShowMercenary
-            ));
-
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.mercenary_mirror",
-                    () -> HudPositionManager.getInstance().getPosition("minion_overlay").isHorizontal(),
-                    val -> {
-                        HudPositionManager posMgr = HudPositionManager.getInstance();
-                        HudPosition cur = posMgr.getPosition("minion_overlay");
-                        posMgr.setPosition("minion_overlay", cur.withHorizontal(val));
-                        posMgr.saveToFile();
-                    }
             ));
         }
 
