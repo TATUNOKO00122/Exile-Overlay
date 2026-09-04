@@ -127,6 +127,7 @@ public class TrackerSyncS2C {
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
+        if (ctx.get().getDirection() != net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) return;
         ctx.get().enqueueWork(() -> {
             ClientTrackerData.set(this);
         });

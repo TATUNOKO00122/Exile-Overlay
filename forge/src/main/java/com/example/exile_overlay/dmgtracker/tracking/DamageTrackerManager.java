@@ -114,4 +114,10 @@ public class DamageTrackerManager {
         playerData.remove(playerUuid);
         dirtyPlayers.remove(playerUuid);
     }
+
+    public static void clearAll() {
+        playerData.clear();
+        mobLastHitRecords.clear();
+        dirtyPlayers.clear();
+    }
 }

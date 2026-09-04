@@ -114,9 +114,26 @@ public class MercenarySyncS2C {
         return new MercenarySyncS2C(classId, name, level, health, maxHealth, energyShield, maxEnergyShield, skills);
     }
 
+    public String getClassId() { return classId; }
+    public String getName() { return name; }
+    public int getLevel() { return level; }
+    public float getHealth() { return health; }
+    public float getMaxHealth() { return maxHealth; }
+    public float getEnergyShield() { return energyShield; }
+    public float getMaxEnergyShield() { return maxEnergyShield; }
+    public List<SkillData> getSkills() { return skills; }
+
     public static void handle(MercenarySyncS2C msg, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
+        if (ctx.getDirection() != net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) return;
         ctx.enqueueWork(() -> {
+            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientPayloadHandler.handle(msg));
+        });
+        ctx.setPacketHandled(true);
+    }
+
+    private static final class ClientPayloadHandler {
+        private static void handle(MercenarySyncS2C msg) {
             if (!msg.hasMercenary) {
                 MercenaryClientCache.clear();
                 return;
@@ -150,8 +167,7 @@ public class MercenarySyncS2C {
             );
 
             MercenaryClientCache.update(displayInfo);
-        });
-        ctx.setPacketHandled(true);
+        }
     }
 
     public static void sendToPlayer(ServerPlayer player, MercenarySyncS2C packet) {

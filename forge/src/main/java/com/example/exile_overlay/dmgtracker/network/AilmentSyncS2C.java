@@ -68,10 +68,17 @@ public class AilmentSyncS2C {
 
     public static void handle(AilmentSyncS2C msg, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
+        if (ctx.getDirection() != net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) return;
         ctx.enqueueWork(() -> {
-            ClientAilmentTracker.getInstance().handleSync(msg.entityId, msg.ailments);
+            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientPayloadHandler.handle(msg.entityId, msg.ailments));
         });
         ctx.setPacketHandled(true);
+    }
+
+    private static final class ClientPayloadHandler {
+        private static void handle(int entityId, List<AilmentEntry> ailments) {
+            ClientAilmentTracker.getInstance().handleSync(entityId, ailments);
+        }
     }
 
     public static void sendToTracking(Entity entity, AilmentSyncS2C packet) {

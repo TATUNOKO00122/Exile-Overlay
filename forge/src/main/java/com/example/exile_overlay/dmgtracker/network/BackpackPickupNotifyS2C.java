@@ -34,10 +34,17 @@ public class BackpackPickupNotifyS2C {
 
     public static void handle(BackpackPickupNotifyS2C msg, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
+        if (ctx.getDirection() != net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) return;
         ctx.enqueueWork(() -> {
-            LootJournalPickupClientHandler.handlePickup(msg.stack);
+            net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> () -> ClientPayloadHandler.handle(msg.stack));
         });
         ctx.setPacketHandled(true);
+    }
+
+    private static final class ClientPayloadHandler {
+        private static void handle(ItemStack stack) {
+            LootJournalPickupClientHandler.handlePickup(stack);
+        }
     }
 
     public static void sendTo(ServerPlayer player, ItemStack stack) {

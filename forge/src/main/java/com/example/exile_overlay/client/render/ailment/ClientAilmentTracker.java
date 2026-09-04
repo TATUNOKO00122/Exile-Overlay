@@ -3,9 +3,11 @@ package com.example.exile_overlay.client.render.ailment;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.data.MobEffectInfo;
 import com.example.exile_overlay.dmgtracker.network.AilmentSyncS2C;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 import java.util.ArrayList;
@@ -82,6 +84,10 @@ public final class ClientAilmentTracker {
 
         long now = System.currentTimeMillis();
         List<SyncedAilment> list = new ArrayList<>(entries.size());
+        float bleedDmg = 0.0f;
+        boolean hasPoison = false;
+        int poisonTicks = 0;
+
         for (AilmentSyncS2C.AilmentEntry entry : entries) {
             list.add(new SyncedAilment(
                     entry.id(),
@@ -91,8 +97,49 @@ public final class ClientAilmentTracker {
                     entry.damage(),
                     now
             ));
+            if ("bleed".equalsIgnoreCase(entry.id())) {
+                bleedDmg = Math.max(bleedDmg, entry.damage());
+            } else if ("poison".equalsIgnoreCase(entry.id())) {
+                hasPoison = true;
+                poisonTicks = Math.max(poisonTicks, entry.ticksLeft());
+            }
         }
         entityAilmentsMap.put(entityId, list);
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) {
+            Entity entity = mc.level.getEntity(entityId);
+            if (entity instanceof LivingEntity living && living.isAlive()) {
+                if (bleedDmg > 0.0f) {
+                    recordBleedDamageFromSync(living, bleedDmg, now);
+                }
+                if (hasPoison) {
+                    long expiry = (poisonTicks > 0) ? (now + poisonTicks * 50L) : (now + POISON_HOLD_MS);
+                    poisonExpiryMap.put(living.getUUID(), expiry);
+                }
+            }
+        }
+    }
+
+    public void recordBleedDamageFromSync(LivingEntity target, float damage, long now) {
+        if (target == null || !target.isAlive() || damage <= 0.0f) return;
+        float maxHp = target.getMaxHealth();
+        float currentHpRatio = (maxHp > 0.0f) ? Math.min(1.0f, target.getHealth() / maxHp) : 1.0f;
+
+        bloodLossMap.compute(target.getUUID(), (k, existing) -> {
+            if (existing == null) {
+                BloodLossEntry entry = new BloodLossEntry(damage, now);
+                entry.displayedEndRatio = currentHpRatio;
+                return entry;
+            } else {
+                existing.accumulatedDamage = Math.max(existing.accumulatedDamage, damage);
+                existing.lastActiveMs = now;
+                if (existing.displayedEndRatio < 0.0f) {
+                    existing.displayedEndRatio = currentHpRatio;
+                }
+                return existing;
+            }
+        });
     }
 
     /**
@@ -205,6 +252,17 @@ public final class ClientAilmentTracker {
         return MethodHandlesUtil.isEntityBleeding(entity);
     }
 
+    public float getSyncedBleedDamage(int entityId) {
+        List<SyncedAilment> list = entityAilmentsMap.get(entityId);
+        if (list == null || list.isEmpty()) return 0.0f;
+        for (SyncedAilment a : list) {
+            if ("bleed".equalsIgnoreCase(a.id()) && a.getCurrentTicksLeft() > 0) {
+                return a.damage();
+            }
+        }
+        return 0.0f;
+    }
+
     /**
      * 減衰を考慮した実効失血ダメージ量を計算
      */
@@ -241,12 +299,19 @@ public final class ClientAilmentTracker {
         }
 
         BloodLossEntry entry = bloodLossMap.get(entity.getUUID());
-        if (entry == null) {
-            return currentHpRatio;
-        }
-
         long now = System.currentTimeMillis();
         boolean bleeding = isBleeding(entity);
+
+        if (entry == null) {
+            float syncedBleed = getSyncedBleedDamage(entity.getId());
+            if (syncedBleed > 0.0f && bleeding) {
+                entry = new BloodLossEntry(syncedBleed, now);
+                entry.displayedEndRatio = currentHpRatio;
+                bloodLossMap.put(entity.getUUID(), entry);
+            } else {
+                return currentHpRatio;
+            }
+        }
         float bloodLoss = getEffectiveBloodLoss(entry, now, bleeding);
         if (bloodLoss <= 0.0f) {
             bloodLossMap.remove(entity.getUUID());

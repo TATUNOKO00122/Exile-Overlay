@@ -16,14 +16,14 @@ modId = "forge"
 mandatory = true
 versionRange = "[47,)"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 
 [[dependencies.exile_overlay]]
 modId = "minecraft"
 mandatory = true
 versionRange = "[1.20.1,1.20.2)"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 
 # Mine and Slash: 本MODの前提MOD。Mixin対象クラスを含むためロード順序を保証。
 [[dependencies.exile_overlay]]

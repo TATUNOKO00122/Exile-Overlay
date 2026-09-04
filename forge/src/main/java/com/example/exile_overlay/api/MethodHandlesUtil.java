@@ -121,9 +121,14 @@ public class MethodHandlesUtil {
     private static MethodHandle GET_EFFECT_TYPE = null;
     private static MethodHandle GET_DURATION_STRING = null;
 
-    // === Ailment MethodHandles ===
+    // === Ailment MethodHandles & Cached Fields ===
     private static MethodHandle GET_AILMENT_DATA = null;
     private static MethodHandle GET_DOT_MAP = null;
+    private static java.lang.reflect.Field AILMENT_ONE_DOT_MAP = null;
+    private static java.lang.reflect.Field AILMENT_ONE_STR_MAP = null;
+    private static java.lang.reflect.Field AILMENT_ONE_DMG_MAP = null;
+    private static java.lang.reflect.Field AILMENT_DOT_TICKS = null;
+    private static java.lang.reflect.Field AILMENT_DOT_DMG = null;
 
     // === ResourceType enum values ===
     private static Object MANA_TYPE = null;
@@ -187,6 +192,7 @@ public class MethodHandlesUtil {
 
     // === Mercenary MethodHandles ===
     private static MethodHandle GET_SERVER_MERCENARY = null;
+    private static MethodHandle GET_MERC_CLASS_ID = null;
     private static MethodHandle GET_MERC_CLASS = null;
     private static MethodHandle GET_MERC_ICON_LOC = null;
     private static MethodHandle GET_MERC_DATA = null;
@@ -357,11 +363,28 @@ public class MethodHandlesUtil {
             GET_EFFECT_TYPE = lookupFieldGetter(exileEffectClass, "type");
             GET_DURATION_STRING = lookupMethod(exileEffectInstanceDataClass, "getDurationString");
 
-            // Ailment Handles
+            // Ailment Handles & Cached Fields
             try {
                 GET_AILMENT_DATA = lookupFieldGetter(entityDataClass, "ailments");
                 Class<?> ailmentDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityAilmentData");
                 GET_DOT_MAP = lookupFieldGetter(ailmentDataClass, "datas");
+                try {
+                    Class<?> oneDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityAilmentData$OneData");
+                    AILMENT_ONE_DOT_MAP = oneDataClass.getField("dotMap");
+                    AILMENT_ONE_STR_MAP = oneDataClass.getField("strMap");
+                    AILMENT_ONE_DMG_MAP = oneDataClass.getField("dmgMap");
+                    AILMENT_ONE_DOT_MAP.setAccessible(true);
+                    AILMENT_ONE_STR_MAP.setAccessible(true);
+                    AILMENT_ONE_DMG_MAP.setAccessible(true);
+
+                    Class<?> dotDataClass = Class.forName("com.robertx22.mine_and_slash.capability.entity.EntityAilmentData$DotData");
+                    AILMENT_DOT_TICKS = dotDataClass.getField("ticks");
+                    AILMENT_DOT_DMG = dotDataClass.getField("dmg");
+                    AILMENT_DOT_TICKS.setAccessible(true);
+                    AILMENT_DOT_DMG.setAccessible(true);
+                } catch (Exception e) {
+                    LOGGER.debug("EntityAilmentData inner fields not available: {}", e.getMessage());
+                }
             } catch (Exception e) {
                 LOGGER.debug("Ailment handles not available: {}", e.getMessage());
             }
@@ -1218,6 +1241,7 @@ public class MethodHandlesUtil {
             } catch (Throwable ignore) {}
 
             Class<?> mercEntityClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.entity.MercenaryEntity");
+            GET_MERC_CLASS_ID = lookupMethod(mercEntityClass, "getClassId");
             GET_MERC_CLASS = lookupMethod(mercEntityClass, "getMercClass");
 
             Class<?> mercClassClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.MercenaryClass");
@@ -2351,18 +2375,15 @@ public class MethodHandlesUtil {
 
                 // 1. dotMap (DoT系: bleed, poison, burn)
                 try {
-                    java.lang.reflect.Field fDot = oneClass.getField("dotMap");
-                    Object dotMapObj = fDot.get(oneData);
+                    Object dotMapObj = AILMENT_ONE_DOT_MAP != null ? AILMENT_ONE_DOT_MAP.get(oneData) : oneClass.getField("dotMap").get(oneData);
                     if (dotMapObj instanceof Map<?, ?> dotMap) {
                         for (Map.Entry<?, ?> entry : dotMap.entrySet()) {
                             String ailId = String.valueOf(entry.getKey());
                             if (entry.getValue() instanceof List<?> dotList) {
                                 for (Object dot : dotList) {
                                     if (dot != null) {
-                                        java.lang.reflect.Field fTicks = dot.getClass().getField("ticks");
-                                        java.lang.reflect.Field fDmg = dot.getClass().getField("dmg");
-                                        float ticks = fTicks.getFloat(dot);
-                                        float dmg = fDmg.getFloat(dot);
+                                        float ticks = AILMENT_DOT_TICKS != null ? AILMENT_DOT_TICKS.getFloat(dot) : dot.getClass().getField("ticks").getFloat(dot);
+                                        float dmg = AILMENT_DOT_DMG != null ? AILMENT_DOT_DMG.getFloat(dot) : dot.getClass().getField("dmg").getFloat(dot);
                                         if (ticks > 0) {
                                             int[] stat = dotStats.computeIfAbsent(ailId, k -> new int[2]);
                                             stat[0] = Math.max(stat[0], (int) ticks);
@@ -2379,8 +2400,7 @@ public class MethodHandlesUtil {
 
                 // 2. strMap (強度系: freeze, electrify)
                 try {
-                    java.lang.reflect.Field fStr = oneClass.getField("strMap");
-                    Object strMapObj = fStr.get(oneData);
+                    Object strMapObj = AILMENT_ONE_STR_MAP != null ? AILMENT_ONE_STR_MAP.get(oneData) : oneClass.getField("strMap").get(oneData);
                     if (strMapObj instanceof Map<?, ?> strMap) {
                         for (Map.Entry<?, ?> entry : strMap.entrySet()) {
                             String ailId = String.valueOf(entry.getKey());
@@ -2396,8 +2416,7 @@ public class MethodHandlesUtil {
 
                 // 3. dmgMap (蓄積ダメージ系)
                 try {
-                    java.lang.reflect.Field fDmg = oneClass.getField("dmgMap");
-                    Object dmgMapObj = fDmg.get(oneData);
+                    Object dmgMapObj = AILMENT_ONE_DMG_MAP != null ? AILMENT_ONE_DMG_MAP.get(oneData) : oneClass.getField("dmgMap").get(oneData);
                     if (dmgMapObj instanceof Map<?, ?> dmgMap) {
                         for (Map.Entry<?, ?> entry : dmgMap.entrySet()) {
                             String ailId = String.valueOf(entry.getKey());
@@ -2546,21 +2565,21 @@ public class MethodHandlesUtil {
             }
 
             String classId = "";
-            if (GET_MERC_CLASS != null) {
-                Object mercClass = GET_MERC_CLASS.invoke(merc);
-                if (mercClass != null) {
-                    try {
-                        Method idMethod = mercClass.getClass().getMethod("GUID");
-                        classId = (String) idMethod.invoke(mercClass);
-                    } catch (Throwable ignore) {}
-                }
-            }
-            if (classId.isEmpty()) {
+            if (GET_MERC_CLASS_ID != null) {
                 try {
-                    Method getClassId = merc.getClass().getMethod("getClassId");
-                    classId = (String) getClassId.invoke(merc);
+                    classId = (String) GET_MERC_CLASS_ID.invoke(merc);
                 } catch (Throwable ignore) {}
             }
+            if ((classId == null || classId.isEmpty()) && GET_MERC_CLASS != null) {
+                try {
+                    Object mercClass = GET_MERC_CLASS.invoke(merc);
+                    if (mercClass != null) {
+                        Method idMethod = mercClass.getClass().getMethod("GUID");
+                        classId = (String) idMethod.invoke(mercClass);
+                    }
+                } catch (Throwable ignore) {}
+            }
+            if (classId == null) classId = "";
 
             String name = merc.getName() != null ? merc.getName().getString() : "Mercenary";
             float health = 0;
