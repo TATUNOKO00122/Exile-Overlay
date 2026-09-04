@@ -302,6 +302,8 @@
   "exile_overlay.config.buff_filter_minions.tooltip": "召喚中のミニオン数をバフ欄に表示します",
   "exile_overlay.config.buff_filter_mercenary": "傭兵: %s",
   "exile_overlay.config.buff_filter_mercenary.tooltip": "傭兵をバフ欄に表示します",
+  "exile_overlay.config.mercenary_mirror": "傭兵UIを左右反転: %s",
+  "exile_overlay.config.mercenary_mirror.tooltip": "傭兵UIのアイコンとステータスバーの配置を左右反転します",
   "exile_overlay.config.buff_filter_aura": "オーラ/スタンス: %s",
   "exile_overlay.config.buff_filter_self_skill": "自己スキルバフ: %s",
   "exile_overlay.config.buff_filter_food": "食事バフ: %s",

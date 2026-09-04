@@ -302,6 +302,8 @@
   "exile_overlay.config.buff_filter_minions.tooltip": "Show summoned minion count in the buff overlay",
   "exile_overlay.config.buff_filter_mercenary": "Mercenary: %s",
   "exile_overlay.config.buff_filter_mercenary.tooltip": "Show mercenary in the buff overlay",
+  "exile_overlay.config.mercenary_mirror": "Mirror Mercenary UI: %s",
+  "exile_overlay.config.mercenary_mirror.tooltip": "Horizontally flips the layout of the mercenary UI icon and status bars",
   "exile_overlay.config.buff_filter_aura": "Aura/Stance: %s",
   "exile_overlay.config.buff_filter_self_skill": "Self Skill Buff: %s",
   "exile_overlay.config.buff_filter_food": "Food Buff: %s",

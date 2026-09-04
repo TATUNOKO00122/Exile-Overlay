@@ -298,6 +298,8 @@
   "exile_overlay.config.buff_filter_minions.tooltip": "Показывать количество призванных миньонов в панели баффов",
   "exile_overlay.config.buff_filter_mercenary": "Наемник: %s",
   "exile_overlay.config.buff_filter_mercenary.tooltip": "Показать наемника в панели баффов",
+  "exile_overlay.config.mercenary_mirror": "Отразить интерфейс наемника: %s",
+  "exile_overlay.config.mercenary_mirror.tooltip": "Зеркально отражает значок и полосы состояния наемника",
   "exile_overlay.config.buff_filter_aura": "Аура/Стойка: %s",
   "exile_overlay.config.buff_filter_self_skill": "Баффы собственных навыков: %s",
   "exile_overlay.config.buff_filter_food": "Баффы еды: %s",

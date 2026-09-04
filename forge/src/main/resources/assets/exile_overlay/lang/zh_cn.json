@@ -298,6 +298,8 @@
   "exile_overlay.config.buff_filter_minions.tooltip": "在增益栏显示召唤随从数量",
   "exile_overlay.config.buff_filter_mercenary": "雇佣兵: %s",
   "exile_overlay.config.buff_filter_mercenary.tooltip": "在增益栏显示雇佣兵",
+  "exile_overlay.config.mercenary_mirror": "雇佣兵UI左右翻转: %s",
+  "exile_overlay.config.mercenary_mirror.tooltip": "水平翻转雇佣兵UI的图标与状态栏布局",
   "exile_overlay.config.buff_filter_aura": "光环/姿态: %s",
   "exile_overlay.config.buff_filter_self_skill": "自身技能增益: %s",
   "exile_overlay.config.buff_filter_food": "食物增益: %s",

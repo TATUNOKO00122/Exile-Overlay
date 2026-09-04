@@ -171,7 +171,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
             */
 
             if (merc != null) {
-                renderMercenaryFrame(graphics, mc, merc, 0, 0);
+                renderMercenaryFrame(graphics, mc, merc, 0, 0, horizontal);
                 /*
                 if (horizontal) {
                     minionStartX = MERC_BAR_OFFSET_X + MERC_BAR_WIDTH + 8;
@@ -194,7 +194,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
     private static void renderMercenaryFrame(GuiGraphics graphics, Minecraft mc,
                                             MercenaryDisplayInfo merc,
-                                            int x, int y) {
+                                            int x, int y, boolean mirrored) {
         RenderSystem.enableBlend();
 
         int frameW = 32;
@@ -203,12 +203,15 @@ public class MinionOverlayRenderer implements IRenderCommand {
         int iconSize = 28;
         int drawY = y + 1;
 
+        // 反転時は右側にアイコン、左側にバーを配置
+        int iconFrameX = mirrored ? (x + MERC_BAR_WIDTH + 2) : x;
+        int iconX = iconFrameX + iconOffset;
+        int iconY = drawY + iconOffset;
+
         // 1. アイコン穴の背景
-        graphics.fill(x + iconOffset, drawY + iconOffset, x + iconOffset + iconSize, drawY + iconOffset + iconSize, 0xAA000000);
+        graphics.fill(iconX, iconY, iconX + iconSize, iconY + iconSize, 0xAA000000);
 
         // 2. 傭兵クラスアイコン
-        int iconX = x + iconOffset;
-        int iconY = drawY + iconOffset;
         ResourceLocation icon = merc.icon() != null ? merc.icon() : DEFAULT_MINION_ICON;
         int srcSize = icon.getPath().contains("summon_zombie") ? 16 : 36;
 
@@ -217,7 +220,7 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
         // 3. アイコン枠 (mercenary_ui.png から描画)
         RenderSystem.setShaderTexture(0, MERCENARY_UI);
-        graphics.blit(MERCENARY_UI, x, drawY, frameW, frameH,
+        graphics.blit(MERCENARY_UI, iconFrameX, drawY, frameW, frameH,
                 (float) MERC_ICON_FRAME_U, (float) MERC_ICON_FRAME_V,
                 MERC_ICON_FRAME_SIZE, MERC_ICON_FRAME_SIZE,
                 MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
@@ -226,11 +229,11 @@ public class MinionOverlayRenderer implements IRenderCommand {
         boolean hasES = merc.maxEnergyShield() > 0;
         int barShift = hasES ? 6 : 0;
 
-        int barFrameX = x + MERC_BAR_OFFSET_X;
+        int barFrameX = mirrored ? x : (x + MERC_BAR_OFFSET_X);
         int hpBarFrameY = drawY + 22 - barShift;
         float esBarFrameY = hpBarFrameY + 7.5f;
 
-        // 5. 装備スキルアイコン (HPバー枠の上側に配置)
+        // 5. 装備スキルアイコン (HPバー枠の上側に配置、反転時はアイコンに近い右側から配置)
         if (merc.skills() != null && !merc.skills().isEmpty()) {
             int skillIconSize = 12;
             int skillY = hpBarFrameY - 2 - skillIconSize;
@@ -240,7 +243,9 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
             for (int i = 0; i < merc.skills().size(); i++) {
                 MercenarySkillInfo skill = merc.skills().get(i);
-                int skillX = barFrameX + 1 + i * (skillIconSize + 2);
+                int skillX = mirrored
+                        ? (barFrameX + MERC_BAR_WIDTH - 1 - skillIconSize - i * (skillIconSize + 2))
+                        : (barFrameX + 1 + i * (skillIconSize + 2));
 
                 // アイコン背景
                 graphics.fill(skillX, skillY, skillX + skillIconSize, skillY + skillIconSize, 0xAA000000);
@@ -279,12 +284,14 @@ public class MinionOverlayRenderer implements IRenderCommand {
                     MERC_BAR_INNER_X + MERC_BAR_INNER_W, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                     0x80000000);
 
-            // 現在HPバー
+            // 現在HPバー（反転時はアイコンに近い右端起点で伸びる）
             float hpPct = merc.maxHealth() > 0 ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
             int hpFillW = (int) (MERC_BAR_INNER_W * hpPct);
             if (hpFillW > 0) {
-                graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
-                        MERC_BAR_INNER_X + hpFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                int fillLeft = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W - hpFillW) : MERC_BAR_INNER_X;
+                int fillRight = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W) : (MERC_BAR_INNER_X + hpFillW);
+                graphics.fill(fillLeft, MERC_BAR_INNER_Y,
+                        fillRight, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                         0xFF43A047);
             }
 
@@ -311,12 +318,14 @@ public class MinionOverlayRenderer implements IRenderCommand {
                         MERC_BAR_INNER_X + MERC_BAR_INNER_W, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                         0x80000000);
 
-                // 現在ESバー
+                // 現在ESバー（反転時はアイコンに近い右端起点で伸びる）
                 float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
                 int esFillW = (int) (MERC_BAR_INNER_W * esPct);
                 if (esFillW > 0) {
-                    graphics.fill(MERC_BAR_INNER_X, MERC_BAR_INNER_Y,
-                            MERC_BAR_INNER_X + esFillW, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
+                    int fillLeft = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W - esFillW) : MERC_BAR_INNER_X;
+                    int fillRight = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W) : (MERC_BAR_INNER_X + esFillW);
+                    graphics.fill(fillLeft, MERC_BAR_INNER_Y,
+                            fillRight, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                             0xFF00B0FF);
                 }
 

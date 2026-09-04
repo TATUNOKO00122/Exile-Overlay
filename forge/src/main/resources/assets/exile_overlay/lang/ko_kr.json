@@ -298,6 +298,8 @@
   "exile_overlay.config.buff_filter_minions.tooltip": "소환된 미니언 수를 버프 창에 표시합니다",
   "exile_overlay.config.buff_filter_mercenary": "용병: %s",
   "exile_overlay.config.buff_filter_mercenary.tooltip": "버프 창에 용병을 표시합니다",
+  "exile_overlay.config.mercenary_mirror": "용병 UI 좌우 반전: %s",
+  "exile_overlay.config.mercenary_mirror.tooltip": "용병 UI의 아이콘과 상태 바 배치를 좌우 반전합니다",
   "exile_overlay.config.buff_filter_aura": "오라/태세: %s",
   "exile_overlay.config.buff_filter_self_skill": "자가 스킬 버프: %s",
   "exile_overlay.config.buff_filter_food": "음식 버프: %s",

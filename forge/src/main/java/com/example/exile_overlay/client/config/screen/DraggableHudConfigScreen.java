@@ -883,7 +883,7 @@ public class DraggableHudConfigScreen extends Screen {
         }
 
         boolean supportsOrientation() {
-            return "skill_hotbar".equals(key);
+            return "skill_hotbar".equals(key) || "minion_overlay".equals(key);
         }
 
         boolean supportsToggleButton() {
