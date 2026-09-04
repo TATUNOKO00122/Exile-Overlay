@@ -102,11 +102,25 @@ public class HudDisplayTab implements IConfigTab {
         entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.simple_skill_keybind",
                 equipConfig::isSimpleSkillKeybindDisplay,
-                equipConfig::setSimpleSkillKeybindDisplay,
+                equipConfig::setSimpleSkillKeybindDisplay
+        ));
+
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.simple_skill_charge_summon",
+                equipConfig::isSimpleSkillChargeSummonDisplay,
+                equipConfig::setSimpleSkillChargeSummonDisplay,
                 null,
-                Component.translatable("exile_overlay.config.simple_skill_keybind.tooltip"),
+                Component.translatable("exile_overlay.config.simple_skill_charge_summon.tooltip"),
                 screen::rebuildCurrentTab
         ));
+
+        if (equipConfig.isSimpleSkillChargeSummonDisplay()) {
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.simple_skill_charge_max_display",
+                    equipConfig::isSimpleSkillChargeMaxDisplay,
+                    equipConfig::setSimpleSkillChargeMaxDisplay
+            ));
+        }
 
         entries.add(new CycleConfigEntry<>(
                 Arrays.asList(EquipmentDisplayConfig.CooldownDisplayType.values()),
@@ -139,14 +153,6 @@ public class HudDisplayTab implements IConfigTab {
                 equipConfig::isShowSkillSummonCount,
                 equipConfig::setShowSkillSummonCount
         ));
-
-        if (equipConfig.isSimpleSkillKeybindDisplay()) {
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.simple_skill_charge_max_display",
-                    equipConfig::isSimpleSkillChargeMaxDisplay,
-                    equipConfig::setSimpleSkillChargeMaxDisplay
-            ));
-        }
 
         // 4. レベル表示
         entries.add(new SectionHeaderEntry("section.exile_overlay.level_display"));

@@ -279,6 +279,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
 
         // Pass 4: キーバインド枠、キーバインド文字、クールダウン数値、バッジ（枠の前）
         boolean isSimpleKeybind = EquipmentDisplayConfig.getInstance().isSimpleSkillKeybindDisplay();
+        boolean isSimpleBadge = EquipmentDisplayConfig.getInstance().isSimpleSkillChargeSummonDisplay();
         for (int i = 0; i < visibleCount; i++) {
             SlotRenderData data = slotDataCache[i];
             int slot = data.slot;
@@ -372,14 +373,14 @@ public class SkillHotbarRenderer implements IRenderCommand {
                 if (EquipmentDisplayConfig.getInstance().isShowSkillSummonCount()) {
                     int summonCount = MethodHandlesUtil.getSummonCount(player, slot);
                     if (summonCount > 0) {
-                        drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleKeybind);
+                        drawSummonBadge(graphics, mc, slotX, slotY, summonCount, isSimpleBadge);
                     }
                 }
 
                 if (MethodHandlesUtil.getSpellUsesCharges(player, slot)) {
                     int charges = MethodHandlesUtil.getSpellCharges(player, slot);
                     int maxCharges = MethodHandlesUtil.getSpellMaxCharges(player, slot);
-                    drawChargeBadge(graphics, mc, slotX, slotY, charges, maxCharges, isSimpleKeybind);
+                    drawChargeBadge(graphics, mc, slotX, slotY, charges, maxCharges, isSimpleBadge);
                 }
             }
         }
@@ -387,8 +388,8 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().popPose();
     }
 
-    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count, boolean isSimpleKeybind) {
-        if (!isSimpleKeybind) {
+    private void drawSummonBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int count, boolean isSimpleBadge) {
+        if (!isSimpleBadge) {
             RenderSystem.enableBlend();
             graphics.blit(SUMMON_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         }
@@ -397,10 +398,10 @@ public class SkillHotbarRenderer implements IRenderCommand {
         int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
-        float s = isSimpleKeybind ? 1.0f : 0.8f;
+        float s = isSimpleBadge ? 1.0f : 0.8f;
         float textX = slotX + 2.0f + (8.0f - textWidth * s) / 2.0f + 0.5f + 1;
         float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
-        if (isSimpleKeybind) {
+        if (isSimpleBadge) {
             // Adjust position for larger text scale without badge
             textX = slotX + 7.0f - (textWidth * s) / 2.0f; // moved right 1px
             textY = slotY + 4.0f; 
@@ -409,7 +410,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
-        if (isSimpleKeybind) {
+        if (isSimpleBadge) {
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     if (dx != 0 || dy != 0) {
@@ -422,21 +423,21 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().popPose();
     }
 
-    private void drawChargeBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int charges, int maxCharges, boolean isSimpleKeybind) {
-        if (!isSimpleKeybind) {
+    private void drawChargeBadge(GuiGraphics graphics, Minecraft mc, int slotX, int slotY, int charges, int maxCharges, boolean isSimpleBadge) {
+        if (!isSimpleBadge) {
             RenderSystem.enableBlend();
             graphics.blit(CHARGE_BADGE_TEXTURE, slotX, slotY, 0, 0, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE, SLOT_SIZE);
         }
 
-        boolean showMax = isSimpleKeybind && EquipmentDisplayConfig.getInstance().isSimpleSkillChargeMaxDisplay();
+        boolean showMax = isSimpleBadge && EquipmentDisplayConfig.getInstance().isSimpleSkillChargeMaxDisplay();
         String text = showMax ? (charges + "/" + maxCharges) : String.valueOf(charges);
         int textWidth = HudFontHelper.getTextWidth(mc.font, text);
         int textHeight = mc.font.lineHeight;
 
-        float s = isSimpleKeybind ? (showMax ? 0.75f : 1.0f) : 0.8f;
+        float s = isSimpleBadge ? (showMax ? 0.75f : 1.0f) : 0.8f;
         float textX = slotX + 23.0f + (8.0f - textWidth * s) / 2.0f - 0.5f - 1;
         float textY = slotY + 2.5f + (8.0f - textHeight * s) / 2.0f + 1;
-        if (isSimpleKeybind) {
+        if (isSimpleBadge) {
             textX = showMax ? (slotX + 29.0f - textWidth * s) : (slotX + 26.0f - (textWidth * s) / 2.0f);
             textY = slotY + 4.0f;
         }
@@ -453,7 +454,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
         graphics.pose().pushPose();
         graphics.pose().translate(textX, textY, 0);
         graphics.pose().scale(s, s, 1.0f);
-        if (isSimpleKeybind) {
+        if (isSimpleBadge) {
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
                     if (dx != 0 || dy != 0) {

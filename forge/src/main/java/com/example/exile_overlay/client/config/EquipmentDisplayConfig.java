@@ -63,7 +63,8 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean enableOrbNoise = true;
     private boolean enableLiquidShadow = false;
     private boolean enableOrbInnerShadow = true;
-    private boolean simpleSkillKeybindDisplay = false;
+    private boolean simpleSkillKeybindDisplay = true;
+    private boolean simpleSkillChargeSummonDisplay = true;
     private boolean simpleSkillChargeMaxDisplay = false;
     private boolean simpleBuffStackDisplay = false;
     private CooldownDisplayType cooldownDisplayType = CooldownDisplayType.VERTICAL;
@@ -132,6 +133,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("enableLiquidShadow")) enableLiquidShadow = obj.get("enableLiquidShadow").getAsBoolean();
         if (obj.has("enableOrbInnerShadow")) enableOrbInnerShadow = obj.get("enableOrbInnerShadow").getAsBoolean();
         if (obj.has("simpleSkillKeybindDisplay")) simpleSkillKeybindDisplay = obj.get("simpleSkillKeybindDisplay").getAsBoolean();
+        if (obj.has("simpleSkillChargeSummonDisplay")) simpleSkillChargeSummonDisplay = obj.get("simpleSkillChargeSummonDisplay").getAsBoolean();
         if (obj.has("simpleSkillChargeMaxDisplay")) simpleSkillChargeMaxDisplay = obj.get("simpleSkillChargeMaxDisplay").getAsBoolean();
         if (obj.has("simpleBuffStackDisplay")) simpleBuffStackDisplay = obj.get("simpleBuffStackDisplay").getAsBoolean();
         if (obj.has("cooldownDisplayType")) {
@@ -173,6 +175,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("enableLiquidShadow", enableLiquidShadow);
         obj.addProperty("enableOrbInnerShadow", enableOrbInnerShadow);
         obj.addProperty("simpleSkillKeybindDisplay", simpleSkillKeybindDisplay);
+        obj.addProperty("simpleSkillChargeSummonDisplay", simpleSkillChargeSummonDisplay);
         obj.addProperty("simpleSkillChargeMaxDisplay", simpleSkillChargeMaxDisplay);
         obj.addProperty("simpleBuffStackDisplay", simpleBuffStackDisplay);
         obj.addProperty("cooldownDisplayType", cooldownDisplayType.name());
@@ -262,6 +265,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isSimpleSkillKeybindDisplay() { return simpleSkillKeybindDisplay; }
     public void setSimpleSkillKeybindDisplay(boolean simple) { this.simpleSkillKeybindDisplay = simple; }
 
+    public boolean isSimpleSkillChargeSummonDisplay() { return simpleSkillChargeSummonDisplay; }
+    public void setSimpleSkillChargeSummonDisplay(boolean simple) { this.simpleSkillChargeSummonDisplay = simple; }
+
     public boolean isSimpleSkillChargeMaxDisplay() { return simpleSkillChargeMaxDisplay; }
     public void setSimpleSkillChargeMaxDisplay(boolean show) { this.simpleSkillChargeMaxDisplay = show; }
 
@@ -303,7 +309,8 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.enableOrbNoise = true;
         this.enableLiquidShadow = false;
         this.enableOrbInnerShadow = true;
-        this.simpleSkillKeybindDisplay = false;
+        this.simpleSkillKeybindDisplay = true;
+        this.simpleSkillChargeSummonDisplay = true;
         this.simpleSkillChargeMaxDisplay = false;
         this.simpleBuffStackDisplay = false;
         this.cooldownDisplayType = CooldownDisplayType.VERTICAL;

@@ -1,16 +1,8 @@
 package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.api.MethodHandlesUtil;
-import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
-import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.client.config.ExileOverlayConfigManager;
-import com.example.exile_overlay.client.config.HudFontConfig;
-import com.example.exile_overlay.client.config.HudFontPreset;
-import com.example.exile_overlay.client.config.OrbColorConfig;
-import com.example.exile_overlay.client.config.OrbSmoothConfig;
-import com.example.exile_overlay.client.config.OrbTextConfig;
-import com.example.exile_overlay.client.config.SkillBuffFilterConfig;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.config.screen.list.ConfigEntryList;
 import com.example.exile_overlay.client.config.screen.tab.DamagePopupTab;
@@ -19,14 +11,9 @@ import com.example.exile_overlay.client.config.screen.tab.GeneralTab;
 import com.example.exile_overlay.client.config.screen.tab.HudDisplayTab;
 import com.example.exile_overlay.client.config.screen.tab.IConfigTab;
 import com.example.exile_overlay.client.config.screen.tab.OrbTab;
-import com.example.exile_overlay.client.damage.DamagePopupConfig;
-import com.example.exile_overlay.client.damage.FontPreset;
-import com.example.exile_overlay.client.render.DayCounterConfig;
-import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
 import com.example.exile_overlay.dmgtracker.config.TrackerConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -89,13 +76,7 @@ public class ConfigScreen extends Screen {
             tabY += 23;
         }
 
-        // 2. 左側下部ボタン（リセット / 完了）
-        Button btnReset = Button.builder(Component.translatable("button.exile_overlay.reset"), b -> resetToDefaults())
-                .bounds(leftPanelX + 6, leftPanelY + leftPanelH - 48, leftPanelW - 12, 20)
-                .tooltip(Tooltip.create(Component.translatable("button.exile_overlay.reset.tooltip")))
-                .build();
-        this.addRenderableWidget(btnReset);
-
+        // 2. 左側下部ボタン（完了）
         Button btnDone = Button.builder(CommonComponents.GUI_DONE, b -> {
             saveConfig();
             this.minecraft.setScreen(this.lastScreen);
@@ -161,129 +142,6 @@ public class ConfigScreen extends Screen {
         trackerConfig.setEnabled(false);
         trackerConfig.setMaxSkillsShown(20);
         trackerConfig.save();
-    }
-
-    private void resetToDefaults() {
-        ExileOverlayConfigManager.getInstance().clearBackupSnapshot();
-
-        EquipmentDisplayConfig config = EquipmentDisplayConfig.getInstance();
-        config.resetToDefaults();
-        config.save();
-
-        MethodHandlesUtil.setNeatHpBarEnabled(false);
-
-        DamagePopupConfig damageConfig = DamagePopupConfig.getInstance();
-        damageConfig.setShowDamage(false);
-        damageConfig.setShowHealing(true);
-        damageConfig.setShowPlayerDamage(false);
-        damageConfig.setShowPlayerHealing(true);
-        damageConfig.setEnableShadow(false);
-        damageConfig.setFontPreset(FontPreset.GAME_POCKET);
-        damageConfig.setBaseScale(0.018f);
-        damageConfig.setCriticalScale(0.032f);
-        damageConfig.setDisplayDuration(20);
-        damageConfig.setFadeInDuration(5);
-        damageConfig.setFadeOutDuration(10);
-        damageConfig.setMaxDamageTexts(10);
-        damageConfig.setPopupHeightRatio(0.8f);
-        damageConfig.setRoundDamageNumbers(true);
-        damageConfig.setCompactNumbers(false);
-        damageConfig.setDecimalThreshold(15.0f);
-        damageConfig.setEnableDamageScale(true);
-        damageConfig.setNormalDamageColor(0xFFFFFF);
-        damageConfig.setCriticalDamageColor(0xFFFF55);
-        damageConfig.setPhysicalDamageColor(0xFFAA00);
-        damageConfig.setHealingColor(0x55FF55);
-        damageConfig.setFireDamageColor(0xFF5555);
-        damageConfig.setIceDamageColor(0x55FFFF);
-        damageConfig.setLightningDamageColor(0xFFFF55);
-        damageConfig.setNatureDamageColor(0xFFFF55);
-        damageConfig.setPoisonDamageColor(0x55FF55);
-        damageConfig.setMagicDamageColor(0xAA00AA);
-        damageConfig.setElementalDamageColor(0xFF77FF);
-        damageConfig.setWitherDamageColor(0x2F2F2F);
-        damageConfig.save();
-
-        EntityHealthBarConfig hpBarConfig = EntityHealthBarConfig.getInstance();
-        hpBarConfig.setEnabled(false);
-        hpBarConfig.setShowPoison(false);
-        hpBarConfig.setShowBleed(false);
-        hpBarConfig.setShowFriendlyColor(true);
-        hpBarConfig.setMaxDistance(24);
-        hpBarConfig.setHeightAbove(0.5);
-        hpBarConfig.setBarWidth(30);
-        hpBarConfig.setBarHeight(2);
-        hpBarConfig.setScale(1.0f);
-        hpBarConfig.setDisplayDuration(5);
-        hpBarConfig.setHealthBarColor("B02020");
-        hpBarConfig.setPoisonBarColor("246E07");
-        hpBarConfig.setBleedBarColor("540606");
-        hpBarConfig.setFriendlyBarColor("2D8B2D");
-        hpBarConfig.setBlacklist(new ArrayList<>(EntityHealthBarConfig.DEFAULT_BLACKLIST));
-        hpBarConfig.save();
-
-        OrbTextConfig orbTextConfig = OrbTextConfig.getInstance();
-        orbTextConfig.setShowOrbText(true);
-        orbTextConfig.setCompactNumbers(false);
-        orbTextConfig.setEnergyCompact(true);
-        orbTextConfig.setTextScale(1.97f);
-        orbTextConfig.setAboveTextScale(1.99f);
-        orbTextConfig.setEnergyTextScale(1.77f);
-        orbTextConfig.setEsTextScale(2.22f);
-        orbTextConfig.setOrb1EsMode(OrbTextConfig.Orb1EsMode.OVERLAP);
-        orbTextConfig.setOrbSwapMode(OrbTextConfig.OrbResourceSwapMode.OFF);
-        orbTextConfig.setHideOrb1SmallerValue(false);
-        orbTextConfig.setTextPosition(OrbTextConfig.OrbTextPosition.ABOVE);
-        orbTextConfig.setAboveOrbOffsetY(2.99f);
-        orbTextConfig.setAboveOrbOffsetX(4.99f);
-        orbTextConfig.setAboveIndividualOrbOffsetY(5.77f);
-        orbTextConfig.setAboveIndividualOrbOffsetX(8.96f);
-        orbTextConfig.save();
-
-        OrbColorConfig orbColorConfig = OrbColorConfig.getInstance();
-        orbColorConfig.resetToDefaults();
-        orbColorConfig.save();
-
-        DayCounterConfig dayCounterConfig = DayCounterConfig.getInstance();
-        dayCounterConfig.setSoundVolume(5);
-        dayCounterConfig.save();
-
-        TrackerConfig trackerConfig = TrackerConfig.getInstance();
-        trackerConfig.setEnabled(false);
-        trackerConfig.setMaxSkillsShown(20);
-        trackerConfig.save();
-
-        HudFontConfig hudFontConfig = HudFontConfig.getInstance();
-        hudFontConfig.setFontPreset(HudFontPreset.GOOGLE_SANS);
-        hudFontConfig.setUseCustomFont(false);
-        hudFontConfig.save();
-
-        SkillBuffFilterConfig skillBuffFilter = SkillBuffFilterConfig.getInstance();
-        skillBuffFilter.setShowAura(true);
-        skillBuffFilter.setShowSelfSkill(true);
-        skillBuffFilter.setShowFood(false);
-        skillBuffFilter.setShowCharge(true);
-        skillBuffFilter.setShowSong(true);
-        skillBuffFilter.setShowGolem(true);
-        skillBuffFilter.setShowOther(false);
-        skillBuffFilter.save();
-
-        BuffOverlayFilterConfig buffFilter = BuffOverlayFilterConfig.getInstance();
-        BuffOverlayFilterConfig.OverlayFilter defaultAll = BuffOverlayFilterConfig.OverlayFilter.createDefaultAll();
-        buffFilter.getBuffOverlay().setShowMinions(defaultAll.isShowMinions());
-        buffFilter.getBuffOverlay().setShowMercenary(defaultAll.isShowMercenary());
-        buffFilter.getBuffOverlay().setSortByDuration(defaultAll.isSortByDuration());
-        BuffOverlayFilterConfig.OverlayFilter defaultSkill = BuffOverlayFilterConfig.OverlayFilter.createDefaultSkillOnly();
-        buffFilter.getSkillBuffOverlay().setShowMinions(defaultSkill.isShowMinions());
-        buffFilter.getSkillBuffOverlay().setShowMercenary(defaultSkill.isShowMercenary());
-        buffFilter.getSkillBuffOverlay().setSortByDuration(defaultSkill.isSortByDuration());
-        buffFilter.save();
-
-        DropSoundConfig dropSoundConfig = DropSoundConfig.getInstance();
-        dropSoundConfig.resetToDefaults();
-        dropSoundConfig.save();
-
-        rebuildCurrentTab();
     }
 
     private void saveConfig() {
