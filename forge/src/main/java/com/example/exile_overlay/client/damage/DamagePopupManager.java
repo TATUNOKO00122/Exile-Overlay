@@ -476,10 +476,22 @@ public class DamagePopupManager {
             }
 
             int count = damageNumbers.size();
+
+            // パス1: 全ポップアップの影を描画しバッファを確定（本体への重なり・回り込みを防止）
+            if (config.isEnableShadow()) {
+                for (int i = 0; i < count; i++) {
+                    DamageNumber dn = damageNumbers.get(i);
+                    int stackIndex = entityStackIndices.getOrDefault(dn, 0);
+                    renderDamageNumber(poseStack, bufferSource, dn, camPos, font, fontStyle, i, stackIndex, true);
+                }
+                bufferSource.endBatch();
+            }
+
+            // パス2: 全ポップアップの文字本体を描画
             for (int i = 0; i < count; i++) {
                 DamageNumber dn = damageNumbers.get(i);
                 int stackIndex = entityStackIndices.getOrDefault(dn, 0);
-                renderDamageNumber(poseStack, bufferSource, dn, camPos, font, fontStyle, i, stackIndex);
+                renderDamageNumber(poseStack, bufferSource, dn, camPos, font, fontStyle, i, stackIndex, false);
             }
 
             bufferSource.endBatch();
@@ -494,7 +506,7 @@ public class DamagePopupManager {
 
     private void renderDamageNumber(PoseStack poseStack, MultiBufferSource bufferSource,
                                     DamageNumber dn, Vec3 camPos, Font font, Style fontStyle,
-                                    int renderIndex, int stackIndex) {
+                                    int renderIndex, int stackIndex, boolean isShadowPass) {
         poseStack.pushPose();
         try {
             Vec3 pos = dn.getPosition();
@@ -513,24 +525,28 @@ public class DamagePopupManager {
                 poseStack.translate(0, 0, -0.002f * renderIndex);
             }
 
+            // 影は奥側(+Z)にオフセットして文字本体の手前への回り込み・Z競合を防止
+            if (isShadowPass) {
+                poseStack.translate(0, 0, 0.03f);
+            }
+
             poseStack.scale(scale, scale, scale);
 
             int alpha = (int) (dn.getAlpha() * 255);
-            int colorWithAlpha = (alpha << 24) | (dn.getDisplayColor() & 0xFFFFFF);
-
             String text = formatDamageText(dn.getDamage(), dn.getType() == DamageType.HEALING);
             float textWidth = font.width(Component.literal(text).withStyle(fontStyle));
             float x = -textWidth / 2.0f;
             float y = -font.lineHeight / 2.0f;
 
-            if (config.isEnableShadow()) {
+            if (isShadowPass) {
                 int shadowColor = ((int) (alpha * 0.5f) << 24) | 0x000000;
                 DamageFontRenderer.renderText(poseStack, text, x + 1.0f, y + 1.0f,
                     shadowColor, bufferSource, 0xF000F0);
+            } else {
+                int colorWithAlpha = (alpha << 24) | (dn.getDisplayColor() & 0xFFFFFF);
+                DamageFontRenderer.renderText(poseStack, text, x, y, colorWithAlpha,
+                    bufferSource, 0xF000F0);
             }
-
-            DamageFontRenderer.renderText(poseStack, text, x, y, colorWithAlpha,
-                bufferSource, 0xF000F0);
 
         } finally {
             poseStack.popPose();
@@ -567,12 +583,7 @@ public class DamagePopupManager {
             }
         }
 
-        if (absValue < config.getDecimalThreshold()) {
-            appendOneDecimal(sb, value);
-        } else {
-            sb.append(Math.round(value));
-        }
-
+        sb.append(Math.round(value));
         return sb.toString();
     }
 
@@ -585,11 +596,5 @@ public class DamagePopupManager {
         } else {
             sb.append(intPart).append(suffix);
         }
-    }
-
-    private void appendOneDecimal(StringBuilder sb, float value) {
-        int intPart = (int) value;
-        int decPart = Math.abs((int) ((value - intPart) * 10));
-        sb.append(intPart).append('.').append(decPart);
     }
 }

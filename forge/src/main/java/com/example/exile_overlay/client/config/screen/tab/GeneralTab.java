@@ -12,7 +12,6 @@ import com.example.exile_overlay.client.config.screen.entry.FloatSliderConfigEnt
 import com.example.exile_overlay.client.config.screen.entry.IntSliderConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.SectionHeaderEntry;
 import com.example.exile_overlay.client.render.DayCounterConfig;
-import com.example.exile_overlay.client.render.kill.KillCounterConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -26,7 +25,6 @@ import java.util.List;
 public class GeneralTab implements IConfigTab {
 
     private static final String DAY_COUNTER_KEY = "day_counter";
-    private static final String KILL_COUNTER_KEY = "kill_counter";
 
     @Override
     public Component getTitle() {
@@ -94,40 +92,7 @@ public class GeneralTab implements IConfigTab {
                 0, 10
         ));
 
-        // 4. キルカウンター
-        entries.add(new SectionHeaderEntry("section.exile_overlay.kill_counter"));
-
-        entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.kill_counter_enabled",
-                () -> posMgr.getPosition(KILL_COUNTER_KEY).isVisible(),
-                val -> {
-                    HudPosition pos = posMgr.getPosition(KILL_COUNTER_KEY);
-                    posMgr.setPosition(KILL_COUNTER_KEY, pos.withVisible(val));
-                }
-        ));
-
-        entries.add(new FloatSliderConfigEntry(
-                "exile_overlay.config.kill_counter_scale",
-                () -> posMgr.getPosition(KILL_COUNTER_KEY).getScale(),
-                val -> {
-                    HudPosition pos = posMgr.getPosition(KILL_COUNTER_KEY);
-                    posMgr.setPosition(KILL_COUNTER_KEY, pos.withScale(val));
-                },
-                0.5f, 3.0f
-        ));
-
-        KillCounterConfig killConfig = KillCounterConfig.getInstance();
-        entries.add(new IntSliderConfigEntry(
-                "exile_overlay.config.kill_counter_timeout",
-                killConfig::getTimeoutSeconds,
-                val -> {
-                    killConfig.setTimeoutSeconds(val);
-                    killConfig.save();
-                },
-                5, 60
-        ));
-
-        // 5. ダメージトラッカー（サーバー側導入時）
+        // 4. ダメージトラッカー（サーバー側導入時）
         if (com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
             entries.add(new SectionHeaderEntry("section.exile_overlay.damage_tracker"));
 

@@ -68,11 +68,6 @@ public class DamagePopupTab implements IConfigTab {
                 popupConfig::setEnableShadow
         ));
 
-        entries.add(new BooleanConfigEntry(
-                "exile_overlay.config.round_damage_numbers",
-                popupConfig::isRoundDamageNumbers,
-                popupConfig::setRoundDamageNumbers
-        ));
 
         entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.compact_numbers",
