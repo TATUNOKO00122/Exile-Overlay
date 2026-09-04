@@ -29,10 +29,10 @@ public class DungeonStatsPacketMixin {
     private void exileOverlay$onStatsReceived(Object context, CallbackInfo ci) {
         try {
             if (snapshotStack != null && !snapshotStack.isEmpty()) {
-                DungeonTimerManager.getInstance().resetTimer();
+                DungeonTimerManager.getInstance().onMapSnapshotReceived(snapshotStack);
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to process dungeon timer reset: {}", e.getMessage());
+            LOGGER.error("Failed to process dungeon timer stats: {}", e.getMessage());
         }
     }
 }

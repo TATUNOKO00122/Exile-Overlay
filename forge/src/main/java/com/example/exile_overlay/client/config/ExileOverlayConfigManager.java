@@ -5,6 +5,7 @@ import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.render.DayCounterConfig;
 import com.example.exile_overlay.client.render.entity.EntityHealthBarConfig;
+import com.example.exile_overlay.client.render.kill.KillCounterConfig;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.compat.jei.JeiConfig;
 import com.example.exile_overlay.dmgtracker.config.TrackerConfig;
@@ -215,7 +216,7 @@ public final class ExileOverlayConfigManager {
         saveSection(OrbColorConfig.getInstance());
         saveSection(OrbSmoothConfig.getInstance());
         saveSection(DayCounterConfig.getInstance());
-        // saveSection(KillCounterConfig.getInstance());
+        saveSection(KillCounterConfig.getInstance());
         saveSection(HudPositionManager.getInstance());
         saveSection(DropSoundConfig.getInstance());
         saveSection(JeiConfig.getInstance());

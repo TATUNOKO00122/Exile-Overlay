@@ -1,23 +1,17 @@
 package com.example.exile_overlay.client.render.kill;
 
-/*
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/ **
+/**
  * キルカウント状態およびポップアニメーション管理クラス
- *
- * - セッション中のキル数をSingle Source of Truthとして一元管理
- * - プレイヤーがダメージを与えたエンティティの死亡追跡（クライアント・サーバー両対応）
- * - 二重カウント防止のTTL付き重複排除
- * - キル発生時のポップアニメーション倍率を時間ベース（フレームレート非依存）で計算
- * - ゼロアロケーション・スレッドセーフ
- * /
+ * セッション中のキル数管理と撃破時ポップアニメーション倍率の計算を担当
+ */
 public final class KillCountManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("exile_overlay/KillCountManager");
@@ -25,8 +19,8 @@ public final class KillCountManager {
 
     private static final long ANIMATION_DURATION_MS = 350L;
     private static final float PEAK_SCALE = 1.35f;
-    private static final long ATTACK_EXPIRY_MS = 6000L; // プレイヤーが攻撃してからキルとして認める猶予時間
-    private static final long PROCESSED_EXPIRY_MS = 10000L;
+    private static final long ATTACK_EXPIRY_MS = 12000L;
+    private static final long PROCESSED_EXPIRY_MS = 20000L;
 
     private int killCount = 0;
     private long lastKillTimeMs = 0;
@@ -43,46 +37,45 @@ public final class KillCountManager {
         return INSTANCE;
     }
 
-    / **
-     * プレイヤーがエンティティにダメージを与えた/攻撃したことを記録
-     * /
     public void recordPlayerAttack(int entityId) {
         long now = System.currentTimeMillis();
         playerAttackedEntities.put(entityId, now);
     }
 
-    / **
-     * エンティティの死亡をチェックし、プレイヤーのキルであればカウント加算
-     *
-     * @param entity 対象エンティティ
-     * @return キルとして新しくカウントされた場合true
-     * /
     public synchronized boolean checkEntityDeath(LivingEntity entity) {
+        return checkEntityDeath(entity, false);
+    }
+
+    public synchronized boolean checkEntityDeath(LivingEntity entity, boolean assumeDead) {
         if (entity == null) {
+            return false;
+        }
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null && entity.getId() == mc.player.getId()) {
+            reset();
             return false;
         }
 
         int entityId = entity.getId();
         long now = System.currentTimeMillis();
 
-        // 既に処理済みのエンティティはスキップ
         if (processedDeadEntities.containsKey(entityId)) {
             return false;
         }
 
-        // プレイヤーが直近に攻撃したエンティティか確認
         Long attackTime = playerAttackedEntities.get(entityId);
         if (attackTime == null || (now - attackTime) > ATTACK_EXPIRY_MS) {
             return false;
         }
 
-        // 死亡状態か確認 (HP <= 0, isDeadOrDying, または deathTime > 0)
-        boolean isDead = entity.getHealth() <= 0.001f || entity.isDeadOrDying() || entity.deathTime > 0;
-        if (!isDead) {
-            return false;
+        if (!assumeDead) {
+            boolean isDead = entity.getHealth() <= 0.001f || entity.isDeadOrDying() || entity.deathTime > 0;
+            if (!isDead) {
+                return false;
+            }
         }
 
-        // 処理済みマーク & 攻撃履歴から削除
         processedDeadEntities.put(entityId, now);
         playerAttackedEntities.remove(entityId);
 
@@ -90,25 +83,16 @@ public final class KillCountManager {
         return true;
     }
 
-    / **
-     * キル数を1加算し、ポップアニメーションを開始
-     * /
     public synchronized void incrementKill() {
         this.killCount++;
         this.lastKillTimeMs = System.currentTimeMillis();
         LOGGER.debug("Kill count incremented to {}", killCount);
     }
 
-    / **
-     * 現在のキル数を取得
-     * /
     public synchronized int getKillCount() {
         return killCount;
     }
 
-    / **
-     * 現在のポップアニメーション拡大倍率を計算 (1.0f ~ 1.35f)
-     * /
     public float getScaleMultiplier() {
         long lastTime = this.lastKillTimeMs;
         if (lastTime <= 0) {
@@ -122,23 +106,18 @@ public final class KillCountManager {
 
         float progress = (float) elapsed / (float) ANIMATION_DURATION_MS;
 
-        // 最初の20%で一気に拡大 (1.0 -> 1.35)
-        // 残り80%で滑らかに通常サイズに戻る (1.35 -> 1.0)
+        // 最初の20%で拡大、残り80%で元に戻る
         float scaleDiff = PEAK_SCALE - 1.0f;
         if (progress < 0.2f) {
             float t = progress / 0.2f;
             return 1.0f + scaleDiff * (float) Math.sin(t * (Math.PI / 2.0));
         } else {
             float t = (progress - 0.2f) / 0.8f;
-            // Ease-Out Quad減衰
             float decay = 1.0f - t;
             return 1.0f + scaleDiff * decay * decay;
         }
     }
 
-    / **
-     * 古いエンティティキャッシュのクリーンアップ（定期実行）
-     * /
     public void cleanupOldEntries() {
         long now = System.currentTimeMillis();
         playerAttackedEntities.entrySet().removeIf(e -> (now - e.getValue()) > ATTACK_EXPIRY_MS);
@@ -151,9 +130,6 @@ public final class KillCountManager {
         }
     }
 
-    / **
-     * キルカウントをリセット
-     * /
     public synchronized void reset() {
         this.killCount = 0;
         this.lastKillTimeMs = 0;
@@ -162,12 +138,8 @@ public final class KillCountManager {
         LOGGER.debug("Kill count reset to 0");
     }
 
-    / **
-     * キルカウントを特定の値に設定
-     * /
     public synchronized void setKillCount(int count) {
         this.killCount = Math.max(0, count);
         this.lastKillTimeMs = System.currentTimeMillis();
     }
 }
-*/

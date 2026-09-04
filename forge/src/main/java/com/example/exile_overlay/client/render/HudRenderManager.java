@@ -8,7 +8,7 @@ import com.example.exile_overlay.api.UnifiedCache;
 import com.example.exile_overlay.client.dungeon.DungeonTimerRenderer;
 import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import com.example.exile_overlay.client.render.exp.ExpAccumulatorRenderer;
-// import com.example.exile_overlay.client.render.kill.KillCounterRenderer;
+import com.example.exile_overlay.client.render.kill.KillCounterRenderer;
 import com.example.exile_overlay.client.render.minion.MinionOverlayRenderer;
 import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.skill.SkillHotbarRenderer;
@@ -117,7 +117,7 @@ public class HudRenderManager {
         this.registerCommand(new DayCounterRenderer(), 200);
 
         // キルカウンター
-        // this.registerCommand(new KillCounterRenderer(), 80);
+        this.registerCommand(new KillCounterRenderer(), 80);
 
         // 累積獲得EXPポップアップ
         this.registerCommand(new ExpAccumulatorRenderer(), 85);

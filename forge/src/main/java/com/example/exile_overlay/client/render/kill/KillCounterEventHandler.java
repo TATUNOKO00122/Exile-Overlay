@@ -1,6 +1,5 @@
 package com.example.exile_overlay.client.render.kill;
 
-/*
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.stats.Stats;
@@ -17,14 +16,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/ **
+/**
  * キルカウンター関連のイベントハンドラー
- *
- * - プレイヤーの敵攻撃検知（AttackEntityEvent）
- * - クライアント側ティックでのエンティティ死亡監視とバニラ統計同期
- * - ForgeのLivingDeathEvent（サーバー・シングルプレイ）の購読
- * - プレイヤー死亡時・ワールド離脱時のリセット
- * /
+ * プレイヤーの攻撃検知、エンティティ死亡監視、バニラ統計同期を担当
+ */
 @OnlyIn(Dist.CLIENT)
 public class KillCounterEventHandler {
 
@@ -34,9 +29,6 @@ public class KillCounterEventHandler {
     private static int tickCounter = 0;
     private static String lastDimension = null;
 
-    / **
-     * プレイヤーがエンティティを攻撃した瞬間に記録
-     * /
     @SubscribeEvent
     public static void onAttackEntity(AttackEntityEvent event) {
         try {
@@ -52,9 +44,6 @@ public class KillCounterEventHandler {
         }
     }
 
-    / **
-     * クライアントティック毎の死亡チェックおよびバニラ統計同期
-     * /
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
@@ -64,6 +53,13 @@ public class KillCounterEventHandler {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) {
+            return;
+        }
+
+        if (player.isDeadOrDying() || player.getHealth() <= 0.001f) {
+            if (KillCountManager.getInstance().getKillCount() > 0) {
+                KillCountManager.getInstance().reset();
+            }
             return;
         }
 
@@ -77,17 +73,16 @@ public class KillCounterEventHandler {
 
         tickCounter++;
 
-        // 10ティック（0.5秒）毎に周囲のエンティティとクリーンアップを実行
+        // 5ティック毎に周囲のエンティティ死亡チェックおよびクリーンアップ
         if (tickCounter % 5 == 0) {
             try {
-                // 周囲64ブロックのエンティティの死亡チェック
                 for (Entity entity : mc.level.entitiesForRendering()) {
                     if (entity instanceof LivingEntity living && living != player) {
                         KillCountManager.getInstance().checkEntityDeath(living);
                     }
                 }
 
-                // バニラ統計（MOB_KILLS）の監視（マルチサーバー等の補正用）
+                // バニラ統計（MOB_KILLS）の同期
                 if (player.getStats() != null) {
                     int currentVanillaKills = player.getStats().getValue(Stats.CUSTOM.get(Stats.MOB_KILLS));
                     if (lastKnownVanillaKills >= 0 && currentVanillaKills > lastKnownVanillaKills) {
@@ -106,9 +101,6 @@ public class KillCounterEventHandler {
         }
     }
 
-    / **
-     * サーバー側 / シングルプレイでの LivingDeathEvent
-     * /
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         try {
@@ -119,16 +111,10 @@ public class KillCounterEventHandler {
             }
 
             LivingEntity victim = event.getEntity();
-            if (victim == null) {
+            if (victim == null || victim.getUUID().equals(clientPlayer.getUUID())) {
                 return;
             }
 
-            // プレイヤー自身の死亡判定
-            if (victim.getUUID().equals(clientPlayer.getUUID())) {
-                return;
-            }
-
-            // 討伐判定: プレイヤー自身によるキルか
             DamageSource source = event.getSource();
             if (source != null) {
                 Entity attacker = source.getEntity();
@@ -153,5 +139,9 @@ public class KillCounterEventHandler {
         lastKnownVanillaKills = -1;
         lastDimension = null;
     }
+
+    @SubscribeEvent
+    public static void onClone(net.minecraftforge.client.event.ClientPlayerNetworkEvent.Clone event) {
+        KillCountManager.getInstance().reset();
+    }
 }
-*/

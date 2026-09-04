@@ -145,7 +145,9 @@ public class HudPositionManager implements IConfigSection {
 
         defaults.put("exp_accumulator", new HudPosition(Anchor.TOP_CENTER, 0, 80, 1.0f, false, false));
 
-        defaults.put("dungeon_timer", new HudPosition(Anchor.CENTER, 139, 83, 1.5f, true, false));
+        defaults.put("dungeon_timer", new HudPosition(Anchor.CENTER, 139, 83, 1.5f, false, false));
+
+        defaults.put("kill_counter", new HudPosition(Anchor.TOP_LEFT, 5, 30, 1.0f, true, false));
 
         LOGGER.debug("Registered {} builtin default positions", defaults.size());
     }

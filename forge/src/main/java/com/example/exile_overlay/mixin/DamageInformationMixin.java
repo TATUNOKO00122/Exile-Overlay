@@ -3,7 +3,7 @@ package com.example.exile_overlay.mixin;
 import com.example.exile_overlay.client.damage.DamagePopupConfig;
 import com.example.exile_overlay.client.damage.DamagePopupManager;
 import com.example.exile_overlay.client.damage.DamageType;
-// import com.example.exile_overlay.client.render.kill.KillCountManager;
+import com.example.exile_overlay.client.render.kill.KillCountManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -133,10 +133,16 @@ public class DamageInformationMixin {
                 position = living.position().add(0, living.getBbHeight() * heightRatio, 0);
                 entityId = living.getId();
                 DamagePopupManager.getInstance().markMsDamageHandled(entityId);
+                if (mc.player == null || entityId != mc.player.getId()) {
+                    KillCountManager.getInstance().recordPlayerAttack(entityId);
+                }
             } else if (entity != null) {
                 position = entity.position().add(0, entity.getBbHeight() * 0.8f, 0);
                 entityId = entity.getId();
                 DamagePopupManager.getInstance().markMsDamageHandled(entityId);
+                if (mc.player == null || entityId != mc.player.getId()) {
+                    KillCountManager.getInstance().recordPlayerAttack(entityId);
+                }
             } else if (mc.player != null) {
                 // entity が null の場合のフォールバック: プレイヤーの前方 2.5 ブロック位置に配置
                 position = mc.player.getEyePosition().add(mc.player.getLookAngle().scale(2.5));

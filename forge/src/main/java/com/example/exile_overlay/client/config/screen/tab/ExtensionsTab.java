@@ -188,7 +188,11 @@ public class ExtensionsTab implements IConfigTab {
         }
 
         // 5. ドロップサウンド設定
-        entries.add(new SectionHeaderEntry("section.exile_overlay.drop_sound"));
+        entries.add(new SectionHeaderEntry(
+                Component.translatable("section.exile_overlay.drop_sound")
+                        .append(" ")
+                        .append(Component.translatable("exile_overlay.config.experimental").withStyle(s -> s.withColor(0xFFAA00)))
+        ));
 
         DropSoundConfig dropSoundConfig = DropSoundConfig.getInstance();
         entries.add(new BooleanConfigEntry(
@@ -196,6 +200,8 @@ public class ExtensionsTab implements IConfigTab {
                 dropSoundConfig::isEnabled,
                 dropSoundConfig::setEnabled,
                 Component.translatable("exile_overlay.config.drop_sound_enabled.tooltip")
+                        .append("\n")
+                        .append(Component.translatable("exile_overlay.config.experimental").withStyle(s -> s.withColor(0xFFAA00)))
         ));
 
         // 全体音量スライダー（0〜200%）

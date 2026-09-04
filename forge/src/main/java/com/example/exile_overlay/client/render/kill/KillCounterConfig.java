@@ -1,12 +1,11 @@
 package com.example.exile_overlay.client.render.kill;
 
-/*
 import com.example.exile_overlay.client.config.AbstractConfigSection;
 import com.google.gson.JsonObject;
 
-/ **
+/**
  * キルカウンターの設定管理クラス
- * /
+ */
 public class KillCounterConfig extends AbstractConfigSection {
 
     private static final String SECTION_ID = "kill_counter";
@@ -52,4 +51,3 @@ public class KillCounterConfig extends AbstractConfigSection {
         this.timeoutSeconds = timeoutSeconds;
     }
 }
-*/
