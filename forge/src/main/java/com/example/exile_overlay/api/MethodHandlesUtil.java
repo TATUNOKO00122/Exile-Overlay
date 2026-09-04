@@ -191,6 +191,7 @@ public class MethodHandlesUtil {
     private static java.lang.reflect.Field STAT_PERCENTS_MAX_FIELD = null;
 
     // === Mercenary MethodHandles ===
+    private static boolean mercenarySupported = false;
     private static MethodHandle GET_SERVER_MERCENARY = null;
     private static MethodHandle GET_MERC_CLASS_ID = null;
     private static MethodHandle GET_MERC_CLASS = null;
@@ -1235,11 +1236,6 @@ public class MethodHandlesUtil {
 
     private static void initializeMercenaryHandles() {
         try {
-            try {
-                Class<?> mercManagerClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.MercenaryManager");
-                GET_SERVER_MERCENARY = lookupMethod(mercManagerClass, "getMerc", Player.class);
-            } catch (Throwable ignore) {}
-
             Class<?> mercEntityClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.entity.MercenaryEntity");
             GET_MERC_CLASS_ID = lookupMethod(mercEntityClass, "getClassId");
             GET_MERC_CLASS = lookupMethod(mercEntityClass, "getMercClass");
@@ -1251,11 +1247,22 @@ public class MethodHandlesUtil {
             Class<?> mercDataClass = Class.forName("com.robertx22.mine_and_slash.saveclasses.mercenary.MercenaryData");
             GET_EQUIPPED_SPELL = lookupMethod(mercDataClass, "getEquippedSpell", int.class);
 
-            LOGGER.debug("Mercenary handles initialized: serverMerc={}, mercClass={}, mercData={}",
-                    GET_SERVER_MERCENARY != null, GET_MERC_CLASS != null, GET_MERC_DATA != null);
-        } catch (Exception e) {
+            try {
+                Class<?> mercManagerClass = Class.forName("com.robertx22.mine_and_slash.database.data.mercenary.MercenaryManager");
+                GET_SERVER_MERCENARY = lookupMethod(mercManagerClass, "getMerc", Player.class);
+            } catch (Throwable ignore) {}
+
+            mercenarySupported = (GET_MERC_CLASS != null || GET_MERC_DATA != null);
+            LOGGER.debug("Mercenary handles initialized: supported={}, serverMerc={}, mercClass={}, mercData={}",
+                    mercenarySupported, GET_SERVER_MERCENARY != null, GET_MERC_CLASS != null, GET_MERC_DATA != null);
+        } catch (Throwable e) {
+            mercenarySupported = false;
             LOGGER.debug("Mercenary handles not available: {}", e.getMessage());
         }
+    }
+
+    public static boolean isMercenarySupported() {
+        return isAvailable() && mercenarySupported;
     }
 
     // ========== Skill Hotbar Helpers ==========
@@ -2539,7 +2546,7 @@ public class MethodHandlesUtil {
      * サーバーサイドでプレイヤーのアクティブ傭兵を取得
      */
     public static LivingEntity getServerMercenary(Player player) {
-        if (!isAvailable() || player == null) return null;
+        if (!isMercenarySupported() || player == null) return null;
         try {
             if (GET_SERVER_MERCENARY != null) {
                 Object result = GET_SERVER_MERCENARY.invoke(player);
@@ -2557,7 +2564,7 @@ public class MethodHandlesUtil {
      * サーバー側で傭兵同期パケットを作成
      */
     public static MercenarySyncS2C createMercenarySyncPacket(ServerPlayer player) {
-        if (player == null || !isAvailable()) return null;
+        if (player == null || !isMercenarySupported()) return null;
         try {
             LivingEntity merc = getServerMercenary(player);
             if (merc == null || !merc.isAlive()) {
@@ -2671,7 +2678,7 @@ public class MethodHandlesUtil {
      * サーバー同期パケットのキャッシュから解決
      */
     public static MercenaryDisplayInfo getActiveMercenary(Player player) {
-        if (!isAvailable() || player == null) return null;
+        if (!isMercenarySupported() || player == null) return null;
         return MercenaryClientCache.get();
     }
 }

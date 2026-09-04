@@ -47,7 +47,7 @@ public class ServerTickSyncHandler {
         syncCounter++;
 
         // 4ティック(0.2秒)ごとに傭兵情報をスキャンし、差分時またはハートビート時のみ同期
-        boolean shouldSyncMerc = (syncCounter % 4 == 0);
+        boolean shouldSyncMerc = (syncCounter % 4 == 0) && MethodHandlesUtil.isMercenarySupported();
         if (shouldSyncMerc) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 UUID uuid = player.getUUID();

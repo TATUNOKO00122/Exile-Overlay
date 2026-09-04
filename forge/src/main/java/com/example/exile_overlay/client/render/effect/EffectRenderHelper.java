@@ -536,7 +536,7 @@ public class EffectRenderHelper {
         }
 
         // 傭兵はトラックの先頭に常駐（M&S本家の仕様に準拠）
-        if (filter.isShowMercenary() && MethodHandlesUtil.isAvailable()) {
+        if (filter.isShowMercenary() && MethodHandlesUtil.isMercenarySupported()) {
             MercenaryDisplayInfo merc = MethodHandlesUtil.getActiveMercenary(player);
             if (merc != null && merc.isAlive()) {
                 mercenaryWrapper.updateInfo(merc);

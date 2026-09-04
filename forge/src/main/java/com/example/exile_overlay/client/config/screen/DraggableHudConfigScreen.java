@@ -1,6 +1,7 @@
 package com.example.exile_overlay.client.config.screen;
 
 import com.example.exile_overlay.api.IRenderCommand;
+import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.client.config.position.Anchor;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
@@ -159,8 +160,12 @@ public class DraggableHudConfigScreen extends Screen {
                 continue;
             }
 
-            if ("skill_hotbar".equals(key) || "buff_overlay".equals(key) || "skill_buff_overlay".equals(key) || "minion_overlay".equals(key)) {
+            if ("skill_hotbar".equals(key) || "buff_overlay".equals(key) || "skill_buff_overlay".equals(key)) {
                 if (!net.minecraftforge.fml.ModList.get().isLoaded("mmorpg")) continue;
+            }
+
+            if ("minion_overlay".equals(key)) {
+                if (!MethodHandlesUtil.isMercenarySupported()) continue;
             }
 
             if ("skill_buff_overlay".equals(key)) {

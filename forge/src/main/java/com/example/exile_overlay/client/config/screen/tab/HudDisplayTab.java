@@ -200,11 +200,13 @@ public class HudDisplayTab implements IConfigTab {
                     buffFilter::setShowMinions
             ));
 
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.buff_filter_mercenary",
-                    buffFilter::isShowMercenary,
-                    buffFilter::setShowMercenary
-            ));
+            if (MethodHandlesUtil.isMercenarySupported()) {
+                entries.add(new BooleanConfigEntry(
+                        "exile_overlay.config.buff_filter_mercenary",
+                        buffFilter::isShowMercenary,
+                        buffFilter::setShowMercenary
+                ));
+            }
         }
 
         return entries;

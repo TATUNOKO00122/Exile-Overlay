@@ -126,6 +126,8 @@ public class MinionOverlayRenderer implements IRenderCommand {
 
     @Override
     public void render(GuiGraphics graphics, RenderContext ctx) {
+        if (!MethodHandlesUtil.isMercenarySupported()) return;
+
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
 
