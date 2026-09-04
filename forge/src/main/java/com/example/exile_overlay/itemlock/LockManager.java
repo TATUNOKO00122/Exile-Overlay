@@ -4,6 +4,7 @@ import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
 import com.example.exile_overlay.itemlock.network.LockSlotC2S;
 import com.example.exile_overlay.itemlock.network.LockSlotSyncS2C;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -42,6 +43,12 @@ public final class LockManager {
     public static long getServerLockedMask(Player player) {
         if (player == null) return 0L;
         CompoundTag persistent = player.getPersistentData();
+        if (persistent.contains(Player.PERSISTED_NBT_TAG, Tag.TAG_COMPOUND)) {
+            CompoundTag persisted = persistent.getCompound(Player.PERSISTED_NBT_TAG);
+            if (persisted.contains(NBT_TAG_KEY)) {
+                return persisted.getLong(NBT_TAG_KEY);
+            }
+        }
         return persistent.getLong(NBT_TAG_KEY);
     }
 
@@ -52,7 +59,11 @@ public final class LockManager {
 
     public static void setServerLockedMask(ServerPlayer player, long mask) {
         if (player == null) return;
-        player.getPersistentData().putLong(NBT_TAG_KEY, mask);
+        CompoundTag persistent = player.getPersistentData();
+        CompoundTag persisted = persistent.getCompound(Player.PERSISTED_NBT_TAG);
+        persisted.putLong(NBT_TAG_KEY, mask);
+        persistent.put(Player.PERSISTED_NBT_TAG, persisted);
+        persistent.putLong(NBT_TAG_KEY, mask);
         NetworkHandler.CHANNEL.send(
                 net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
                 new LockSlotSyncS2C(mask)

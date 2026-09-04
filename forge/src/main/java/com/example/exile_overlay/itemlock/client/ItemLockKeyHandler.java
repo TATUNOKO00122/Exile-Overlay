@@ -1,12 +1,13 @@
 package com.example.exile_overlay.itemlock.client;
 
 import com.example.exile_overlay.client.event.ExileOverlayForgeClient;
+import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
 import com.example.exile_overlay.itemlock.ItemLockHelper;
 import com.example.exile_overlay.itemlock.LockManager;
+import com.example.exile_overlay.itemlock.network.LockSlotC2S;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
@@ -36,7 +37,7 @@ public final class ItemLockKeyHandler {
     public static boolean isToggleKeyDown() {
         KeyMapping key = ExileOverlayForgeClient.toggleItemLockKey;
         if (key == null || key.isUnbound()) {
-            return Screen.hasAltDown();
+            return false;
         }
         int keyCode = key.getKey().getValue();
         long window = Minecraft.getInstance().getWindow().getWindow();
@@ -68,6 +69,7 @@ public final class ItemLockKeyHandler {
         if (event.getButton() == 0 && isToggleKeyDown()) {
             event.setCanceled(true);
             LockManager.toggleClientSlotLock(slotIdx);
+            ItemLockClientStorage.setLockMask(mc.player.getStringUUID(), LockManager.getClientLockedMask());
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.2f));
             return;
         }
@@ -137,10 +139,30 @@ public final class ItemLockKeyHandler {
     }
 
     /**
-     * ワールド退出時にクライアントキャッシュをリセット
+     * ワールド参加時にローカル保存されたロック状態を復元し、サーバーへ同期を要求
+     */
+    @SubscribeEvent
+    public void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.world.entity.player.Player player = event.getPlayer() != null ? event.getPlayer() : mc.player;
+        if (player != null) {
+            String uuid = player.getStringUUID();
+            long savedMask = ItemLockClientStorage.getLockMask(uuid);
+            LockManager.setClientLockedMask(savedMask);
+            NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(LockSlotC2S.SYNC_REQUEST_SLOT));
+        }
+    }
+
+    /**
+     * ワールド退出時にクライアントキャッシュを保存してリセット
      */
     @SubscribeEvent
     public void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        Minecraft mc = Minecraft.getInstance();
+        net.minecraft.world.entity.player.Player player = event.getPlayer() != null ? event.getPlayer() : mc.player;
+        if (player != null) {
+            ItemLockClientStorage.setLockMask(player.getStringUUID(), LockManager.getClientLockedMask());
+        }
         LockManager.resetClient();
     }
 }

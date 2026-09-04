@@ -10,8 +10,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.Slot;
 import net.minecraftforge.client.event.ContainerScreenEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -53,30 +51,6 @@ public final class ItemLockGuiRenderer {
             if (playerSlot >= 0 && LockManager.isClientSlotLocked(playerSlot)) {
                 // スロット枠（16x16）の右上（x + 9, y - 1）に南京錠アイコンを描画
                 renderLockIcon(event.getGuiGraphics(), slot.x + 9, slot.y - 1);
-            }
-        }
-    }
-
-    /**
-     * 通常画面のバニラホットバーHUD上での描画（exile_overlayのホットバーが無効な場合のフォールバック）
-     */
-    @SubscribeEvent
-    public void onRenderGuiOverlayPost(RenderGuiOverlayEvent.Post event) {
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) return;
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.screen != null) return;
-
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-        int left = screenWidth / 2 - 90;
-        int top = screenHeight - 22;
-
-        for (int i = 0; i < 9; i++) {
-            if (LockManager.isClientSlotLocked(i)) {
-                int slotX = left + i * 20 + 3;
-                int slotY = top + 3;
-                renderLockIcon(event.getGuiGraphics(), slotX + 9, slotY - 1);
             }
         }
     }

@@ -116,7 +116,7 @@ public class ExileOverlayForgeClient {
 
         toggleItemLockKey = new KeyMapping(
                 "key.exile_overlay.toggle_item_lock",
-                GLFW.GLFW_KEY_LEFT_ALT,
+                GLFW.GLFW_KEY_UNKNOWN,
                 "category.exile_overlay.general");
         event.register(toggleItemLockKey);
 

@@ -35,7 +35,7 @@ public final class ItemLockServerHandler {
         // 死亡リスポーンまたはディメンション移動時にNBTデータを引き継ぐ
         if (event.getEntity() instanceof ServerPlayer newPlayer) {
             long oldMask = LockManager.getServerLockedMask(event.getOriginal());
-            newPlayer.getPersistentData().putLong(LockManager.NBT_TAG_KEY, oldMask);
+            LockManager.setServerLockedMask(newPlayer, oldMask);
         }
     }
 }

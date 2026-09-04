@@ -12,6 +12,7 @@ import java.util.function.Supplier;
  * クライアントからサーバーへ、特定スロットのロック切り替えを要求するパケット。
  */
 public class LockSlotC2S {
+    public static final int SYNC_REQUEST_SLOT = -1;
     private final int slot;
 
     public LockSlotC2S(int slot) {
@@ -32,7 +33,11 @@ public class LockSlotC2S {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
 
-            LockManager.toggleServerSlotLock(player, slot);
+            if (slot == SYNC_REQUEST_SLOT) {
+                LockManager.syncToClient(player);
+            } else {
+                LockManager.toggleServerSlotLock(player, slot);
+            }
         });
         ctx.get().setPacketHandled(true);
     }
