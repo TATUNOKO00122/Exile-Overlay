@@ -51,6 +51,14 @@ public class DropFilter {
             String uniqueWithRarity = (uniqueId != null && rawRarity != null) ? uniqueId + "@" + rawRarity : null;
             String uniquePrefixWithRarity = (uniqueWithPrefix != null && rawRarity != null) ? uniqueWithPrefix + "@" + rawRarity : null;
 
+            String rawSlot = info.slot() != null ? info.slot().toLowerCase(Locale.ROOT) : null;
+            String slotKey = rawSlot != null ? "slot:" + rawSlot : null;
+            String slotWithRarity = (slotKey != null && rawRarity != null) ? slotKey + "@" + rawRarity : null;
+
+            String rawType = info.gearType() != null ? info.gearType().toLowerCase(Locale.ROOT) : null;
+            String typeKey = rawType != null ? "type:" + rawType : null;
+            String typeWithRarity = (typeKey != null && rawRarity != null) ? typeKey + "@" + rawRarity : null;
+
             // 1. 個別除外 (!) チェック
             if (!excludes.isEmpty()) {
                 if (!itemId.isEmpty() && excludes.contains(itemId)) return false;
@@ -58,6 +66,10 @@ public class DropFilter {
                 if (uniqueId != null && (excludes.contains(uniqueId) || excludes.contains(uniqueWithPrefix))) return false;
                 if (uniqueWithRarity != null && excludes.contains(uniqueWithRarity)) return false;
                 if (uniquePrefixWithRarity != null && excludes.contains(uniquePrefixWithRarity)) return false;
+                if (slotWithRarity != null && excludes.contains(slotWithRarity)) return false;
+                if (slotKey != null && excludes.contains(slotKey)) return false;
+                if (typeWithRarity != null && excludes.contains(typeWithRarity)) return false;
+                if (typeKey != null && excludes.contains(typeKey)) return false;
                 if (rarity != null && excludes.contains(rarity)) return false;
             }
 
@@ -71,10 +83,22 @@ public class DropFilter {
             if (uniquePrefixWithRarity != null && targets.contains(uniquePrefixWithRarity)) {
                 return true;
             }
+            if (slotWithRarity != null && targets.contains(slotWithRarity)) {
+                return true;
+            }
+            if (typeWithRarity != null && targets.contains(typeWithRarity)) {
+                return true;
+            }
             if (!itemId.isEmpty() && targets.contains(itemId)) {
                 return true;
             }
             if (uniqueId != null && (targets.contains(uniqueId) || targets.contains(uniqueWithPrefix))) {
+                return true;
+            }
+            if (slotKey != null && targets.contains(slotKey)) {
+                return true;
+            }
+            if (typeKey != null && targets.contains(typeKey)) {
                 return true;
             }
             if (rarity != null && targets.contains(rarity)) {

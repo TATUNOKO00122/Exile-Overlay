@@ -2,6 +2,8 @@ package com.example.exile_overlay.util;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.robertx22.mine_and_slash.a_libraries.curios.interfaces.IRing;
+import com.robertx22.mine_and_slash.database.data.gear_types.bases.BaseGearType;
 import com.robertx22.mine_and_slash.database.data.unique_items.UniqueGear;
 import com.robertx22.mine_and_slash.database.registry.ExileDB;
 import com.robertx22.mine_and_slash.itemstack.ExileStack;
@@ -13,20 +15,32 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ShieldItem;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TridentItem;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.Locale;
+
 public final class DropItemResolver {
 
-    public record ItemInfo(String itemId, String uniqueId, String rarity) {}
+    public record ItemInfo(String itemId, String uniqueId, String rarity, String slot, String gearType) {}
+
+    private record SlotAndType(String slot, String gearType) {}
 
     private DropItemResolver() {
     }
 
     public static ItemInfo resolve(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
-            return new ItemInfo("", null, null);
+            return new ItemInfo("", null, null, null, null);
         }
 
         String itemId = "";
@@ -40,8 +54,9 @@ public final class DropItemResolver {
 
         String uniqueId = resolveUniqueId(stack);
         String rarity = ItemRarityResolver.resolveRarity(stack);
+        SlotAndType slotAndType = resolveSlotAndType(stack, uniqueId);
 
-        return new ItemInfo(itemId, uniqueId, rarity);
+        return new ItemInfo(itemId, uniqueId, rarity, slotAndType.slot(), slotAndType.gearType());
     }
 
     public static String resolveFilterId(ItemStack stack) {
@@ -64,6 +79,89 @@ public final class DropItemResolver {
             return itemId + "@" + rarity.toLowerCase(java.util.Locale.ROOT);
         }
         return itemId;
+    }
+
+    private static SlotAndType resolveSlotAndType(ItemStack stack, String uniqueId) {
+        if (stack == null || stack.isEmpty()) {
+            return new SlotAndType(null, null);
+        }
+
+        String slot = null;
+        String gearType = null;
+
+        if (ModList.get().isLoaded("mmorpg")) {
+            try {
+                if (StackSaving.GEARS.has(stack)) {
+                    var gearData = StackSaving.GEARS.loadFrom(stack);
+                    if (gearData != null) {
+                        gearType = gearData.gtype;
+                        BaseGearType base = ExileDB.GearTypes().get(gearData.gtype);
+                        if (base != null) {
+                            slot = base.gear_slot;
+                        }
+                    }
+                }
+
+                if (slot == null && uniqueId != null && !uniqueId.isEmpty()) {
+                    UniqueGear unique = ExileDB.UniqueGears().get(uniqueId);
+                    if (unique != null) {
+                        gearType = unique.base_gear;
+                        BaseGearType base = unique.getBaseGear();
+                        if (base == null && unique.base_gear != null) {
+                            base = ExileDB.GearTypes().get(unique.base_gear);
+                        }
+                        if (base != null) {
+                            slot = base.gear_slot;
+                        }
+                    }
+                }
+
+                if (slot == null && stack.getItem() instanceof IRing) {
+                    slot = "ring";
+                    gearType = "ring";
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (slot == null) {
+            try {
+                if (stack.is(ItemTags.create(new ResourceLocation("curios", "ring")))) {
+                    slot = "ring";
+                    if (gearType == null) gearType = "ring";
+                } else if (stack.is(ItemTags.create(new ResourceLocation("curios", "necklace")))) {
+                    slot = "necklace";
+                    if (gearType == null) gearType = "necklace";
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (slot == null) {
+            if (stack.getItem() instanceof ArmorItem armor) {
+                slot = switch (armor.getType()) {
+                    case HELMET -> "helmet";
+                    case CHESTPLATE -> "chest";
+                    case LEGGINGS -> "pants";
+                    case BOOTS -> "boots";
+                };
+            } else if (stack.getItem() instanceof SwordItem) {
+                slot = "sword";
+            } else if (stack.getItem() instanceof BowItem) {
+                slot = "bow";
+            } else if (stack.getItem() instanceof CrossbowItem) {
+                slot = "crossbow";
+            } else if (stack.getItem() instanceof ShieldItem) {
+                slot = "shield";
+            } else if (stack.getItem() instanceof TridentItem) {
+                slot = "trident";
+            }
+        }
+
+        return new SlotAndType(
+                slot != null ? slot.toLowerCase(Locale.ROOT) : null,
+                gearType != null ? gearType.toLowerCase(Locale.ROOT) : null
+        );
     }
 
     private static String resolveUniqueId(ItemStack stack) {
