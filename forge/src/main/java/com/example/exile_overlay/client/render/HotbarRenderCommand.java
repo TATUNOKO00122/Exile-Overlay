@@ -11,6 +11,8 @@ import com.example.exile_overlay.client.render.orb.OrbRegistry;
 import com.example.exile_overlay.client.render.orb.OrbRenderer;
 import com.example.exile_overlay.client.render.orb.OrbType;
 import com.example.exile_overlay.api.MethodHandlesUtil;
+import com.example.exile_overlay.itemlock.LockManager;
+import com.example.exile_overlay.itemlock.client.ItemLockGuiRenderer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -285,6 +287,10 @@ public class HotbarRenderCommand implements IRenderCommand {
             ItemStack stack = mc.player.getInventory().items.get(i);
             if (!stack.isEmpty()) {
                 renderHotbarItem(graphics, mc, stack, slotX, SLOT_START_Y);
+            }
+
+            if (LockManager.isClientSlotLocked(i)) {
+                ItemLockGuiRenderer.renderLockIcon(graphics, slotX + SLOT_DISPLAY_SIZE - 8, SLOT_START_Y);
             }
         }
     }

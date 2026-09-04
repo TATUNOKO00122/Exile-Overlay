@@ -1,6 +1,8 @@
 package com.example.exile_overlay.dmgtracker.network;
 
 import com.example.exile_overlay.ExileOverlayMod;
+import com.example.exile_overlay.itemlock.network.LockSlotC2S;
+import com.example.exile_overlay.itemlock.network.LockSlotSyncS2C;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.network.NetworkRegistry;
@@ -17,8 +19,11 @@ public class NetworkHandler {
     );
 
     private static int packetId = 0;
+    private static boolean registered = false;
 
-    public static void register(IEventBus modBus) {
+    public static synchronized void register(IEventBus modBus) {
+        if (registered) return;
+        registered = true;
         CHANNEL.registerMessage(packetId++,
                 TrackerSyncS2C.class,
                 TrackerSyncS2C::encode,
@@ -48,5 +53,17 @@ public class NetworkHandler {
                 BackpackPickupNotifyS2C::encode,
                 BackpackPickupNotifyS2C::decode,
                 BackpackPickupNotifyS2C::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                LockSlotC2S.class,
+                LockSlotC2S::encode,
+                LockSlotC2S::decode,
+                LockSlotC2S::handle);
+
+        CHANNEL.registerMessage(packetId++,
+                LockSlotSyncS2C.class,
+                LockSlotSyncS2C::encode,
+                LockSlotSyncS2C::decode,
+                LockSlotSyncS2C::handle);
     }
 }

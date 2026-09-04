@@ -390,5 +390,7 @@
   "exile_overlay.config.loot_journal_only_ms_items": "MSアイテムのみ表示: %s",
   "exile_overlay.config.loot_journal_only_ms_items.tooltip": "バニラの土や石などの通常アイテムを除外し、M&S 関連アイテムのみを HUD に表示します",
   "exile_overlay.config.loot_journal_show_full_affix_name": "接頭辞・接尾辞フルネーム表示: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "装備品の接頭辞・接尾辞を含むフルネームを表示します"
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "装備品の接頭辞・接尾辞を含むフルネームを表示します",
+  "section.exile_overlay.item_lock": "アイテムロック",
+  "key.exile_overlay.toggle_item_lock": "スロットロック切り替え (長押し+クリック)"
 }

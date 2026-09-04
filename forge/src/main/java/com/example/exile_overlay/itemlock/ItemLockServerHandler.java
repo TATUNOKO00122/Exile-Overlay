@@ -1,0 +1,41 @@
+package com.example.exile_overlay.itemlock;
+
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+/**
+ * サーバー側でのプレイヤー参加・リスポーン時のアイテムロック状態同期および永続化ハンドラ。
+ */
+public final class ItemLockServerHandler {
+
+    private ItemLockServerHandler() {}
+
+    public static void register() {
+        MinecraftForge.EVENT_BUS.register(new ItemLockServerHandler());
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.syncToClient(player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.syncToClient(player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerClone(PlayerEvent.Clone event) {
+        // 死亡リスポーンまたはディメンション移動時にNBTデータを引き継ぐ
+        if (event.getEntity() instanceof ServerPlayer newPlayer) {
+            long oldMask = LockManager.getServerLockedMask(event.getOriginal());
+            newPlayer.getPersistentData().putLong(LockManager.NBT_TAG_KEY, oldMask);
+        }
+    }
+}

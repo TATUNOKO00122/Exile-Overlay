@@ -1,12 +1,16 @@
 package com.example.exile_overlay;
 
 import com.example.exile_overlay.client.ClientSetup;
+import com.example.exile_overlay.compat.MineAndSlashTrackerCompat;
+import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
+import com.example.exile_overlay.itemlock.ItemLockServerHandler;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.NetworkConstants;
 
 /**
@@ -27,9 +31,15 @@ public final class ExileOverlayMod {
         // 物理クライアント専用の初期化処理（Dedicated Server環境でのNoClassDefFoundErrorを防止）
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientSetup::init);
 
+        // ネットワークパケット初期化
+        NetworkHandler.register(FMLJavaModLoadingContext.get().getModEventBus());
+
+        // アイテムロック機能のサーバーイベント登録
+        ItemLockServerHandler.register();
+
         // サーバー・クライアント共通（連携データ収集・パケット初期化）
         if (ModList.get().isLoaded("mmorpg")) {
-            com.example.exile_overlay.compat.MineAndSlashTrackerCompat.register();
+            MineAndSlashTrackerCompat.register();
         }
     }
 }

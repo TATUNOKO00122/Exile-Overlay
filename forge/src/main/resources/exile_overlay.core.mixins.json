@@ -13,7 +13,10 @@
     "ItemEntityMixin",
     "GuiMixin"
   ],
-  "mixins": [],
+  "mixins": [
+    "itemlock.InvWrapperMixin",
+    "itemlock.InventoryMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

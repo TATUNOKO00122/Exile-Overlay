@@ -390,5 +390,7 @@
   "exile_overlay.config.loot_journal_only_ms_items": "Show Only M&S Items: %s",
   "exile_overlay.config.loot_journal_only_ms_items.tooltip": "Hide vanilla common blocks/items and only show M&S related items on HUD",
   "exile_overlay.config.loot_journal_show_full_affix_name": "Show Full Affix Names: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "Display full gear names including prefixes and suffixes"
+  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "Display full gear names including prefixes and suffixes",
+  "section.exile_overlay.item_lock": "Item Lock",
+  "key.exile_overlay.toggle_item_lock": "Toggle Slot Lock (Hold + Click)"
 }

@@ -48,6 +48,7 @@ public class ExileOverlayForgeClient {
     private static KeyMapping hudConfigKey;
     private static KeyMapping toggleOverlayKey;
     private static KeyMapping resetTrackerKey;
+    public static KeyMapping toggleItemLockKey;
 
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) {
@@ -112,6 +113,12 @@ public class ExileOverlayForgeClient {
                 GLFW.GLFW_KEY_UNKNOWN,
                 "category.exile_overlay.general");
         event.register(resetTrackerKey);
+
+        toggleItemLockKey = new KeyMapping(
+                "key.exile_overlay.toggle_item_lock",
+                GLFW.GLFW_KEY_LEFT_ALT,
+                "category.exile_overlay.general");
+        event.register(toggleItemLockKey);
 
         LOGGER.info("Registered key bindings for Forge");
     }
