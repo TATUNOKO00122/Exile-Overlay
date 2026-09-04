@@ -175,6 +175,7 @@
   "hud.exile_overlay.day_counter": "Day Counter",
   "hud.exile_overlay.kill_counter": "Kill Counter",
   "hud.exile_overlay.exp_accumulator": "EXP Gained",
+  "hud.exile_overlay.dungeon_timer": "Dungeon Timer",
   "profession.exile_overlay.salvaging": "Salvaging",
   "profession.exile_overlay.mining": "Mining",
   "profession.exile_overlay.farming": "Farming",

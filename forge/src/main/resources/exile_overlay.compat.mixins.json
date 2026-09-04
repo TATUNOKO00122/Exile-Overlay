@@ -13,7 +13,8 @@
         "LightmansCurrencyHudMixin",
         "compat.lootjournal.LootJournalFilterMixin",
         "compat.lootjournal.LootJournalItemPickupEventMixin",
-        "compat.lootjournal.LootJournalRarityMatchMixin"
+        "compat.lootjournal.LootJournalRarityMatchMixin",
+        "compat.DungeonStatsPacketMixin"
     ],
     "mixins": [
         "BackpacksMixin",

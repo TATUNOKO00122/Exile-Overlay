@@ -7,6 +7,7 @@ import com.example.exile_overlay.client.config.ModMenuApi;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import com.example.exile_overlay.client.config.screen.DraggableHudConfigScreen;
+import com.example.exile_overlay.client.dungeon.DungeonTimerManager;
 import com.example.exile_overlay.client.render.DayCounterRenderer;
 import com.example.exile_overlay.client.render.HudRenderManager;
 import com.example.exile_overlay.client.render.ailment.ClientAilmentTracker;
@@ -146,6 +147,7 @@ public class ExileOverlayForgeClient {
         TrackerSyncS2C.ClientTrackerData.resetServerPresence();
         // KillCountManager.getInstance().reset();
         DayCounterRenderer.reset();
+        DungeonTimerManager.getInstance().resetTimer();
         LOGGER.info("Reset cache and session data on logging out");
     }
 
@@ -161,6 +163,7 @@ public class ExileOverlayForgeClient {
                 LOGGER.info("HUD config key pressed on Forge, opening config screen");
                 ModMenuApi.openConfigScreen();
             }
+            DungeonTimerManager.getInstance().onClientTick(mc);
             if (mc.player.tickCount % 40 == 0) {
                 ClientAilmentTracker.getInstance().cleanup();
             }

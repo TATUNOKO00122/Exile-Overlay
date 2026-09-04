@@ -5,6 +5,7 @@ import com.example.exile_overlay.api.IRenderPipeline;
 import com.example.exile_overlay.api.PooledRenderContext;
 import com.example.exile_overlay.api.RenderContextPool;
 import com.example.exile_overlay.api.UnifiedCache;
+import com.example.exile_overlay.client.dungeon.DungeonTimerRenderer;
 import com.example.exile_overlay.client.render.effect.BuffOverlayRenderer;
 import com.example.exile_overlay.client.render.exp.ExpAccumulatorRenderer;
 // import com.example.exile_overlay.client.render.kill.KillCounterRenderer;
@@ -120,6 +121,9 @@ public class HudRenderManager {
 
         // 累積獲得EXPポップアップ
         this.registerCommand(new ExpAccumulatorRenderer(), 85);
+
+        // ダンジョンタイマー
+        this.registerCommand(new DungeonTimerRenderer(), 88);
     }
 
     /**

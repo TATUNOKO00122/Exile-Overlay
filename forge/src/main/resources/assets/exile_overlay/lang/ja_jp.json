@@ -175,6 +175,7 @@
   "hud.exile_overlay.day_counter": "日数カウンター",
   "hud.exile_overlay.kill_counter": "キルカウンター",
   "hud.exile_overlay.exp_accumulator": "獲得EXP",
+  "hud.exile_overlay.dungeon_timer": "ダンジョンタイマー",
   "profession.exile_overlay.salvaging": "サルベージ",
   "profession.exile_overlay.mining": "採掘",
   "profession.exile_overlay.farming": "農業",
