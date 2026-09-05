@@ -272,16 +272,15 @@ public class BuffOverlayRenderer implements IRenderCommand {
         boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
         String customStackText = effect.getCustomStackText();
         String stackText = customStackText != null ? customStackText : toRoman(stacks);
-        float stackScale = isSimple ? 0.9f : 0.7f;
+        float stackScale = isSimple ? 1.0f : 0.8f;
         int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
 
         float badgeCenterX = x + FRAME_WIDTH - 5;
         float badgeCenterY = y + 7;
+        float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
+        float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
 
         if (isSimple) {
-            float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
-            float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
-
             graphics.pose().pushPose();
             graphics.pose().translate(textX, textY, 0);
             graphics.pose().scale(stackScale, stackScale, 1.0f);
@@ -298,13 +297,11 @@ public class BuffOverlayRenderer implements IRenderCommand {
             RenderSystem.setShaderTexture(0, EFFECT_STACK_BADGE);
             graphics.blit(EFFECT_STACK_BADGE, x, y, 0, 0, FRAME_WIDTH, FRAME_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
 
-            float stackX = (badgeCenterX - stackTextWidth * stackScale / 2.0f) / stackScale;
-            float stackY = (badgeCenterY - mc.font.lineHeight * stackScale / 2.0f) / stackScale;
-
             graphics.pose().pushPose();
             try {
+                graphics.pose().translate(textX - 0.5f, textY - 0.5f, 0);
                 graphics.pose().scale(stackScale, stackScale, 1.0f);
-                HudFontHelper.drawString(graphics, mc.font, stackText, (int) stackX, (int) stackY, 0xFFFFFFFF, true);
+                HudFontHelper.drawString(graphics, mc.font, stackText, 0, 0, 0xFFFFFFFF, true);
             } finally {
                 graphics.pose().popPose();
             }
