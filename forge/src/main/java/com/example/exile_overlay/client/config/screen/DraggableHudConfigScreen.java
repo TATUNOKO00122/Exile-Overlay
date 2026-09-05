@@ -156,7 +156,7 @@ public class DraggableHudConfigScreen extends Screen {
         draggableElements.clear();
 
         for (String key : positionManager.getDefaultPositions().keySet()) {
-            if ("damage_popup".equals(key) || "day_counter".equals(key)) {
+            if ("damage_popup".equals(key) || "day_counter".equals(key) || "kill_counter".equals(key)) {
                 continue;
             }
 

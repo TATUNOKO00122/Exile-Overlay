@@ -1,7 +1,7 @@
 package com.example.exile_overlay.mixin;
 
 import com.example.exile_overlay.client.damage.DamagePopupManager;
-import com.example.exile_overlay.client.render.kill.KillCountManager;
+// import com.example.exile_overlay.client.render.kill.KillCountManager;
 import net.minecraft.world.entity.LivingEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +42,9 @@ public abstract class DamageMixin {
                 // }
             }
 
-            if (health <= 0.001f) {
-                KillCountManager.getInstance().checkEntityDeath(entity);
-            }
+            // if (health <= 0.001f) {
+            //     KillCountManager.getInstance().checkEntityDeath(entity);
+            // }
 
             exileOverlay$lastHealth = health;
         } catch (Exception e) {
@@ -52,17 +52,17 @@ public abstract class DamageMixin {
         }
     }
 
-    @Inject(method = "handleEntityEvent", at = @At("HEAD"))
-    private void exileOverlay$onHandleEntityEvent(byte id, CallbackInfo ci) {
-        try {
-            if (id == 3) {
-                LivingEntity entity = (LivingEntity) (Object) this;
-                if (entity.level().isClientSide()) {
-                    KillCountManager.getInstance().checkEntityDeath(entity, true);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to handle entity death event", e);
-        }
-    }
+    // @Inject(method = "handleEntityEvent", at = @At("HEAD"))
+    // private void exileOverlay$onHandleEntityEvent(byte id, CallbackInfo ci) {
+    //     try {
+    //         if (id == 3) {
+    //             LivingEntity entity = (LivingEntity) (Object) this;
+    //             if (entity.level().isClientSide()) {
+    //                 KillCountManager.getInstance().checkEntityDeath(entity, true);
+    //             }
+    //         }
+    //     } catch (Exception e) {
+    //         LOGGER.error("Failed to handle entity death event", e);
+    //     }
+    // }
 }
