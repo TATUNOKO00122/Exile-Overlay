@@ -69,7 +69,13 @@ public final class ItemLockKeyHandler {
         if (event.getButton() == 0 && isToggleKeyDown()) {
             event.setCanceled(true);
             LockManager.toggleClientSlotLock(slotIdx);
-            ItemLockClientStorage.setLockMask(mc.player.getStringUUID(), LockManager.getClientLockedMask());
+            String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+            if (storageKey != null) {
+                ItemLockClientStorage.setLockMask(storageKey, LockManager.getClientLockedMask());
+            }
+            if (ItemLockClientStorage.isServerModPresent()) {
+                NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(slotIdx));
+            }
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.2f));
             return;
         }
@@ -81,7 +87,7 @@ public final class ItemLockKeyHandler {
     }
 
     /**
-     * コンテナ画面でのキーボード操作インターセプト（Qキードロップ、数字キー入れ替え）
+     * コンテナ画面でのキーボード操作インターセプト（Qキードロップ、数字キー入れ替え、オフハンドFキー入れ替え）
      */
     @SubscribeEvent
     public void onScreenKeyPressed(ScreenEvent.KeyPressed.Pre event) {
@@ -116,52 +122,65 @@ public final class ItemLockKeyHandler {
                 }
             }
         }
+
+        // 3. オフハンドキー（Fキー）での入れ替え防止
+        if (mc.options.keySwapOffhand.matches(keyCode, scanCode)) {
+            if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
+                event.setCanceled(true);
+                return;
+            }
+        }
     }
 
     /**
-     * 通常画面（インベントリを閉じた状態）でのQキードロップ防止
+     * 通常画面（インベントリを閉じた状態）でのQキードロップおよびオフハンドFキー入れ替え防止
      */
     @SubscribeEvent
     public void onKeyInput(InputEvent.Key event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.screen != null) return;
 
+        int selected = mc.player.getInventory().selected;
+        if (!LockManager.isClientSlotLocked(selected)) return;
+
+        // 1. ロックされた選択中スロットのQキードロップ防止
         if (mc.options.keyDrop.matches(event.getKey(), event.getScanCode())) {
-            int selected = mc.player.getInventory().selected;
-            if (LockManager.isClientSlotLocked(selected)) {
-                // ロックされたホットバースロットのアイテムはドロップを拒否
-                // バニラ処理を止めるため、ドロップキーの押下状態を解除
-                while (mc.options.keyDrop.consumeClick()) {
-                    // クリップキューを空にする
-                }
+            while (mc.options.keyDrop.consumeClick()) {
+                // クリックキューを空にする
+            }
+        }
+
+        // 2. ロックされた選択中スロットのオフハンド（Fキー）入れ替え防止
+        if (mc.options.keySwapOffhand.matches(event.getKey(), event.getScanCode())) {
+            while (mc.options.keySwapOffhand.consumeClick()) {
+                // クリックキューを空にする
             }
         }
     }
 
     /**
-     * ワールド参加時にローカル保存されたロック状態を復元し、サーバーへ同期を要求
+     * ワールド参加時に接続先に応じたロック状態を復元し、サーバーにMODが存在する場合のみ同期を要求
      */
     @SubscribeEvent
     public void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        Minecraft mc = Minecraft.getInstance();
-        net.minecraft.world.entity.player.Player player = event.getPlayer() != null ? event.getPlayer() : mc.player;
-        if (player != null) {
-            String uuid = player.getStringUUID();
-            long savedMask = ItemLockClientStorage.getLockMask(uuid);
+        String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+        if (storageKey != null) {
+            long savedMask = ItemLockClientStorage.getLockMask(storageKey);
             LockManager.setClientLockedMask(savedMask);
+        }
+        if (ItemLockClientStorage.isServerModPresent()) {
             NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(LockSlotC2S.SYNC_REQUEST_SLOT));
         }
     }
 
     /**
-     * ワールド退出時にクライアントキャッシュを保存してリセット
+     * ワールド退出時に現在の接続先スコープにキャッシュを保存してリセット
      */
     @SubscribeEvent
     public void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        Minecraft mc = Minecraft.getInstance();
-        net.minecraft.world.entity.player.Player player = event.getPlayer() != null ? event.getPlayer() : mc.player;
-        if (player != null) {
-            ItemLockClientStorage.setLockMask(player.getStringUUID(), LockManager.getClientLockedMask());
+        String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+        if (storageKey != null) {
+            ItemLockClientStorage.setLockMask(storageKey, LockManager.getClientLockedMask());
         }
         LockManager.resetClient();
     }

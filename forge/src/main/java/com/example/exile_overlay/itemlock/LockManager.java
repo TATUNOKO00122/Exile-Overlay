@@ -1,7 +1,6 @@
 package com.example.exile_overlay.itemlock;
 
 import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
-import com.example.exile_overlay.itemlock.network.LockSlotC2S;
 import com.example.exile_overlay.itemlock.network.LockSlotSyncS2C;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -112,10 +111,7 @@ public final class LockManager {
 
     public static void toggleClientSlotLock(int slot) {
         if (slot < 0 || slot >= ItemLockHelper.INVENTORY_SIZE) return;
-        // 即時プレビュー反映
         clientLockedMask = toggleBit(clientLockedMask, slot);
-        // サーバーへ更新要求を送信
-        NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(slot));
     }
 
     public static void resetClient() {
