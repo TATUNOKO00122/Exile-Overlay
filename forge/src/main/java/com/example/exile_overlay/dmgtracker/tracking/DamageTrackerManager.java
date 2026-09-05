@@ -1,5 +1,6 @@
 package com.example.exile_overlay.dmgtracker.tracking;
 
+import com.example.exile_overlay.dmgtracker.util.IDamageEventAccessor;
 import com.example.exile_overlay.dmgtracker.util.SkillIdResolver;
 import com.robertx22.mine_and_slash.uncommon.effectdatas.DamageEvent;
 import com.robertx22.mine_and_slash.uncommon.enumclasses.Elements;
@@ -7,7 +8,9 @@ import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DamageTrackerManager {
@@ -32,16 +35,13 @@ public class DamageTrackerManager {
         SkillDamageStats stats = tracker.getOrCreateStats(skillId, displayName);
 
         if (dmgEvent.target != null) {
+            long now = System.currentTimeMillis();
             mobLastHitRecords.put(dmgEvent.target.getUUID(),
-                    new MobLastHitRecord(player.getUUID(), skillId, displayName, System.currentTimeMillis()));
-            // サイズ超過時は全消しせず半分を削除し、直近の記録を保持する
+                    new MobLastHitRecord(player.getUUID(), skillId, displayName, now));
             if (mobLastHitRecords.size() > MAX_MOB_CACHE) {
-                int removeCount = MAX_MOB_CACHE / 2;
-                Iterator<UUID> it = mobLastHitRecords.keySet().iterator();
-                while (it.hasNext() && removeCount-- > 0) {
-                    it.next();
-                    it.remove();
-                }
+                // 上限超過時は直近5秒未満の戦闘中レコードを保護し、古いエントリを剪定
+                long cutoff = now - 5_000L;
+                mobLastHitRecords.entrySet().removeIf(e -> e.getValue().timestampMs() < cutoff);
             }
         }
 
@@ -55,7 +55,7 @@ public class DamageTrackerManager {
 
         boolean isCrit = dmgEvent.data.isCrit();
 
-        DamageEvent.DmgByElement info = (dmgEvent instanceof com.example.exile_overlay.dmgtracker.util.IDamageEventAccessor accessor)
+        DamageEvent.DmgByElement info = (dmgEvent instanceof IDamageEventAccessor accessor)
                 ? accessor.exileOverlay$getDmgByElement()
                 : null;
 
@@ -80,24 +80,32 @@ public class DamageTrackerManager {
         PlayerTrackerData tracker = playerData.get(playerUuid);
         if (tracker == null) return;
 
-        SkillDamageStats stats = tracker.getStats(skillId);
-        if (stats != null) {
-            stats.recordKill();
-            dirtyPlayers.add(playerUuid);
-        }
+        SkillDamageStats stats = tracker.getOrCreateStats(skillId, displayName != null ? displayName : skillId);
+        stats.recordKill();
+        dirtyPlayers.add(playerUuid);
     }
 
+    private static final long MOB_RECORD_EXPIRY_MS = 10_000L;
+
     public static MobLastHitRecord consumeMobLastHit(UUID mobUuid, UUID killerPlayerUuid) {
-        MobLastHitRecord record = mobLastHitRecords.remove(mobUuid);
-        if (record != null && killerPlayerUuid != null && killerPlayerUuid.equals(record.attackerUuid())) {
-            return record;
+        if (mobUuid == null) return null;
+        MobLastHitRecord record = mobLastHitRecords.get(mobUuid);
+        if (record != null) {
+            long now = System.currentTimeMillis();
+            if ((now - record.timestampMs()) > MOB_RECORD_EXPIRY_MS) {
+                mobLastHitRecords.remove(mobUuid);
+                return null;
+            }
+            if (killerPlayerUuid == null || killerPlayerUuid.equals(record.attackerUuid())) {
+                return mobLastHitRecords.remove(mobUuid);
+            }
         }
         return null;
     }
 
-    public static String consumeMobLastHitSkill(UUID mobUuid) {
-        MobLastHitRecord record = mobLastHitRecords.remove(mobUuid);
-        return record != null ? record.skillId() : null;
+    public static void cleanupOldMobRecords() {
+        long now = System.currentTimeMillis();
+        mobLastHitRecords.entrySet().removeIf(e -> (now - e.getValue().timestampMs()) > MOB_RECORD_EXPIRY_MS);
     }
 
     public static boolean consumeDirty(UUID playerUuid) {

@@ -10,13 +10,9 @@
         "GatewaysClientMixin",
         "HealNumberMixin",
         "BotaniaHudMixin",
-        "LightmansCurrencyHudMixin",
-        "compat.lootjournal.LootJournalFilterMixin",
-        "compat.lootjournal.LootJournalItemPickupEventMixin",
-        "compat.lootjournal.LootJournalRarityMatchMixin"
+        "LightmansCurrencyHudMixin"
     ],
     "mixins": [
-        "BackpacksMixin",
         "DamageEventMixin"
     ],
     "injectors": {

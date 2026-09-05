@@ -3,7 +3,6 @@ package com.example.exile_overlay.client.config.screen.tab;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.client.config.DropSoundConfig;
 import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
-import com.example.exile_overlay.client.config.LootJournalCompatConfig;
 import com.example.exile_overlay.client.config.screen.ConfigScreen;
 import com.example.exile_overlay.client.config.screen.entry.ActionConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.BooleanConfigEntry;
@@ -151,35 +150,6 @@ public class ExtensionsTab implements IConfigTab {
                     "exile_overlay.config.auto_sort_lootr_chest",
                     config::isAutoSortLootrChest,
                     config::setAutoSortLootrChest
-            ));
-        }
-
-        // 5. Loot Journal 連携
-        if (ModList.get().isLoaded("loot_journal")) {
-            hasAnyCompat = true;
-            entries.add(new SectionHeaderEntry("section.exile_overlay.loot_journal"));
-
-            LootJournalCompatConfig ljConfig = LootJournalCompatConfig.getInstance();
-
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.loot_journal_enable_compat",
-                    ljConfig::isEnableCompat,
-                    ljConfig::setEnableCompat,
-                    Component.translatable("exile_overlay.config.loot_journal_enable_compat.tooltip")
-            ));
-
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.loot_journal_only_ms_items",
-                    ljConfig::isOnlyMsItems,
-                    ljConfig::setOnlyMsItems,
-                    Component.translatable("exile_overlay.config.loot_journal_only_ms_items.tooltip")
-            ));
-
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.loot_journal_show_full_affix_name",
-                    ljConfig::isShowFullAffixName,
-                    ljConfig::setShowFullAffixName,
-                    Component.translatable("exile_overlay.config.loot_journal_show_full_affix_name.tooltip")
             ));
         }
 

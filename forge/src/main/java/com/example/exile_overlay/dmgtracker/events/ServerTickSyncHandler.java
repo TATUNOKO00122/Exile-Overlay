@@ -2,6 +2,7 @@ package com.example.exile_overlay.dmgtracker.events;
 
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
+import com.example.exile_overlay.dmgtracker.network.TrackerActionC2S;
 import com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C;
 import com.example.exile_overlay.dmgtracker.tracking.DamageTrackerManager;
 import com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker;
@@ -34,6 +35,7 @@ public class ServerTickSyncHandler {
 
     private static final Map<UUID, MercSyncState> mercSyncStates = new ConcurrentHashMap<>();
     private static final int MERC_HEARTBEAT_TICKS = 20; // 1秒ごとに補正送信
+    private static final Map<UUID, Boolean> lastCombatStates = new ConcurrentHashMap<>();
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
@@ -46,8 +48,8 @@ public class ServerTickSyncHandler {
 
         syncCounter++;
 
-        // 4ティック(0.2秒)ごとに傭兵情報をスキャンし、差分時またはハートビート時のみ同期
-        boolean shouldSyncMerc = (syncCounter % 4 == 0) && MethodHandlesUtil.isMercenarySupported();
+        // 10ティック(0.5秒)ごとに傭兵情報をスキャンし、差分時またはハートビート時のみ同期
+        boolean shouldSyncMerc = (syncCounter % 10 == 0) && MethodHandlesUtil.isMercenarySupported();
         if (shouldSyncMerc) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                 UUID uuid = player.getUUID();
@@ -75,10 +77,23 @@ public class ServerTickSyncHandler {
 
         if (shouldSync) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                if (DamageTrackerManager.consumeDirty(player.getUUID())) {
+                UUID uuid = player.getUUID();
+                var data = DamageTrackerManager.getTracker(uuid);
+                boolean inCombat = data != null && data.isInCombat();
+                Boolean wasInCombat = lastCombatStates.put(uuid, inCombat);
+
+                boolean combatEnded = (wasInCombat != null && wasInCombat && !inCombat);
+                boolean dirty = DamageTrackerManager.consumeDirty(uuid);
+
+                // ダメージ変動時または戦闘終了検知時に即座に同期
+                if (dirty || combatEnded) {
                     TrackerSyncS2C.sendToPlayer(player);
                 }
             }
+        }
+
+        if (syncCounter % 100 == 0) {
+            DamageTrackerManager.cleanupOldMobRecords();
         }
 
         fallbackCounter++;
@@ -122,6 +137,9 @@ public class ServerTickSyncHandler {
         if (uuid != null) {
             playersWithActiveMerc.remove(uuid);
             mercSyncStates.remove(uuid);
+            lastCombatStates.remove(uuid);
+            ServerAilmentTracker.onPlayerLogout(uuid);
+            TrackerActionC2S.onPlayerLogout(uuid);
         }
     }
 }

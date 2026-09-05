@@ -385,13 +385,6 @@
   "exile_overlay.jei.applicable_gears": "적용 가능한 장비:",
   "exile_overlay.jei.only_one_per_item": "아이템당 이 접사는 1개만 부여 가능",
   "exile_overlay.jei.one_of_a_kind": "동일 그룹(%s)의 접사와 중복 불가",
-  "section.exile_overlay.loot_journal": "Loot Journal",
-  "exile_overlay.config.loot_journal_enable_compat": "활성화: %s",
-  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Loot Journal과 Mine and Slash의 연동 기능(희귀도 색상, 전체 이름, 가방 알림 등)을 활성화합니다",
-  "exile_overlay.config.loot_journal_only_ms_items": "M&S 아이템만 표시: %s",
-  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "바닐라 흙, 돌 등의 일반 아이템을 제외하고 M&S 관련 아이템만 HUD에 표시합니다",
-  "exile_overlay.config.loot_journal_show_full_affix_name": "접두사/접미사 전체 이름 표시: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "장비의 접두사와 접미사를 포함한 전체 이름을 표시합니다",
   "section.exile_overlay.item_lock": "아이템 잠금",
   "key.exile_overlay.toggle_item_lock": "슬롯 잠금 전환 (누른 상태로 클릭)"
 }

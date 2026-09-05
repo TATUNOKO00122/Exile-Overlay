@@ -6,11 +6,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkDirection;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class TrackerActionC2S {
     public static final int ACTION_RESET = 0;
     public static final int ACTION_REQUEST_SYNC = 1;
+
+    private static final Map<UUID, Long> lastSyncRequestTime = new ConcurrentHashMap<>();
+    private static final long SYNC_COOLDOWN_MS = 1000L;
 
     private final int action;
 
@@ -37,10 +43,21 @@ public class TrackerActionC2S {
                     DamageTrackerManager.resetTracker(player.getUUID());
                     break;
                 case ACTION_REQUEST_SYNC:
-                    TrackerSyncS2C.sendToPlayer(player);
+                    long now = System.currentTimeMillis();
+                    Long lastTime = lastSyncRequestTime.get(player.getUUID());
+                    if (lastTime == null || (now - lastTime) >= SYNC_COOLDOWN_MS) {
+                        lastSyncRequestTime.put(player.getUUID(), now);
+                        TrackerSyncS2C.sendToPlayer(player);
+                    }
                     break;
             }
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    public static void onPlayerLogout(UUID uuid) {
+        if (uuid != null) {
+            lastSyncRequestTime.remove(uuid);
+        }
     }
 }

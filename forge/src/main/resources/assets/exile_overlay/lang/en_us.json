@@ -385,13 +385,6 @@
   "exile_overlay.jei.applicable_gears": "Applicable Gears:",
   "exile_overlay.jei.only_one_per_item": "Only 1 of this affix per item",
   "exile_overlay.jei.one_of_a_kind": "Exclusive with other %s affixes",
-  "section.exile_overlay.loot_journal": "Loot Journal",
-  "exile_overlay.config.loot_journal_enable_compat": "Enable: %s",
-  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Enable Loot Journal and Mine and Slash integration (rarity colors, full affix names, backpack notify, etc.)",
-  "exile_overlay.config.loot_journal_only_ms_items": "Show Only M&S Items: %s",
-  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "Hide vanilla common blocks/items and only show M&S related items on HUD",
-  "exile_overlay.config.loot_journal_show_full_affix_name": "Show Full Affix Names: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "Display full gear names including prefixes and suffixes",
   "section.exile_overlay.item_lock": "Item Lock",
   "key.exile_overlay.toggle_item_lock": "Toggle Slot Lock (Hold + Click)"
 }

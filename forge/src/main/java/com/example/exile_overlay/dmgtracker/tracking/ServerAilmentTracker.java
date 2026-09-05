@@ -5,6 +5,7 @@ import com.example.exile_overlay.dmgtracker.network.AilmentSyncS2C;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
@@ -13,6 +14,7 @@ import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,10 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class ServerAilmentTracker {
 
+    private static final int MAX_PER_PLAYER = 20;
+
     private record TrackedTarget(
             WeakReference<LivingEntity> ref,
             ResourceKey<Level> dimension,
-            UUID uuid
+            UUID uuid,
+            UUID playerUuid,
+            boolean isPriority,
+            long addedTime
     ) {}
 
     private static final class SyncState {
@@ -41,20 +48,94 @@ public final class ServerAilmentTracker {
     private static final Map<UUID, TrackedTarget> TRACKED_ENTITIES = new ConcurrentHashMap<>();
     private static final Map<UUID, SyncState> SYNC_STATES = new ConcurrentHashMap<>();
     private static int tickCounter = 0;
-    private static final int SCAN_INTERVAL_TICKS = 4; // 0.2秒ごとにスキャン
-    private static final int HEARTBEAT_TICKS = 20;   // 最大1秒ごとに補正同期
+    private static final int SCAN_INTERVAL_TICKS = 10; // 0.5秒ごとにスキャン
+    private static final int HEARTBEAT_TICKS = 40;   // 最大2秒ごとに補正同期
 
     private ServerAilmentTracker() {}
 
     /**
-     * エンティティに Ailment が付与・更新された際に追跡対象に追加
+     * 後方互換用: プレイヤー未指定で追跡
      */
     public static void track(Entity entity) {
+        track(null, entity);
+    }
+
+    /**
+     * エンティティに Ailment が付与・更新された際に追跡対象に追加（1プレイヤーあたり最大20体上限）
+     */
+    public static void track(ServerPlayer player, Entity entity) {
         if (entity instanceof LivingEntity living && living.isAlive() && !living.level().isClientSide()) {
-            ResourceKey<Level> dim = living.level().dimension();
             UUID uuid = living.getUUID();
-            TRACKED_ENTITIES.put(uuid, new TrackedTarget(new WeakReference<>(living), dim, uuid));
+            if (TRACKED_ENTITIES.containsKey(uuid)) {
+                return;
+            }
+
+            UUID pUuid = player != null ? player.getUUID() : null;
+            boolean priority = isPriorityTarget(living);
+
+            // プレイヤーごとの現在の追跡数を集計
+            int count = 0;
+            UUID oldestUuid = null;
+            long oldestTime = Long.MAX_VALUE;
+            UUID oldestNonPriorityUuid = null;
+            long oldestNonPriorityTime = Long.MAX_VALUE;
+
+            for (Map.Entry<UUID, TrackedTarget> e : TRACKED_ENTITIES.entrySet()) {
+                if (Objects.equals(e.getValue().playerUuid(), pUuid)) {
+                    count++;
+                    long t = e.getValue().addedTime();
+                    if (t < oldestTime) {
+                        oldestTime = t;
+                        oldestUuid = e.getKey();
+                    }
+                    if (!e.getValue().isPriority() && t < oldestNonPriorityTime) {
+                        oldestNonPriorityTime = t;
+                        oldestNonPriorityUuid = e.getKey();
+                    }
+                }
+            }
+
+            if (count >= MAX_PER_PLAYER) {
+                UUID toEvict;
+                if (oldestNonPriorityUuid != null) {
+                    toEvict = oldestNonPriorityUuid;
+                } else if (priority) {
+                    toEvict = oldestUuid;
+                } else {
+                    return; // 一般ターゲットは優先ターゲットを追い出せない
+                }
+                TRACKED_ENTITIES.remove(toEvict);
+                SYNC_STATES.remove(toEvict);
+            }
+
+            ResourceKey<Level> dim = living.level().dimension();
+            TRACKED_ENTITIES.put(uuid, new TrackedTarget(new WeakReference<>(living), dim, uuid, pUuid, priority, System.currentTimeMillis()));
         }
+    }
+
+    public static void onPlayerLogout(UUID playerUuid) {
+        if (playerUuid == null) return;
+        TRACKED_ENTITIES.entrySet().removeIf(e -> playerUuid.equals(e.getValue().playerUuid()));
+        SYNC_STATES.entrySet().removeIf(e -> !TRACKED_ENTITIES.containsKey(e.getKey()));
+    }
+
+    private static boolean isPriorityTarget(LivingEntity living) {
+        if (living == null) return false;
+        if (!living.canChangeDimensions()) return true;
+
+        if (MethodHandlesUtil.isAvailable()) {
+            try {
+                Object entityData = MethodHandlesUtil.getEntityData(living);
+                if (entityData != null) {
+                    Object rarity = MethodHandlesUtil.getMobRarityObj(entityData);
+                    if (rarity != null) {
+                        return MethodHandlesUtil.isRarityElite(rarity) || MethodHandlesUtil.isRaritySpecial(rarity);
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        return false;
     }
 
     /**
@@ -78,7 +159,7 @@ public final class ServerAilmentTracker {
                 ServerLevel level = server.getLevel(targetEntry.dimension);
                 if (level != null && level.getEntity(uuid) instanceof LivingEntity living && living.isAlive()) {
                     target = living;
-                    mapEntry.setValue(new TrackedTarget(new WeakReference<>(living), targetEntry.dimension, uuid));
+                    mapEntry.setValue(new TrackedTarget(new WeakReference<>(living), targetEntry.dimension, uuid, targetEntry.playerUuid(), targetEntry.isPriority(), targetEntry.addedTime()));
                 } else {
                     it.remove();
                     SYNC_STATES.remove(uuid);
@@ -98,10 +179,13 @@ public final class ServerAilmentTracker {
 
                 if (state == null) {
                     shouldSend = true;
-                } else if (hasSignificantChange(entries, state.lastEntries)) {
-                    shouldSend = true;
-                } else if (tickCounter - state.lastSyncTick >= HEARTBEAT_TICKS) {
-                    shouldSend = true;
+                } else {
+                    int elapsedTicks = tickCounter - state.lastSyncTick;
+                    if (hasSignificantChange(entries, state.lastEntries, elapsedTicks)) {
+                        shouldSend = true;
+                    } else if (elapsedTicks >= HEARTBEAT_TICKS) {
+                        shouldSend = true;
+                    }
                 }
 
                 if (shouldSend) {
@@ -112,18 +196,27 @@ public final class ServerAilmentTracker {
         }
     }
 
-    private static boolean hasSignificantChange(List<AilmentSyncS2C.AilmentEntry> current, List<AilmentSyncS2C.AilmentEntry> previous) {
+    private static boolean hasSignificantChange(List<AilmentSyncS2C.AilmentEntry> current, List<AilmentSyncS2C.AilmentEntry> previous, int elapsedTicks) {
         if (previous == null || current.size() != previous.size()) return true;
-        for (int i = 0; i < current.size(); i++) {
-            AilmentSyncS2C.AilmentEntry c = current.get(i);
-            AilmentSyncS2C.AilmentEntry p = previous.get(i);
-            if (!c.id().equals(p.id())) return true;
+        for (AilmentSyncS2C.AilmentEntry c : current) {
+            AilmentSyncS2C.AilmentEntry p = findEntry(previous, c.id());
+            if (p == null) return true;
             if (c.stacks() != p.stacks()) return true;
             if (Math.abs(c.strength() - p.strength()) > 0.01f) return true;
             if (Math.abs(c.damage() - p.damage()) > 0.1f) return true;
-            if (Math.abs(c.ticksLeft() - p.ticksLeft()) > 20) return true;
+            // 自然減少では即時送信せず（ハートビートに委ねる）、再付与等で時間が増加・延長した場合のみ即時同期
+            int expectedTicks = Math.max(0, p.ticksLeft() - elapsedTicks);
+            if (c.ticksLeft() > expectedTicks + 5) return true;
         }
         return false;
+    }
+
+    private static AilmentSyncS2C.AilmentEntry findEntry(List<AilmentSyncS2C.AilmentEntry> list, String id) {
+        for (int i = 0; i < list.size(); i++) {
+            AilmentSyncS2C.AilmentEntry entry = list.get(i);
+            if (entry.id().equals(id)) return entry;
+        }
+        return null;
     }
 
     /**

@@ -385,13 +385,6 @@
   "exile_overlay.jei.applicable_gears": "适用装备:",
   "exile_overlay.jei.only_one_per_item": "每件物品仅限1个此词缀",
   "exile_overlay.jei.one_of_a_kind": "无法与同组（%s）的词缀共存",
-  "section.exile_overlay.loot_journal": "Loot Journal",
-  "exile_overlay.config.loot_journal_enable_compat": "启用: %s",
-  "exile_overlay.config.loot_journal_enable_compat.tooltip": "启用 Loot Journal 与 Mine and Slash 的联动功能（稀有度颜色、完整名称、背包通知等）",
-  "exile_overlay.config.loot_journal_only_ms_items": "仅显示MS物品: %s",
-  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "在 HUD 上隐藏原版泥土、石头等普通物品，仅显示 M&S 相关物品",
-  "exile_overlay.config.loot_journal_show_full_affix_name": "显示词缀完整名称: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "显示包含前缀和后缀的装备完整名称",
   "section.exile_overlay.item_lock": "物品锁定",
   "key.exile_overlay.toggle_item_lock": "切换槽位锁定 (按住+点击)"
 }

@@ -57,17 +57,25 @@ public final class LockManager {
         return isBitSet(getServerLockedMask(player), slot);
     }
 
-    public static void setServerLockedMask(ServerPlayer player, long mask) {
+    public static void setServerLockedMaskNbtOnly(Player player, long mask) {
         if (player == null) return;
         CompoundTag persistent = player.getPersistentData();
         CompoundTag persisted = persistent.getCompound(Player.PERSISTED_NBT_TAG);
         persisted.putLong(NBT_TAG_KEY, mask);
         persistent.put(Player.PERSISTED_NBT_TAG, persisted);
         persistent.putLong(NBT_TAG_KEY, mask);
-        NetworkHandler.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new LockSlotSyncS2C(mask)
-        );
+    }
+
+    public static void setServerLockedMask(ServerPlayer player, long mask) {
+        if (player == null) return;
+        setServerLockedMaskNbtOnly(player, mask);
+        syncToClient(player);
+    }
+
+    public static void copyServerLockedMask(Player from, Player to) {
+        if (from == null || to == null) return;
+        long mask = getServerLockedMask(from);
+        setServerLockedMaskNbtOnly(to, mask);
     }
 
     public static void toggleServerSlotLock(ServerPlayer player, int slot) {

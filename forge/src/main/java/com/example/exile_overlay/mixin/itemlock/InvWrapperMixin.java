@@ -28,7 +28,10 @@ public abstract class InvWrapperMixin {
             Container container = this.getInv();
             if (container instanceof Inventory playerInv && playerInv.player != null) {
                 if (slot >= 0 && slot < ItemLockHelper.INVENTORY_SIZE) {
-                    if (LockManager.isServerSlotLocked(playerInv.player, slot)) {
+                    boolean locked = playerInv.player.level().isClientSide()
+                            ? LockManager.isClientSlotLocked(slot)
+                            : LockManager.isServerSlotLocked(playerInv.player, slot);
+                    if (locked) {
                         cir.setReturnValue(ItemStack.EMPTY);
                     }
                 }

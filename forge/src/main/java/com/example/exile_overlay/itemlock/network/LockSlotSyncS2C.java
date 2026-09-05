@@ -1,8 +1,6 @@
 package com.example.exile_overlay.itemlock.network;
 
-import com.example.exile_overlay.itemlock.LockManager;
 import com.example.exile_overlay.itemlock.client.ItemLockClientStorage;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -32,18 +30,8 @@ public class LockSlotSyncS2C {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if (ctx.get().getDirection() != NetworkDirection.PLAY_TO_CLIENT) return;
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPayloadHandler.handle(lockedMask));
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ItemLockClientStorage.handleSync(lockedMask));
         });
         ctx.get().setPacketHandled(true);
-    }
-
-    private static final class ClientPayloadHandler {
-        private static void handle(long lockedMask) {
-            LockManager.setClientLockedMask(lockedMask);
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.player != null) {
-                ItemLockClientStorage.setLockMask(mc.player.getStringUUID(), lockedMask);
-            }
-        }
     }
 }

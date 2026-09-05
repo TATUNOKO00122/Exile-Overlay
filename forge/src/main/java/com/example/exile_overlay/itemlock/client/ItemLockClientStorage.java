@@ -1,8 +1,12 @@
 package com.example.exile_overlay.itemlock.client;
 
+import com.example.exile_overlay.itemlock.LockManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,7 @@ import java.util.Map;
  * クライアント側でのアイテムロック設定をローカルファイルに永続化するストレージ。
  * サーバー側MODの有無にかかわらず、プレイヤーごとのロックスロット状態を維持する。
  */
+@OnlyIn(Dist.CLIENT)
 public final class ItemLockClientStorage {
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemLockClientStorage.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -75,5 +80,13 @@ public final class ItemLockClientStorage {
         if (playerUuid == null) return;
         LOCK_CACHE.put(playerUuid, mask);
         save();
+    }
+
+    public static void handleSync(long lockedMask) {
+        LockManager.setClientLockedMask(lockedMask);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            setLockMask(mc.player.getStringUUID(), lockedMask);
+        }
     }
 }

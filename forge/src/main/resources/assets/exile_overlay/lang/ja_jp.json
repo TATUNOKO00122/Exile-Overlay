@@ -385,13 +385,6 @@
   "exile_overlay.jei.applicable_gears": "付与可能な装備:",
   "exile_overlay.jei.only_one_per_item": "1つのアイテムにつき1つのみ付与可能",
   "exile_overlay.jei.one_of_a_kind": "同グループ(%s)のAffixと重複不可",
-  "section.exile_overlay.loot_journal": "Loot Journal",
-  "exile_overlay.config.loot_journal_enable_compat": "有効化: %s",
-  "exile_overlay.config.loot_journal_enable_compat.tooltip": "Loot Journal と Mine and Slash の連携機能（レアリティ色・フルネーム・バックパック等）を有効化します",
-  "exile_overlay.config.loot_journal_only_ms_items": "MSアイテムのみ表示: %s",
-  "exile_overlay.config.loot_journal_only_ms_items.tooltip": "バニラの土や石などの通常アイテムを除外し、M&S 関連アイテムのみを HUD に表示します",
-  "exile_overlay.config.loot_journal_show_full_affix_name": "接頭辞・接尾辞フルネーム表示: %s",
-  "exile_overlay.config.loot_journal_show_full_affix_name.tooltip": "装備品の接頭辞・接尾辞を含むフルネームを表示します",
   "section.exile_overlay.item_lock": "アイテムロック",
   "key.exile_overlay.toggle_item_lock": "スロットロック切り替え (長押し+クリック)"
 }

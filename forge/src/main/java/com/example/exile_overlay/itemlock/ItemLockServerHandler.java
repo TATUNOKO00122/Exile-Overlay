@@ -32,10 +32,16 @@ public final class ItemLockServerHandler {
 
     @SubscribeEvent
     public void onPlayerClone(PlayerEvent.Clone event) {
-        // 死亡リスポーンまたはディメンション移動時にNBTデータを引き継ぐ
+        // 死亡リスポーンまたはディメンション移動時にNBTデータを引き継ぐ（パケット送信はRespawn/ChangedDimensionで行う）
         if (event.getEntity() instanceof ServerPlayer newPlayer) {
-            long oldMask = LockManager.getServerLockedMask(event.getOriginal());
-            LockManager.setServerLockedMask(newPlayer, oldMask);
+            LockManager.copyServerLockedMask(event.getOriginal(), newPlayer);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.syncToClient(player);
         }
     }
 }

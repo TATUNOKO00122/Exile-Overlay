@@ -2,8 +2,12 @@ package com.example.exile_overlay.dmgtracker.tracking;
 
 import com.robertx22.mine_and_slash.uncommon.enumclasses.Elements;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SkillDamageStats {
     private final String skillId;
@@ -23,8 +27,9 @@ public class SkillDamageStats {
     private final Map<Elements, Double> damageByElement = new EnumMap<>(Elements.class);
     // ConcurrentLinkedDeque: recordHit（サーバースレッド）とgetOverallDps（Tickスレッド）の並行アクセスに対応
     final ConcurrentLinkedDeque<TimestampedDamage> recentHits = new ConcurrentLinkedDeque<>();
+    private final AtomicInteger recentHitsCount = new AtomicInteger(0);
 
-    private static final int MAX_RECENT_HITS = 10000;
+    private static final int MAX_RECENT_HITS = 5000;
 
     public SkillDamageStats(String skillId, String displayName) {
         this.skillId = skillId;
@@ -47,6 +52,7 @@ public class SkillDamageStats {
 
         long now = System.currentTimeMillis();
         recentHits.addLast(new TimestampedDamage(now, damage));
+        recentHitsCount.incrementAndGet();
         trimRecentHits();
     }
 
@@ -74,6 +80,7 @@ public class SkillDamageStats {
 
         long now = System.currentTimeMillis();
         recentHits.addLast(new TimestampedDamage(now, totalHitDmg));
+        recentHitsCount.incrementAndGet();
         trimRecentHits();
     }
 
@@ -99,18 +106,20 @@ public class SkillDamageStats {
 
     void trimRecentHits(long now) {
         long cutoff = now - TimestampedDamage.DPS_WINDOW_MS;
-        // ConcurrentLinkedDequeはpollFirst()でスレッドセーフに先頭から削除
         while (!recentHits.isEmpty() && recentHits.peekFirst() != null
                 && recentHits.peekFirst().timestampMs < cutoff) {
-            recentHits.pollFirst();
+            if (recentHits.pollFirst() != null) {
+                recentHitsCount.decrementAndGet();
+            }
         }
-        // size()はO(N)の計算コストがかかるため、頻繁な呼び出し（毎ヒット）は負荷の原因となる。
-        // 時間経過で古い要素は削除されるため、上限チェックは不要。
-        /*
-        while (recentHits.size() > MAX_RECENT_HITS) {
-            recentHits.pollFirst();
+        // AtomicIntegerでO(1)にサイズを追跡し、上限を超えた要素をトリム
+        while (recentHitsCount.get() > MAX_RECENT_HITS) {
+            if (recentHits.pollFirst() != null) {
+                recentHitsCount.decrementAndGet();
+            } else {
+                break;
+            }
         }
-        */
     }
 
     /**
@@ -153,6 +162,7 @@ public class SkillDamageStats {
         killCount = 0;
         damageByElement.clear();
         recentHits.clear();
+        recentHitsCount.set(0);
     }
 
     public String getSkillId() { return skillId; }

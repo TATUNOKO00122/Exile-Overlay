@@ -220,7 +220,6 @@ public final class ExileOverlayConfigManager {
         saveSection(HudPositionManager.getInstance());
         saveSection(DropSoundConfig.getInstance());
         saveSection(JeiConfig.getInstance());
-        saveSection(LootJournalCompatConfig.getInstance());
     }
 
     private void saveSection(IConfigSection section) {

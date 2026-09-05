@@ -1,7 +1,14 @@
 package com.example.exile_overlay.mixin;
 
+import com.example.exile_overlay.dmgtracker.tracking.DamageTrackerManager;
+import com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker;
 import com.example.exile_overlay.dmgtracker.util.IDamageEventAccessor;
 import com.robertx22.mine_and_slash.uncommon.effectdatas.DamageEvent;
+import com.robertx22.mine_and_slash.uncommon.effectdatas.rework.EventData;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.OwnableEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
@@ -9,12 +16,13 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import com.example.exile_overlay.dmgtracker.tracking.DamageTrackerManager;
-import net.minecraft.server.level.ServerPlayer;
 
 @Pseudo
 @Mixin(targets = "com.robertx22.mine_and_slash.uncommon.effectdatas.DamageEvent", remap = false)
 public class DamageEventMixin implements IDamageEventAccessor {
+    @Unique
+    private static final Logger exileOverlay$LOGGER = LoggerFactory.getLogger("exile_overlay/DamageEventMixin");
+
     @Unique
     private DamageEvent.DmgByElement exileOverlay$dmgByElement;
 
@@ -37,30 +45,30 @@ public class DamageEventMixin implements IDamageEventAccessor {
     private void exileOverlay$onActivateReturn(CallbackInfo ci) {
         DamageEvent event = (DamageEvent) (Object) this;
         if (!event.data.isCanceled()) {
+            // 攻撃者がプレイヤー、またはプレイヤーがオーナーの召喚物/傭兵である場合に特定
+            ServerPlayer player = null;
+            if (event.source instanceof ServerPlayer sp) {
+                player = sp;
+            } else if (event.source instanceof OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer sp) {
+                player = sp;
+            }
+
             try {
                 if (event.target != null) {
-                    String ailmentId = event.data.getString(com.robertx22.mine_and_slash.uncommon.effectdatas.rework.EventData.AILMENT);
+                    String ailmentId = event.data.getString(EventData.AILMENT);
                     if (!ailmentId.isEmpty()) {
-                        com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker.track(event.target);
+                        ServerAilmentTracker.track(player, event.target);
                     }
                 }
             } catch (Throwable t) {
                 // non-critical
             }
 
-            // 攻撃者がプレイヤー、またはプレイヤーがオーナーの召喚物/傭兵である場合に記録
-            ServerPlayer player = null;
-            if (event.source instanceof ServerPlayer sp) {
-                player = sp;
-            } else if (event.source instanceof net.minecraft.world.entity.OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer sp) {
-                player = sp;
-            }
-
             if (player != null) {
                 try {
                     DamageTrackerManager.recordDamage(player, event);
                 } catch (Exception e) {
-                    org.slf4j.LoggerFactory.getLogger("exile_overlay/DamageEventMixin").error("Error tracking damage", e);
+                    exileOverlay$LOGGER.error("Error tracking damage", e);
                 }
             }
         }

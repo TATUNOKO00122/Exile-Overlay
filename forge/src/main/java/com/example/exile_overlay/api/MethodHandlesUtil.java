@@ -2,12 +2,15 @@ package com.example.exile_overlay.api;
 
 import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
+import com.example.exile_overlay.api.data.MobEffectInfo;
 import com.example.exile_overlay.client.render.minion.MercenaryClientCache;
 import com.example.exile_overlay.dmgtracker.network.AilmentSyncS2C;
 import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
-import net.minecraft.client.Minecraft;
+import com.example.exile_overlay.client.util.ClientSingleplayerHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,6 +24,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -201,6 +205,7 @@ public class MethodHandlesUtil {
     private static Method mercRegistryMethod = null;
     private static Object mercRegistry = null;
     private static Method mercRegistryGetMethod = null;
+    private static volatile Method mercClassGuidMethod = null;
     private static final ResourceLocation MERC_ICON_FALLBACK = new ResourceLocation("mmorpg", "textures/gui/spells/icons/summon_zombie.png");
 
     // === Additional ExileEffect Field Handles ===
@@ -2217,8 +2222,11 @@ public class MethodHandlesUtil {
 
         // 状態異常（Ailments）のアイコン追加（クライアント同期 + シングルプレイフォールバック）
         try {
-            var trackerEffects = com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.getInstance().getAilmentEffects(entity);
-            if (!trackerEffects.isEmpty()) {
+            List<MobEffectInfo> trackerEffects = DistExecutor.unsafeCallWhenOn(
+                    Dist.CLIENT,
+                    () -> () -> ClientSingleplayerHelper.getAilmentEffects(entity)
+            );
+            if (trackerEffects != null && !trackerEffects.isEmpty()) {
                 result.addAll(trackerEffects);
             } else {
                 LivingEntity serverEntity = resolveServerEntity(entity);
@@ -2226,9 +2234,12 @@ public class MethodHandlesUtil {
                     var entries = extractAilmentEntries(serverEntity);
                     for (var entry : entries) {
                         if (entry.ticksLeft() > 0 || entry.strength() > 0.0f) {
-                            ResourceLocation icon = com.example.exile_overlay.client.render.ailment.ClientAilmentTracker.resolveElementIcon(entry.id());
-                            String name = net.minecraft.network.chat.Component.translatable("mmorpg.ailment." + entry.id()).getString();
-                            result.add(new com.example.exile_overlay.api.data.MobEffectInfo(
+                            ResourceLocation icon = DistExecutor.unsafeCallWhenOn(
+                                    Dist.CLIENT,
+                                    () -> () -> ClientSingleplayerHelper.resolveElementIcon(entry.id())
+                            );
+                            String name = Component.translatable("mmorpg.ailment." + entry.id()).getString();
+                            result.add(new MobEffectInfo(
                                     "ailment:" + entry.id(), name, icon, entry.ticksLeft(), entry.stacks(), false, true));
                         }
                     }
@@ -2299,19 +2310,10 @@ public class MethodHandlesUtil {
         if (!entity.level().isClientSide()) {
             return entity;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.hasSingleplayerServer() && mc.getSingleplayerServer() != null) {
-            try {
-                ServerLevel serverLevel = mc.getSingleplayerServer().getLevel(entity.level().dimension());
-                if (serverLevel != null) {
-                    Entity serverEntity = serverLevel.getEntity(entity.getUUID());
-                    if (serverEntity instanceof LivingEntity living) {
-                        return living;
-                    }
-                }
-            } catch (Throwable ignore) {}
-        }
-        return null;
+        return DistExecutor.unsafeCallWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientSingleplayerHelper.resolveServerEntity(entity)
+        );
     }
 
     /**
@@ -2353,28 +2355,46 @@ public class MethodHandlesUtil {
         return false;
     }
 
+    private static final class AilmentAccumulator {
+        int maxTicks;
+        int stacks;
+        float dmg;
+        float str;
+        float accDmg;
+
+        void reset() {
+            maxTicks = 0;
+            stacks = 0;
+            dmg = 0f;
+            str = 0f;
+            accDmg = 0f;
+        }
+    }
+
+    private static final ThreadLocal<Map<String, AilmentAccumulator>> AILMENT_ACCUMULATOR_CACHE =
+            ThreadLocal.withInitial(LinkedHashMap::new);
+
     /**
      * エンティティの EntityAilmentData から全 Ailment 状態（残りTick、スタック数、強度、ダメージ）を抽出
      */
     public static List<AilmentSyncS2C.AilmentEntry> extractAilmentEntries(LivingEntity entity) {
-        List<AilmentSyncS2C.AilmentEntry> list = new ArrayList<>();
         if (entity == null || GET_AILMENT_DATA == null || GET_DOT_MAP == null) {
-            return list;
+            return Collections.emptyList();
         }
         try {
             Object entityData = getEntityData(entity);
-            if (entityData == null) return list;
+            if (entityData == null) return Collections.emptyList();
             Object ailmentData = GET_AILMENT_DATA.invoke(entityData);
-            if (ailmentData == null) return list;
+            if (ailmentData == null) return Collections.emptyList();
             Object datasObj = GET_DOT_MAP.invoke(ailmentData);
             if (!(datasObj instanceof Map<?, ?> datasMap) || datasMap.isEmpty()) {
-                return list;
+                return Collections.emptyList();
             }
 
-            Map<String, int[]> dotStats = new HashMap<>(); // [maxTicks, totalStacks]
-            Map<String, float[]> dotDmg = new HashMap<>(); // [totalDmg]
-            Map<String, Float> strStats = new HashMap<>();
-            Map<String, Float> dmgStats = new HashMap<>();
+            Map<String, AilmentAccumulator> accMap = AILMENT_ACCUMULATOR_CACHE.get();
+            for (AilmentAccumulator acc : accMap.values()) {
+                acc.reset();
+            }
 
             for (Object oneData : datasMap.values()) {
                 if (oneData == null) continue;
@@ -2392,11 +2412,10 @@ public class MethodHandlesUtil {
                                         float ticks = AILMENT_DOT_TICKS != null ? AILMENT_DOT_TICKS.getFloat(dot) : dot.getClass().getField("ticks").getFloat(dot);
                                         float dmg = AILMENT_DOT_DMG != null ? AILMENT_DOT_DMG.getFloat(dot) : dot.getClass().getField("dmg").getFloat(dot);
                                         if (ticks > 0) {
-                                            int[] stat = dotStats.computeIfAbsent(ailId, k -> new int[2]);
-                                            stat[0] = Math.max(stat[0], (int) ticks);
-                                            stat[1]++;
-                                            float[] d = dotDmg.computeIfAbsent(ailId, k -> new float[1]);
-                                            d[0] += dmg;
+                                            AilmentAccumulator acc = accMap.computeIfAbsent(ailId, k -> new AilmentAccumulator());
+                                            acc.maxTicks = Math.max(acc.maxTicks, (int) ticks);
+                                            acc.stacks++;
+                                            acc.dmg += dmg;
                                         }
                                     }
                                 }
@@ -2414,7 +2433,8 @@ public class MethodHandlesUtil {
                             if (entry.getValue() instanceof Number n) {
                                 float v = n.floatValue();
                                 if (v > 0.001f) {
-                                    strStats.merge(ailId, v, Math::max);
+                                    AilmentAccumulator acc = accMap.computeIfAbsent(ailId, k -> new AilmentAccumulator());
+                                    acc.str = Math.max(acc.str, v);
                                 }
                             }
                         }
@@ -2430,7 +2450,8 @@ public class MethodHandlesUtil {
                             if (entry.getValue() instanceof Number n) {
                                 float v = n.floatValue();
                                 if (v > 0.001f) {
-                                    dmgStats.merge(ailId, v, Float::sum);
+                                    AilmentAccumulator acc = accMap.computeIfAbsent(ailId, k -> new AilmentAccumulator());
+                                    acc.accDmg += v;
                                 }
                             }
                         }
@@ -2438,27 +2459,21 @@ public class MethodHandlesUtil {
                 } catch (Throwable ignore) {}
             }
 
-            for (Map.Entry<String, int[]> e : dotStats.entrySet()) {
+            List<AilmentSyncS2C.AilmentEntry> list = new ArrayList<>();
+            for (Map.Entry<String, AilmentAccumulator> e : accMap.entrySet()) {
                 String id = e.getKey();
-                int ticks = e.getValue()[0];
-                int stacks = e.getValue()[1];
-                float dmg = dotDmg.containsKey(id) ? dotDmg.get(id)[0] : 0.0f;
-                float str = strStats.getOrDefault(id, 0.0f);
-                list.add(new AilmentSyncS2C.AilmentEntry(id, ticks, stacks, str, dmg));
-            }
-
-            for (Map.Entry<String, Float> e : strStats.entrySet()) {
-                String id = e.getKey();
-                if (!dotStats.containsKey(id)) {
-                    float str = e.getValue();
-                    float accDmg = dmgStats.getOrDefault(id, 0.0f);
-                    list.add(new AilmentSyncS2C.AilmentEntry(id, 0, 1, str, accDmg));
+                AilmentAccumulator acc = e.getValue();
+                if (acc.stacks > 0) {
+                    list.add(new AilmentSyncS2C.AilmentEntry(id, acc.maxTicks, acc.stacks, acc.str, acc.dmg));
+                } else if (acc.str > 0.001f || acc.accDmg > 0.001f) {
+                    list.add(new AilmentSyncS2C.AilmentEntry(id, 0, 1, acc.str, acc.accDmg));
                 }
             }
+            return list;
         } catch (Throwable t) {
             // non-critical
         }
-        return list;
+        return Collections.emptyList();
     }
 
     /**
@@ -2581,8 +2596,10 @@ public class MethodHandlesUtil {
                 try {
                     Object mercClass = GET_MERC_CLASS.invoke(merc);
                     if (mercClass != null) {
-                        Method idMethod = mercClass.getClass().getMethod("GUID");
-                        classId = (String) idMethod.invoke(mercClass);
+                        if (mercClassGuidMethod == null) {
+                            mercClassGuidMethod = mercClass.getClass().getMethod("GUID");
+                        }
+                        classId = (String) mercClassGuidMethod.invoke(mercClass);
                     }
                 } catch (Throwable ignore) {}
             }

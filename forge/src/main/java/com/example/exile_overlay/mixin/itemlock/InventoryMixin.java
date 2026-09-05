@@ -30,8 +30,10 @@ public abstract class InventoryMixin {
     private void exileOverlay$preventLockedDrop(boolean entireStack, CallbackInfoReturnable<ItemStack> cir) {
         try {
             if (this.player != null && this.selected >= 0 && this.selected < ItemLockHelper.INVENTORY_SIZE) {
-                // ホットバーはスロット0〜8
-                if (LockManager.isServerSlotLocked(this.player, this.selected)) {
+                boolean locked = this.player.level().isClientSide()
+                        ? LockManager.isClientSlotLocked(this.selected)
+                        : LockManager.isServerSlotLocked(this.player, this.selected);
+                if (locked) {
                     cir.setReturnValue(ItemStack.EMPTY);
                 }
             }
