@@ -102,6 +102,8 @@
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "禁用血条: %s",
   "exile_overlay.config.disable_mns_hpbar.tooltip": "隐藏 Mine and Slash 头顶血条（Neat）",
+  "exile_overlay.config.exclude_dummy_boss_bar": "Boss血条排除假人: %s",
+  "exile_overlay.config.exclude_dummy_boss_bar.tooltip": "即使训练假人具有Boss稀有度，也将其从Boss血条中排除",
   "exile_overlay.config.cancel_dungeon_scoreboard": "隐藏记分板界面: %s",
   "exile_overlay.config.cancel_dungeon_scoreboard.tooltip": "隐藏 Dungeon Realm 的记分板界面（地图统计）",
   "exile_overlay.config.enable_boss_portal_marker": "自动标记首领传送门: %s",

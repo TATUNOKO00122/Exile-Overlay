@@ -102,6 +102,8 @@
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "HP 바 비활성화: %s",
   "exile_overlay.config.disable_mns_hpbar.tooltip": "Mine and Slash의 머리 위 HP 바(Neat) 숨기기",
+  "exile_overlay.config.exclude_dummy_boss_bar": "보스 HP 바에서 더미 제외: %s",
+  "exile_overlay.config.exclude_dummy_boss_bar.tooltip": "훈련용 더미가 보스 등급이더라도 보스 HP 바에 표시되지 않도록 제외합니다",
   "exile_overlay.config.cancel_dungeon_scoreboard": "스코어보드 UI 숨기기: %s",
   "exile_overlay.config.cancel_dungeon_scoreboard.tooltip": "Dungeon Realm의 스코어보드 UI(맵 스탯) 숨기기",
   "exile_overlay.config.enable_boss_portal_marker": "보스 포탈 자동 표시: %s",

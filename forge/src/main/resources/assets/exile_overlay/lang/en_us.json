@@ -102,6 +102,8 @@
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "Disable HP Bar: %s",
   "exile_overlay.config.disable_mns_hpbar.tooltip": "Hide Mine and Slash overhead HP bar (Neat)",
+  "exile_overlay.config.exclude_dummy_boss_bar": "Exclude Dummies from Boss Bar: %s",
+  "exile_overlay.config.exclude_dummy_boss_bar.tooltip": "Excludes training dummies from the Boss HP Bar even if they have boss rarity.",
   "exile_overlay.config.cancel_dungeon_scoreboard": "Hide Scoreboard UI: %s",
   "exile_overlay.config.cancel_dungeon_scoreboard.tooltip": "Hide Dungeon Realm's scoreboard UI (Map Stats)",
   "exile_overlay.config.enable_boss_portal_marker": "Auto-Mark Boss Portals: %s",

@@ -44,6 +44,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean keyQuickLootEnabled = true;
     private QuickLootMode keyQuickLootMode = QuickLootMode.DROP;
     private boolean disableMnsHpBar = false;
+    private boolean excludeDummyBossBar = true;
     private boolean cancelMnsRpgBars = true;
     private boolean cancelMnsSpellHotbar = true;
     private boolean cancelMnsCastBar = true;
@@ -107,6 +108,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
             }
         }
         if (obj.has("disableMnsHpBar")) disableMnsHpBar = obj.get("disableMnsHpBar").getAsBoolean();
+        if (obj.has("excludeDummyBossBar")) excludeDummyBossBar = obj.get("excludeDummyBossBar").getAsBoolean();
         if (obj.has("cancelMnsRpgBars")) cancelMnsRpgBars = obj.get("cancelMnsRpgBars").getAsBoolean();
         if (obj.has("cancelMnsSpellHotbar")) cancelMnsSpellHotbar = obj.get("cancelMnsSpellHotbar").getAsBoolean();
         if (obj.has("cancelMnsCastBar")) cancelMnsCastBar = obj.get("cancelMnsCastBar").getAsBoolean();
@@ -155,6 +157,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("keyQuickLootEnabled", keyQuickLootEnabled);
         obj.addProperty("keyQuickLootMode", keyQuickLootMode.name());
         obj.addProperty("disableMnsHpBar", disableMnsHpBar);
+        obj.addProperty("excludeDummyBossBar", excludeDummyBossBar);
         obj.addProperty("cancelMnsRpgBars", cancelMnsRpgBars);
         obj.addProperty("cancelMnsSpellHotbar", cancelMnsSpellHotbar);
         obj.addProperty("cancelMnsCastBar", cancelMnsCastBar);
@@ -281,6 +284,14 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         }
     }
 
+    public boolean isExcludeDummyBossBar() {
+        return excludeDummyBossBar;
+    }
+
+    public void setExcludeDummyBossBar(boolean excludeDummyBossBar) {
+        this.excludeDummyBossBar = excludeDummyBossBar;
+    }
+
     public void resetToDefaults() {
         this.usePercentage = true;
         this.enableShadow = true;
@@ -290,6 +301,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.keyQuickLootEnabled = true;
         this.keyQuickLootMode = QuickLootMode.DROP;
         this.disableMnsHpBar = false;
+        this.excludeDummyBossBar = true;
         this.cancelMnsRpgBars = true;
         this.cancelMnsSpellHotbar = true;
         this.cancelMnsCastBar = true;

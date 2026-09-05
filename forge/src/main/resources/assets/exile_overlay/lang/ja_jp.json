@@ -102,6 +102,8 @@
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "HPバーを無効化: %s",
   "exile_overlay.config.disable_mns_hpbar.tooltip": "Mine and Slashの頭上HPバー（Neat）を非表示",
+  "exile_overlay.config.exclude_dummy_boss_bar": "ボスHPバーからダミーを除外: %s",
+  "exile_overlay.config.exclude_dummy_boss_bar.tooltip": "トレーニングダミーがボス扱いの場合でも、ボスHPバーへの表示を除外します",
   "exile_overlay.config.cancel_dungeon_scoreboard": "Scoreboard UIを非表示: %s",
   "exile_overlay.config.cancel_dungeon_scoreboard.tooltip": "Dungeon RealmのスコアボードUI（マップステータス）を非表示",
   "exile_overlay.config.enable_boss_portal_marker": "ボス部屋ポータルの自動マーカー: %s",

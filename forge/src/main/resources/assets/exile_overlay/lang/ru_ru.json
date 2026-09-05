@@ -102,6 +102,8 @@
   "exile_overlay.config.mode.drop": "DROP",
   "exile_overlay.config.disable_mns_hpbar": "Отключить полосу здоровья: %s",
   "exile_overlay.config.disable_mns_hpbar.tooltip": "Скрыть полосу здоровья Mine and Slash над головой (Neat)",
+  "exile_overlay.config.exclude_dummy_boss_bar": "Исключить манекены из полосы босса: %s",
+  "exile_overlay.config.exclude_dummy_boss_bar.tooltip": "Исключает тренировочные манекены из полосы здоровья босса, даже если они имеют редкость босса",
   "exile_overlay.config.cancel_dungeon_scoreboard": "Скрыть счетчик на экране: %s",
   "exile_overlay.config.cancel_dungeon_scoreboard.tooltip": "Скрыть интерфейс таблицы результатов Dungeon Realm (статистика карты)",
   "exile_overlay.config.enable_boss_portal_marker": "Авто-маркер порталов босса: %s",

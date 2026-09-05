@@ -27,6 +27,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -518,6 +519,7 @@ public class BossHpBarRenderer implements IRenderCommand {
 
     static boolean isAnyBoss(LivingEntity entity) {
         if (entity == null || !entity.isAlive()) return false;
+        if (EquipmentDisplayConfig.getInstance().isExcludeDummyBossBar() && isTrainingDummy(entity)) return false;
 
         if (isMsBoss(entity)) return true;
 
@@ -562,6 +564,30 @@ public class BossHpBarRenderer implements IRenderCommand {
         MobRarityInfo rarity = MethodHandlesUtil.getMobRarityInfo(entity);
         if (rarity == null) return false;
         return "boss".equals(rarity.id) || "uber".equals(rarity.id) || "pinnacle".equals(rarity.id);
+    }
+
+    private static boolean isTrainingDummy(LivingEntity entity) {
+        if (entity instanceof ArmorStand) {
+            return true;
+        }
+        try {
+            ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+            if (key != null) {
+                String path = key.getPath();
+                String namespace = key.getNamespace();
+                if (path.contains("dummy") || namespace.contains("dummy")) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (entity.getClass().getName().contains("Dummy")) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private static boolean hasActiveBossEvent(Minecraft mc) {
