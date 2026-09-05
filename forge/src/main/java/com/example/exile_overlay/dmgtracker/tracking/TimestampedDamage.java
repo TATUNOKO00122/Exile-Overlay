@@ -12,7 +12,10 @@ public class TimestampedDamage {
     }
 
     public static float computeDps(Iterable<TimestampedDamage> hits) {
-        long now = System.currentTimeMillis();
+        return computeDps(hits, System.currentTimeMillis());
+    }
+
+    public static float computeDps(Iterable<TimestampedDamage> hits, long now) {
         long cutoff = now - DPS_WINDOW_MS;
         float total = 0;
         long oldest = Long.MAX_VALUE;

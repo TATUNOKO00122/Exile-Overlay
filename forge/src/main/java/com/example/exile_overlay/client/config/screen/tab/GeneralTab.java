@@ -113,6 +113,19 @@ public class GeneralTab implements IConfigTab {
                     1, 20,
                     val -> Component.translatable("exile_overlay.config.damage_tracker_max_skills", val)
             ));
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.damage_tracker_show_individual_dps",
+                    com.example.exile_overlay.dmgtracker.config.TrackerConfig::isShowIndividualDps,
+                    trackerConfig::setShowIndividualDps
+            ));
+
+            entries.add(new BooleanConfigEntry(
+                    "exile_overlay.config.damage_tracker_exclude_mercenary",
+                    com.example.exile_overlay.dmgtracker.config.TrackerConfig::isExcludeMercenaryDamage,
+                    trackerConfig::setExcludeMercenaryDamage,
+                    Component.translatable("exile_overlay.config.damage_tracker_exclude_mercenary.tooltip")
+            ));
         }
 
         return entries;

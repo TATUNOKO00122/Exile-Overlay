@@ -131,8 +131,12 @@ public class SkillDamageStats {
     }
 
     public float getDps() {
-        trimRecentHits();
-        return TimestampedDamage.computeDps(recentHits);
+        return getDps(System.currentTimeMillis());
+    }
+
+    public float getDps(long now) {
+        trimRecentHits(now);
+        return TimestampedDamage.computeDps(recentHits, now);
     }
 
     public synchronized String getDominantElement() {

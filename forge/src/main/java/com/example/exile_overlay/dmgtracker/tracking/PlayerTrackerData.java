@@ -86,6 +86,49 @@ public class PlayerTrackerData {
         return realNow;
     }
 
+    public long getEffectiveNow() {
+        return effectiveNow();
+    }
+
+    public Map<String, Float> getRecentSkillDpsMap() {
+        long now = effectiveNow();
+        long cutoff = now - TimestampedDamage.DPS_WINDOW_MS;
+
+        for (SkillDamageStats s : skillStats.values()) {
+            s.trimRecentHits(now);
+        }
+
+        long oldest = Long.MAX_VALUE;
+        Map<String, Float> skillDmgInWindow = new HashMap<>();
+
+        for (SkillDamageStats s : skillStats.values()) {
+            float skillTotal = 0;
+            List<TimestampedDamage> snapshot = s.getRecentHitsSnapshot();
+            for (TimestampedDamage td : snapshot) {
+                if (td.timestampMs >= cutoff) {
+                    skillTotal += td.damage;
+                    if (td.timestampMs < oldest) oldest = td.timestampMs;
+                }
+            }
+            if (skillTotal > 0) {
+                skillDmgInWindow.put(s.getSkillId(), skillTotal);
+            }
+        }
+
+        Map<String, Float> dpsMap = new HashMap<>();
+        if (oldest == Long.MAX_VALUE) {
+            return dpsMap;
+        }
+
+        long spanMs = Math.max(1000, Math.min(TimestampedDamage.DPS_WINDOW_MS, now - oldest));
+        float spanSec = spanMs / 1000f;
+
+        for (Map.Entry<String, Float> entry : skillDmgInWindow.entrySet()) {
+            dpsMap.put(entry.getKey(), entry.getValue() / spanSec);
+        }
+        return dpsMap;
+    }
+
     public float getOverallDps() {
         long now = effectiveNow();
         long cutoff = now - TimestampedDamage.DPS_WINDOW_MS;

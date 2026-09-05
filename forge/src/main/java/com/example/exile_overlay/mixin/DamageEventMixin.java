@@ -3,6 +3,7 @@ package com.example.exile_overlay.mixin;
 import com.example.exile_overlay.dmgtracker.tracking.DamageTrackerManager;
 import com.example.exile_overlay.dmgtracker.tracking.ServerAilmentTracker;
 import com.example.exile_overlay.dmgtracker.util.IDamageEventAccessor;
+import com.robertx22.mine_and_slash.database.data.mercenary.entity.MercenaryEntity;
 import com.robertx22.mine_and_slash.uncommon.effectdatas.DamageEvent;
 import com.robertx22.mine_and_slash.uncommon.effectdatas.rework.EventData;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,26 +46,33 @@ public class DamageEventMixin implements IDamageEventAccessor {
     private void exileOverlay$onActivateReturn(CallbackInfo ci) {
         DamageEvent event = (DamageEvent) (Object) this;
         if (!event.data.isCanceled()) {
-            // 攻撃者がプレイヤー、またはプレイヤーがオーナーの召喚物/傭兵である場合に特定
             ServerPlayer player = null;
+            boolean isMercenary = false;
             if (event.source instanceof ServerPlayer sp) {
                 player = sp;
             } else if (event.source instanceof OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer sp) {
                 player = sp;
-            }
-
-            try {
-                if (event.target != null) {
-                    String ailmentId = event.data.getString(EventData.AILMENT);
-                    if (!ailmentId.isEmpty()) {
-                        ServerAilmentTracker.track(player, event.target);
-                    }
+                if (event.source instanceof MercenaryEntity) {
+                    isMercenary = true;
                 }
-            } catch (Throwable t) {
-                // non-critical
             }
 
             if (player != null) {
+                if (isMercenary && DamageTrackerManager.isExcludeMercenary(player.getUUID())) {
+                    return;
+                }
+
+                try {
+                    if (event.target != null) {
+                        String ailmentId = event.data.getString(EventData.AILMENT);
+                        if (!ailmentId.isEmpty()) {
+                            ServerAilmentTracker.track(player, event.target);
+                        }
+                    }
+                } catch (Throwable t) {
+                    // non-critical
+                }
+
                 try {
                     DamageTrackerManager.recordDamage(player, event);
                 } catch (Exception e) {

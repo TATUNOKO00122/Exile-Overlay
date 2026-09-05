@@ -129,6 +129,8 @@
   "exile_overlay.config.damage_tracker_max_skills": "최대 표시 수: %s",
   "exile_overlay.config.damage_tracker_max_skills.unlimited": "최대 표시 수: 무제한",
   "exile_overlay.config.damage_tracker_max_skills.tooltip": "트래커에 표시될 스킬의 최대 수를 설정합니다",
+  "exile_overlay.config.damage_tracker_exclude_mercenary": "용병 데미지 제외: %s",
+  "exile_overlay.config.damage_tracker_exclude_mercenary.tooltip": "용병의 스킬 및 기본 공격 데미지를 데미지 추적기에서 제외합니다",
   "exile_overlay.config.experimental": "[실험적]",
   "exile_overlay.config.show_damage": "데미지 표시: %s",
   "exile_overlay.config.show_damage.tooltip": "데미지 수치 표시",

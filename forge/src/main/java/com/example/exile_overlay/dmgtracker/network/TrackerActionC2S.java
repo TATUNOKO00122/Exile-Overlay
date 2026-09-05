@@ -14,6 +14,8 @@ import java.util.function.Supplier;
 public class TrackerActionC2S {
     public static final int ACTION_RESET = 0;
     public static final int ACTION_REQUEST_SYNC = 1;
+    public static final int ACTION_SET_EXCLUDE_MERC_TRUE = 2;
+    public static final int ACTION_SET_EXCLUDE_MERC_FALSE = 3;
 
     private static final Map<UUID, Long> lastSyncRequestTime = new ConcurrentHashMap<>();
     private static final long SYNC_COOLDOWN_MS = 1000L;
@@ -49,6 +51,12 @@ public class TrackerActionC2S {
                         lastSyncRequestTime.put(player.getUUID(), now);
                         TrackerSyncS2C.sendToPlayer(player);
                     }
+                    break;
+                case ACTION_SET_EXCLUDE_MERC_TRUE:
+                    DamageTrackerManager.setExcludeMercenary(player.getUUID(), true);
+                    break;
+                case ACTION_SET_EXCLUDE_MERC_FALSE:
+                    DamageTrackerManager.setExcludeMercenary(player.getUUID(), false);
                     break;
             }
         });

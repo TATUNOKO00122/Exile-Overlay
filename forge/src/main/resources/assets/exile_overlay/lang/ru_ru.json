@@ -129,6 +129,8 @@
   "exile_overlay.config.damage_tracker_max_skills": "Макс. отображаемых навыков: %s",
   "exile_overlay.config.damage_tracker_max_skills.unlimited": "Макс. отображаемых навыков: Без ограничений",
   "exile_overlay.config.damage_tracker_max_skills.tooltip": "Ограничить количество навыков, отображаемых на трекере",
+  "exile_overlay.config.damage_tracker_exclude_mercenary": "Исключить урон наемников: %s",
+  "exile_overlay.config.damage_tracker_exclude_mercenary.tooltip": "Исключить урон от навыков и обычных атак наемников из отслеживания",
   "exile_overlay.config.experimental": "[Экспериментально]",
   "exile_overlay.config.show_damage": "Показывать урон: %s",
   "exile_overlay.config.show_damage.tooltip": "Отображать числа урона",

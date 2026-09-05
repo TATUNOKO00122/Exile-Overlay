@@ -21,7 +21,17 @@ public class DamageTrackerManager {
     private static final Map<UUID, PlayerTrackerData> playerData = new ConcurrentHashMap<>();
     private static final Map<UUID, MobLastHitRecord> mobLastHitRecords = new ConcurrentHashMap<>();
     private static final Set<UUID> dirtyPlayers = ConcurrentHashMap.newKeySet();
+    private static final Map<UUID, Boolean> excludeMercenaryMap = new ConcurrentHashMap<>();
     private static final int MAX_MOB_CACHE = 1000;
+
+    public static void setExcludeMercenary(UUID playerUuid, boolean exclude) {
+        if (playerUuid == null) return;
+        excludeMercenaryMap.put(playerUuid, exclude);
+    }
+
+    public static boolean isExcludeMercenary(UUID playerUuid) {
+        return playerUuid != null && excludeMercenaryMap.getOrDefault(playerUuid, true);
+    }
 
     public static PlayerTrackerData getTracker(UUID playerUuid) {
         return playerData.computeIfAbsent(playerUuid, id -> new PlayerTrackerData());
@@ -121,11 +131,13 @@ public class DamageTrackerManager {
     public static void removeTracker(UUID playerUuid) {
         playerData.remove(playerUuid);
         dirtyPlayers.remove(playerUuid);
+        excludeMercenaryMap.remove(playerUuid);
     }
 
     public static void clearAll() {
         playerData.clear();
         mobLastHitRecords.clear();
         dirtyPlayers.clear();
+        excludeMercenaryMap.clear();
     }
 }

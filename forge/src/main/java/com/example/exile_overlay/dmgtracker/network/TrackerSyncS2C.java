@@ -25,15 +25,17 @@ public class TrackerSyncS2C {
 
     public TrackerSyncS2C(PlayerTrackerData data) {
         this.entries = new ArrayList<>();
+        Map<String, Float> dpsMap = data.getRecentSkillDpsMap();
         for (SkillDamageStats s : data.getTopSkillsByDamage(20)) {
             Map<String, Double> elemMap = new HashMap<>();
             for (Map.Entry<Elements, Double> e : s.getDamageByElement().entrySet()) {
                 elemMap.put(e.getKey().name(), e.getValue());
             }
+            float skillDps = dpsMap.getOrDefault(s.getSkillId(), 0f);
             entries.add(new SkillStatsEntry(
                     s.getSkillId(), s.getDisplayName(), SkillIdResolver.extractRawSpellId(s.getSkillId()),
                     s.getTotalDamage(), s.getHitCount(), s.getCritCount(),
-                    s.getMissCount(), s.getMaxHit(), s.getMinHit(), s.getKillCount(), s.getDps(),
+                    s.getMissCount(), s.getMaxHit(), s.getMinHit(), s.getKillCount(), skillDps,
                     s.getCritRate(), elemMap, s.getDominantElement()
             ));
         }
@@ -187,7 +189,15 @@ public class TrackerSyncS2C {
         public static void set(TrackerSyncS2C data) {
             lastData = data;
             receivedAtMs = System.currentTimeMillis();
+            boolean wasPresent = serverHasMod;
             serverHasMod = true;
+            if (!wasPresent) {
+                boolean exclude = com.example.exile_overlay.dmgtracker.config.TrackerConfig.isExcludeMercenaryDamage();
+                NetworkHandler.CHANNEL.sendToServer(new TrackerActionC2S(
+                        exclude ? TrackerActionC2S.ACTION_SET_EXCLUDE_MERC_TRUE
+                                : TrackerActionC2S.ACTION_SET_EXCLUDE_MERC_FALSE
+                ));
+            }
         }
 
         public static TrackerSyncS2C get() {

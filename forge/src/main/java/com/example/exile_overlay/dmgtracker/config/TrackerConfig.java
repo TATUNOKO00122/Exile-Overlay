@@ -14,6 +14,8 @@ public class TrackerConfig extends AbstractConfigSection {
     private int maxSkillsShown = 20;
     private int overlayPosX = -1;
     private int overlayPosY = -1;
+    private boolean showIndividualDps = true;
+    private boolean excludeMercenaryDamage = true;
 
     public TrackerConfig() {
         super("damage_tracker", "exile_overlay_damage_tracker.json", true);
@@ -21,6 +23,20 @@ public class TrackerConfig extends AbstractConfigSection {
 
     public static TrackerConfig getInstance() {
         return INSTANCE;
+    }
+
+    public static boolean isExcludeMercenaryDamage() { return INSTANCE.excludeMercenaryDamage; }
+    public void setExcludeMercenaryDamage(boolean val) {
+        this.excludeMercenaryDamage = val;
+        this.save();
+        if (com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
+            com.example.exile_overlay.dmgtracker.network.NetworkHandler.CHANNEL.sendToServer(
+                    new com.example.exile_overlay.dmgtracker.network.TrackerActionC2S(
+                            val ? com.example.exile_overlay.dmgtracker.network.TrackerActionC2S.ACTION_SET_EXCLUDE_MERC_TRUE
+                                : com.example.exile_overlay.dmgtracker.network.TrackerActionC2S.ACTION_SET_EXCLUDE_MERC_FALSE
+                    )
+            );
+        }
     }
 
     public boolean isEnabled() { return enabled; }
@@ -54,6 +70,11 @@ public class TrackerConfig extends AbstractConfigSection {
         this.maxSkillsShown = maxSkillsShown;
         this.save();
     }
+    public static boolean isShowIndividualDps() { return INSTANCE.showIndividualDps; }
+    public void setShowIndividualDps(boolean val) {
+        this.showIndividualDps = val;
+        this.save();
+    }
     public static int getOverlayPosX() { return INSTANCE.overlayPosX; }
     public static int getOverlayPosY() { return INSTANCE.overlayPosY; }
     public static void setOverlayPos(int x, int y) { INSTANCE.overlayPosX = x; INSTANCE.overlayPosY = y; INSTANCE.save(); }
@@ -66,6 +87,8 @@ public class TrackerConfig extends AbstractConfigSection {
         if (obj.has("maxSkillsShown")) maxSkillsShown = obj.get("maxSkillsShown").getAsInt();
         if (obj.has("overlayPosX")) overlayPosX = obj.get("overlayPosX").getAsInt();
         if (obj.has("overlayPosY")) overlayPosY = obj.get("overlayPosY").getAsInt();
+        if (obj.has("showIndividualDps")) showIndividualDps = obj.get("showIndividualDps").getAsBoolean();
+        if (obj.has("excludeMercenaryDamage")) excludeMercenaryDamage = obj.get("excludeMercenaryDamage").getAsBoolean();
     }
 
     @Override
@@ -75,5 +98,7 @@ public class TrackerConfig extends AbstractConfigSection {
         obj.addProperty("maxSkillsShown", maxSkillsShown);
         obj.addProperty("overlayPosX", overlayPosX);
         obj.addProperty("overlayPosY", overlayPosY);
+        obj.addProperty("showIndividualDps", showIndividualDps);
+        obj.addProperty("excludeMercenaryDamage", excludeMercenaryDamage);
     }
 }

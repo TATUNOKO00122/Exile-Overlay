@@ -129,6 +129,8 @@
   "exile_overlay.config.damage_tracker_max_skills": "最大显示数量: %s",
   "exile_overlay.config.damage_tracker_max_skills.unlimited": "最大显示数量: 无限制",
   "exile_overlay.config.damage_tracker_max_skills.tooltip": "限制追踪器上显示的技能数量",
+  "exile_overlay.config.damage_tracker_exclude_mercenary": "排除雇佣兵伤害: %s",
+  "exile_overlay.config.damage_tracker_exclude_mercenary.tooltip": "从伤害追踪器中排除雇佣兵的技能和普通攻击伤害",
   "exile_overlay.config.experimental": "[实验性]",
   "exile_overlay.config.show_damage": "显示伤害: %s",
   "exile_overlay.config.show_damage.tooltip": "显示伤害数字",

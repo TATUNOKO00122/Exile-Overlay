@@ -29,8 +29,9 @@ public class DamageTrackerOverlay implements IRenderCommand {
     private static final String COMMAND_ID = "damage_tracker";
     private static final int PRIORITY = 70;
 
-    private static final int MIN_WIDTH = 180;
+    private static final int MIN_WIDTH = 200;
     private static final int NAME_VAL_GAP = 20;
+    private static final int COL_GAP = 8;
 
     private static final int PADDING = 4;
     private static final int MARGIN = 4;
@@ -45,6 +46,31 @@ public class DamageTrackerOverlay implements IRenderCommand {
 
     private static final Map<String, Float> animRatio = new LinkedHashMap<>();
     private static final Map<ResourceLocation, Boolean> VALID_ICON_CACHE = new ConcurrentHashMap<>();
+
+    public record ColumnWidths(int maxDmgW, int maxDpsW, int maxPctW, int totalW) {
+        public static ColumnWidths calculate(net.minecraft.client.gui.Font font, int count,
+                                              List<TrackerSyncS2C.SkillStatsEntry> rows,
+                                              double grandTotal, boolean inCombat, boolean showDps) {
+            int maxDmgW = 0;
+            int maxDpsW = 0;
+            int maxPctW = 0;
+            for (int i = 0; i < count; i++) {
+                TrackerSyncS2C.SkillStatsEntry r = rows.get(i);
+                double pct = grandTotal > 0 ? r.totalDamage / grandTotal * 100 : 0;
+                String dmgStr = FormatUtil.fmt(r.totalDamage);
+                String pctStr = String.format("%.0f%%", pct);
+                maxDmgW = Math.max(maxDmgW, font.width(dmgStr));
+                maxPctW = Math.max(maxPctW, font.width(pctStr));
+                if (showDps) {
+                    float skillDps = inCombat ? r.dps : 0f;
+                    String dpsStr = (skillDps > 0 ? FormatUtil.fmt(skillDps) : "0") + "/s";
+                    maxDpsW = Math.max(maxDpsW, font.width(dpsStr));
+                }
+            }
+            int total = maxDmgW + (showDps ? COL_GAP + maxDpsW : 0) + COL_GAP + maxPctW;
+            return new ColumnWidths(maxDmgW, maxDpsW, maxPctW, total);
+        }
+    }
 
     @Override
     public String getId() {
@@ -85,7 +111,7 @@ public class DamageTrackerOverlay implements IRenderCommand {
         }
         List<TrackerSyncS2C.SkillStatsEntry> rows = data.getEntries();
         int count = Math.min(rows.size(), TrackerConfig.getMaxSkillsShown());
-        return calcBoxWidth(mc, count, rows, data.getTotalDamage());
+        return calcBoxWidth(mc, count, rows, data.getTotalDamage(), data.isInCombat());
     }
 
     @Override
@@ -157,15 +183,15 @@ public class DamageTrackerOverlay implements IRenderCommand {
         var font = mc.font;
         int count = Math.min(rows.size(), topN);
 
+        boolean inCombat = isConfig || (data != null && data.isInCombat());
         String dmgStr = FormatUtil.fmt(grandTotal);
         String dpsStr = dps > 0 ? FormatUtil.fmt(dps) + "/s" : "0/s";
         String headerLeft = dmgStr;
         String headerRight = dpsStr + " DPS";
 
-        int valW = 0;
-        for (int i = 0; i < count; i++) {
-            valW = Math.max(valW, font.width(rowValue(rows.get(i), grandTotal)));
-        }
+        boolean showDps = TrackerConfig.isShowIndividualDps();
+        ColumnWidths colWidths = ColumnWidths.calculate(font, count, rows, grandTotal, inCombat, showDps);
+        int valW = colWidths.totalW();
 
         int nameAreaW = 0;
         for (int i = 0; i < count; i++) {
@@ -287,8 +313,23 @@ public class DamageTrackerOverlay implements IRenderCommand {
                 String name = FormatUtil.truncate(font, rankName, nameSpace);
                 g.drawString(font, name, barLeft + 2, textY, 0xFFE8E8E8, true);
 
-                String val = rowValue(r, grandTotal);
-                g.drawString(font, val, contentRight - font.width(val), textY, VALUE_COLOR, true);
+                double pct = grandTotal > 0 ? r.totalDamage / grandTotal * 100 : 0;
+                String rowDmgStr = FormatUtil.fmt(r.totalDamage);
+                String pctStr = String.format("%.0f%%", pct);
+
+                int pctRight = contentRight;
+                g.drawString(font, pctStr, pctRight - font.width(pctStr), textY, VALUE_COLOR, true);
+
+                int curRight = pctRight - colWidths.maxPctW() - COL_GAP;
+
+                if (showDps) {
+                    float skillDps = inCombat ? r.dps : 0f;
+                    String rowDpsStr = (skillDps > 0 ? FormatUtil.fmt(skillDps) : "0") + "/s";
+                    g.drawString(font, rowDpsStr, curRight - font.width(rowDpsStr), textY, VALUE_COLOR, true);
+                    curRight -= colWidths.maxDpsW() + COL_GAP;
+                }
+
+                g.drawString(font, rowDmgStr, curRight - font.width(rowDmgStr), textY, VALUE_COLOR, true);
 
                 ty += ROW_H + ROW_GAP;
             }
@@ -298,11 +339,16 @@ public class DamageTrackerOverlay implements IRenderCommand {
     }
 
     public static int calcBoxWidth(Minecraft mc, int count, List<TrackerSyncS2C.SkillStatsEntry> rows, double grandTotal) {
+        TrackerSyncS2C data = TrackerSyncS2C.ClientTrackerData.get();
+        boolean inCombat = data != null && data.isInCombat();
+        return calcBoxWidth(mc, count, rows, grandTotal, inCombat);
+    }
+
+    public static int calcBoxWidth(Minecraft mc, int count, List<TrackerSyncS2C.SkillStatsEntry> rows, double grandTotal, boolean inCombat) {
         var font = mc.font;
-        int valW = 0;
-        for (int i = 0; i < count; i++) {
-            valW = Math.max(valW, font.width(rowValue(rows.get(i), grandTotal)));
-        }
+        boolean showDps = TrackerConfig.isShowIndividualDps();
+        ColumnWidths colWidths = ColumnWidths.calculate(font, count, rows, grandTotal, inCombat, showDps);
+        int valW = colWidths.totalW();
         int nameAreaW = 0;
         for (int i = 0; i < count; i++) {
             TrackerSyncS2C.SkillStatsEntry r = rows.get(i);
@@ -330,8 +376,21 @@ public class DamageTrackerOverlay implements IRenderCommand {
     }
 
     private static String rowValue(TrackerSyncS2C.SkillStatsEntry r, double grandTotal) {
+        TrackerSyncS2C data = TrackerSyncS2C.ClientTrackerData.get();
+        boolean inCombat = data != null && data.isInCombat();
+        return rowValue(r, grandTotal, inCombat);
+    }
+
+    private static String rowValue(TrackerSyncS2C.SkillStatsEntry r, double grandTotal, boolean inCombat) {
         double pct = grandTotal > 0 ? r.totalDamage / grandTotal * 100 : 0;
-        return FormatUtil.fmt(r.totalDamage) + "  " + String.format("%.0f%%", pct);
+        String dmgStr = FormatUtil.fmt(r.totalDamage);
+        String pctStr = String.format("%.0f%%", pct);
+        if (TrackerConfig.isShowIndividualDps()) {
+            float skillDps = inCombat ? r.dps : 0f;
+            String dpsStr = (skillDps > 0 ? FormatUtil.fmt(skillDps) : "0") + "/s";
+            return dmgStr + "  " + dpsStr + "  " + pctStr;
+        }
+        return dmgStr + "  " + pctStr;
     }
 
     public static String resolveDisplayName(TrackerSyncS2C.SkillStatsEntry entry) {
