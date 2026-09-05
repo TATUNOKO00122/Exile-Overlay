@@ -14,8 +14,8 @@ public record MercenaryDisplayInfo(
         int level,
         float health,
         float maxHealth,
-        float energyShield,
-        float maxEnergyShield,
+        float magicShield,
+        float maxMagicShield,
         List<MercenarySkillInfo> skills
 ) {
     public boolean isAlive() {

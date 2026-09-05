@@ -21,9 +21,9 @@ public class OrbTextConfig extends AbstractConfigSection {
     }
 
     /**
-     * Orb1のHP/ES表示モード
+     * Orb1のHP/MS表示モード
      */
-    public enum Orb1EsMode {
+    public enum Orb1MsMode {
         OVERLAP,  // 重ね合わせ（比率に応じた動的幅）
         SPLIT     // 分割表示
     }
@@ -44,11 +44,11 @@ public class OrbTextConfig extends AbstractConfigSection {
     private float textScale = 1.97f;
     private float aboveTextScale = 1.99f;
     private float energyTextScale = 1.77f;
-    private float esTextScale = 2.22f;
-    private Orb1EsMode orb1EsMode = Orb1EsMode.OVERLAP;
+    private float msTextScale = 2.22f;
+    private Orb1MsMode orb1MsMode = Orb1MsMode.OVERLAP;
     private OrbResourceSwapMode orbSwapMode = OrbResourceSwapMode.OFF;
     private boolean hideOrb1SmallerValue = false;
-    private boolean hideLowerHpEsGaugeOrb1 = false;
+    private boolean hideLowerHpMsGaugeOrb1 = false;
     private OrbTextPosition textPosition = OrbTextPosition.ABOVE;
     private float aboveOrbOffsetY = 2.99f;
     private float aboveOrbOffsetX = 4.99f;
@@ -89,15 +89,25 @@ public class OrbTextConfig extends AbstractConfigSection {
         if (obj.has("textScale")) textScale = obj.get("textScale").getAsFloat();
         if (obj.has("aboveTextScale")) aboveTextScale = obj.get("aboveTextScale").getAsFloat();
         if (obj.has("energyTextScale")) energyTextScale = obj.get("energyTextScale").getAsFloat();
-        if (obj.has("esTextScale")) esTextScale = obj.get("esTextScale").getAsFloat();
-        if (obj.has("orb1EsMode")) {
+        if (obj.has("msTextScale")) {
+            msTextScale = obj.get("msTextScale").getAsFloat();
+        } else if (obj.has("esTextScale")) {
+            msTextScale = obj.get("esTextScale").getAsFloat();
+        }
+        if (obj.has("orb1MsMode")) {
             try {
-                orb1EsMode = Orb1EsMode.valueOf(obj.get("orb1EsMode").getAsString());
+                orb1MsMode = Orb1MsMode.valueOf(obj.get("orb1MsMode").getAsString());
             } catch (IllegalArgumentException ignored) {
-                orb1EsMode = Orb1EsMode.OVERLAP;
+                orb1MsMode = Orb1MsMode.OVERLAP;
+            }
+        } else if (obj.has("orb1EsMode")) {
+            try {
+                orb1MsMode = Orb1MsMode.valueOf(obj.get("orb1EsMode").getAsString());
+            } catch (IllegalArgumentException ignored) {
+                orb1MsMode = Orb1MsMode.OVERLAP;
             }
         } else if (obj.has("splitOrb1")) {
-            orb1EsMode = obj.get("splitOrb1").getAsBoolean() ? Orb1EsMode.SPLIT : Orb1EsMode.OVERLAP;
+            orb1MsMode = obj.get("splitOrb1").getAsBoolean() ? Orb1MsMode.SPLIT : Orb1MsMode.OVERLAP;
         }
         if (obj.has("orbSwapMode")) {
             try {
@@ -111,7 +121,11 @@ public class OrbTextConfig extends AbstractConfigSection {
         } else if (obj.has("showOrb1SmallerValue")) {
             hideOrb1SmallerValue = !obj.get("showOrb1SmallerValue").getAsBoolean();
         }
-        if (obj.has("hideLowerHpEsGaugeOrb1")) hideLowerHpEsGaugeOrb1 = obj.get("hideLowerHpEsGaugeOrb1").getAsBoolean();
+        if (obj.has("hideLowerHpMsGaugeOrb1")) {
+            hideLowerHpMsGaugeOrb1 = obj.get("hideLowerHpMsGaugeOrb1").getAsBoolean();
+        } else if (obj.has("hideLowerHpEsGaugeOrb1")) {
+            hideLowerHpMsGaugeOrb1 = obj.get("hideLowerHpEsGaugeOrb1").getAsBoolean();
+        }
         if (obj.has("textPosition")) {
             try {
                 textPosition = OrbTextPosition.valueOf(obj.get("textPosition").getAsString());
@@ -138,11 +152,11 @@ public class OrbTextConfig extends AbstractConfigSection {
         obj.addProperty("textScale", textScale);
         obj.addProperty("aboveTextScale", aboveTextScale);
         obj.addProperty("energyTextScale", energyTextScale);
-        obj.addProperty("esTextScale", esTextScale);
-        obj.addProperty("orb1EsMode", orb1EsMode.name());
+        obj.addProperty("msTextScale", msTextScale);
+        obj.addProperty("orb1MsMode", orb1MsMode.name());
         obj.addProperty("orbSwapMode", orbSwapMode.name());
         obj.addProperty("hideOrb1SmallerValue", hideOrb1SmallerValue);
-        obj.addProperty("hideLowerHpEsGaugeOrb1", hideLowerHpEsGaugeOrb1);
+        obj.addProperty("hideLowerHpMsGaugeOrb1", hideLowerHpMsGaugeOrb1);
         obj.addProperty("textPosition", textPosition.name());
         obj.addProperty("aboveOrbOffsetY", aboveOrbOffsetY);
         obj.addProperty("aboveOrbOffsetX", aboveOrbOffsetX);
@@ -188,34 +202,44 @@ public class OrbTextConfig extends AbstractConfigSection {
         return energyTextScale;
     }
 
-    public float getEsTextScale() { return esTextScale; }
-    public void setEsTextScale(float scale) { this.esTextScale = scale; }
+    public float getMsTextScale() { return msTextScale; }
+    public void setMsTextScale(float scale) { this.msTextScale = scale; }
 
-    public float cycleEsTextScale() {
+    public float cycleMsTextScale() {
         for (int i = 0; i < SCALE_OPTIONS.length; i++) {
-            if (Float.compare(SCALE_OPTIONS[i], esTextScale) == 0) {
-                esTextScale = SCALE_OPTIONS[(i + 1) % SCALE_OPTIONS.length];
-                return esTextScale;
+            if (Float.compare(SCALE_OPTIONS[i], msTextScale) == 0) {
+                msTextScale = SCALE_OPTIONS[(i + 1) % SCALE_OPTIONS.length];
+                return msTextScale;
             }
         }
-        esTextScale = 1.0f;
-        return esTextScale;
+        msTextScale = 1.0f;
+        return msTextScale;
     }
+
+    @Deprecated
+    public float getEsTextScale() { return getMsTextScale(); }
+    @Deprecated
+    public void setEsTextScale(float scale) { setMsTextScale(scale); }
+    @Deprecated
+    public float cycleEsTextScale() { return cycleMsTextScale(); }
 
     public boolean isEnergyCompact() { return energyCompact; }
     public void setEnergyCompact(boolean compact) { this.energyCompact = compact; }
 
-    public Orb1EsMode getOrb1EsMode() { return orb1EsMode; }
-    public void setOrb1EsMode(Orb1EsMode mode) { this.orb1EsMode = mode; }
-    public boolean isSplitOrb1() { return orb1EsMode == Orb1EsMode.SPLIT; }
-    public void setSplitOrb1(boolean split) { this.orb1EsMode = split ? Orb1EsMode.SPLIT : Orb1EsMode.OVERLAP; }
-    public boolean isOverlapHpEsOrb1() { return orb1EsMode == Orb1EsMode.OVERLAP; }
+    public Orb1MsMode getOrb1MsMode() { return orb1MsMode; }
+    public void setOrb1MsMode(Orb1MsMode mode) { this.orb1MsMode = mode; }
+    public boolean isSplitOrb1() { return orb1MsMode == Orb1MsMode.SPLIT; }
+    public void setSplitOrb1(boolean split) { this.orb1MsMode = split ? Orb1MsMode.SPLIT : Orb1MsMode.OVERLAP; }
+    public boolean isOverlapHpMsOrb1() { return orb1MsMode == Orb1MsMode.OVERLAP; }
 
-    public Orb1EsMode cycleOrb1EsMode() {
-        Orb1EsMode[] values = Orb1EsMode.values();
-        orb1EsMode = values[(orb1EsMode.ordinal() + 1) % values.length];
-        return orb1EsMode;
+    public Orb1MsMode cycleOrb1MsMode() {
+        Orb1MsMode[] values = Orb1MsMode.values();
+        orb1MsMode = values[(orb1MsMode.ordinal() + 1) % values.length];
+        return orb1MsMode;
     }
+
+    @Deprecated
+    public boolean isOverlapHpEsOrb1() { return isOverlapHpMsOrb1(); }
 
     public OrbResourceSwapMode getOrbSwapMode() { return orbSwapMode; }
     public void setOrbSwapMode(OrbResourceSwapMode mode) { this.orbSwapMode = mode; }
@@ -229,8 +253,13 @@ public class OrbTextConfig extends AbstractConfigSection {
     public boolean isHideOrb1SmallerValue() { return hideOrb1SmallerValue; }
     public void setHideOrb1SmallerValue(boolean hide) { this.hideOrb1SmallerValue = hide; }
 
-    public boolean isHideLowerHpEsGaugeOrb1() { return hideLowerHpEsGaugeOrb1; }
-    public void setHideLowerHpEsGaugeOrb1(boolean hide) { this.hideLowerHpEsGaugeOrb1 = hide; }
+    public boolean isHideLowerHpMsGaugeOrb1() { return hideLowerHpMsGaugeOrb1; }
+    public void setHideLowerHpMsGaugeOrb1(boolean hide) { this.hideLowerHpMsGaugeOrb1 = hide; }
+
+    @Deprecated
+    public boolean isHideLowerHpEsGaugeOrb1() { return isHideLowerHpMsGaugeOrb1(); }
+    @Deprecated
+    public void setHideLowerHpEsGaugeOrb1(boolean hide) { setHideLowerHpMsGaugeOrb1(hide); }
 
     public OrbTextPosition getTextPosition() { return textPosition; }
     public void setTextPosition(OrbTextPosition position) {

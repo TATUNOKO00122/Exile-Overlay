@@ -115,8 +115,8 @@ public class ServerTickSyncHandler {
         if (current.hasMercenary() != previous.hasMercenary()) return true;
         if (Math.abs(current.getHealth() - previous.getHealth()) > 0.1f) return true;
         if (Math.abs(current.getMaxHealth() - previous.getMaxHealth()) > 0.1f) return true;
-        if (Math.abs(current.getEnergyShield() - previous.getEnergyShield()) > 0.1f) return true;
-        if (Math.abs(current.getMaxEnergyShield() - previous.getMaxEnergyShield()) > 0.1f) return true;
+        if (Math.abs(current.getMagicShield() - previous.getMagicShield()) > 0.1f) return true;
+        if (Math.abs(current.getMaxMagicShield() - previous.getMaxMagicShield()) > 0.1f) return true;
         if (current.getLevel() != previous.getLevel()) return true;
         if (!current.getClassId().equals(previous.getClassId())) return true;
 

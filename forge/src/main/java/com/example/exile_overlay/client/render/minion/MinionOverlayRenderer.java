@@ -227,13 +227,13 @@ public class MinionOverlayRenderer implements IRenderCommand {
                 MERC_ICON_FRAME_SIZE, MERC_ICON_FRAME_SIZE,
                 MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
 
-        // 4. HP / ES バー座標 & スキルアイコン座標設定
-        boolean hasES = merc.maxEnergyShield() > 0;
-        int barShift = hasES ? 6 : 0;
+        // 4. HP / MS バー座標 & スキルアイコン座標設定
+        boolean hasMS = merc.maxMagicShield() > 0;
+        int barShift = hasMS ? 6 : 0;
 
         int barFrameX = mirrored ? x : (x + MERC_BAR_OFFSET_X);
         int hpBarFrameY = drawY + 22 - barShift;
-        float esBarFrameY = hpBarFrameY + 7.5f;
+        float msBarFrameY = hpBarFrameY + 7.5f;
 
         // 5. 装備スキルアイコン (HPバー枠の上側に配置、反転時はアイコンに近い右側から配置)
         if (merc.skills() != null && !merc.skills().isEmpty()) {
@@ -308,11 +308,11 @@ public class MinionOverlayRenderer implements IRenderCommand {
             graphics.pose().popPose();
         }
 
-        // 7. ES（Energy Shield）バー描画（下段、二段表示）
-        if (hasES) {
+        // 7. MS（Magic Shield）バー描画（下段、二段表示）
+        if (hasMS) {
             graphics.pose().pushPose();
             try {
-                graphics.pose().translate(barFrameX, esBarFrameY, 0);
+                graphics.pose().translate(barFrameX, msBarFrameY, 0);
                 graphics.pose().scale(MERC_BAR_SCALE, MERC_BAR_SCALE, 1.0f);
 
                 // バー背景
@@ -320,24 +320,24 @@ public class MinionOverlayRenderer implements IRenderCommand {
                         MERC_BAR_INNER_X + MERC_BAR_INNER_W, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                         0x80000000);
 
-                // 現在ESバー（反転時はアイコンに近い右端起点で伸びる）
-                float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
-                int esFillW = (int) (MERC_BAR_INNER_W * esPct);
-                if (esFillW > 0) {
-                    int fillLeft = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W - esFillW) : MERC_BAR_INNER_X;
-                    int fillRight = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W) : (MERC_BAR_INNER_X + esFillW);
+                // 現在MSバー（反転時はアイコンに近い右端起点で伸びる）
+                float msPct = Math.max(0.0f, Math.min(1.0f, merc.magicShield() / merc.maxMagicShield()));
+                int msFillW = (int) (MERC_BAR_INNER_W * msPct);
+                if (msFillW > 0) {
+                    int fillLeft = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W - msFillW) : MERC_BAR_INNER_X;
+                    int fillRight = mirrored ? (MERC_BAR_INNER_X + MERC_BAR_INNER_W) : (MERC_BAR_INNER_X + msFillW);
                     graphics.fill(fillLeft, MERC_BAR_INNER_Y,
                             fillRight, MERC_BAR_INNER_Y + MERC_BAR_INNER_H,
                             0xFF00B0FF);
                 }
 
-                // ESBar枠テクスチャ描画
+                // MSBar枠テクスチャ描画
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 graphics.blit(MERCENARY_UI, 0, 0, MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
-                        (float) MERC_BAR_FRAME_U, (float) MERC_BAR_FRAME_V,
-                        MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
-                        MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
+                    (float) MERC_BAR_FRAME_U, (float) MERC_BAR_FRAME_V,
+                    MERC_BAR_FRAME_W, MERC_BAR_FRAME_H,
+                    MERC_UI_TEX_SIZE, MERC_UI_TEX_SIZE);
             } finally {
                 graphics.pose().popPose();
             }
@@ -349,9 +349,9 @@ public class MinionOverlayRenderer implements IRenderCommand {
             int curHp = (int) Math.ceil(merc.health());
             int maxHp = (int) Math.ceil(merc.maxHealth());
             String hpText;
-            if (hasES && merc.energyShield() > 0) {
-                int curEs = (int) Math.ceil(merc.energyShield());
-                hpText = curHp + " (+" + curEs + ") / " + maxHp;
+            if (hasMS && merc.magicShield() > 0) {
+                int curMs = (int) Math.ceil(merc.magicShield());
+                hpText = curHp + " (+" + curMs + ") / " + maxHp;
             } else {
                 hpText = curHp + " / " + maxHp;
             }

@@ -2608,15 +2608,15 @@ public class MethodHandlesUtil {
             String name = merc.getName() != null ? merc.getName().getString() : "Mercenary";
             float health = 0;
             float maxHealth = 0;
-            float energyShield = 0;
-            float maxEnergyShield = 0;
+            float magicShield = 0;
+            float maxMagicShield = 0;
             int level = 1;
             Object cooldowns = null;
 
             try {
                 health = getCurrentHealth(merc);
                 maxHealth = getMaxHealth(merc);
-                energyShield = getCurrentMagicShield(merc);
+                magicShield = getCurrentMagicShield(merc);
             } catch (Throwable ignore) {}
 
             if (LOAD_UNIT != null) {
@@ -2630,7 +2630,7 @@ public class MethodHandlesUtil {
 
                     try {
                         if (MAGIC_SHIELD_TYPE != null && GET_MAXIMUM_RESOURCE != null) {
-                            maxEnergyShield = getMaximumResource(entityData, MAGIC_SHIELD_TYPE);
+                            maxMagicShield = getMaximumResource(entityData, MAGIC_SHIELD_TYPE);
                         }
                     } catch (Throwable ignore) {}
 
@@ -2683,7 +2683,7 @@ public class MethodHandlesUtil {
                 }
             }
 
-            return new MercenarySyncS2C(classId, name, level, health, maxHealth, energyShield, maxEnergyShield, skillList);
+            return new MercenarySyncS2C(classId, name, level, health, maxHealth, magicShield, maxMagicShield, skillList);
         } catch (Throwable t) {
             LOGGER.debug("Failed to create mercenary sync packet: {}", t.getMessage());
             return null;

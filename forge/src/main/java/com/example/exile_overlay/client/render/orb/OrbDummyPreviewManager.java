@@ -38,7 +38,7 @@ public class OrbDummyPreviewManager {
      */
     public enum OrbTarget {
         HEALTH("screen.exile_overlay.orb_color.health", "Health (HP)", OrbColorConfig::getHealthColor, OrbColorConfig::setHealthColor),
-        SHIELD("screen.exile_overlay.orb_color.shield", "Shield (ES)", OrbColorConfig::getShieldColor, OrbColorConfig::setShieldColor),
+        SHIELD("screen.exile_overlay.orb_color.shield", "Shield (MS)", OrbColorConfig::getShieldColor, OrbColorConfig::setShieldColor),
         MANA("screen.exile_overlay.orb_color.mana", "Mana", OrbColorConfig::getManaColor, OrbColorConfig::setManaColor),
         BLOOD("screen.exile_overlay.orb_color.blood", "Blood Magic", OrbColorConfig::getBloodColor, OrbColorConfig::setBloodColor),
         ENERGY("screen.exile_overlay.orb_color.energy", "Energy", OrbColorConfig::getEnergyColor, OrbColorConfig::setEnergyColor),

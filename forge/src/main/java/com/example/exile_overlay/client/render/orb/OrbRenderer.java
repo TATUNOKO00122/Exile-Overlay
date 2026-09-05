@@ -129,9 +129,9 @@ public class OrbRenderer {
         boolean splitMode = isOrb1 && TEXT_CONFIG.isSplitOrb1();
 
         if (splitMode) {
-            float esMax = getEsMaxValue(player);
+            float msMax = getMsMaxValue(player);
 
-            if (esMax <= 0) {
+            if (msMax <= 0) {
                 OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, color);
             } else {
                 float hpCurrent = config.getDataProvider().getCurrentValue(player);
@@ -140,29 +140,29 @@ public class OrbRenderer {
                 float hpSmoothed = OrbSmoothedValue.getSmoothedPercent(config.getId() + "_split_hp", hpPercent);
                 OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, hpSmoothed, OrbColorConfig.getInstance().getHealthColor(), 1);
 
-                float esCurrent = getEsCurrentValue(player);
-                if (esCurrent > 0) {
-                    float esPercent = Math.min(esCurrent / esMax, 1.0f);
-                    float esSmoothed = OrbDummyPreviewManager.getInstance().isDummyPreviewActive()
-                            ? esPercent
-                            : OrbSmoothedValue.getSmoothedPercent(config.getId() + "_split_ms", esPercent);
-                    OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, esSmoothed, OrbColorConfig.getInstance().getShieldColor(), 2);
+                float msCurrent = getMsCurrentValue(player);
+                if (msCurrent > 0) {
+                    float msPercent = Math.min(msCurrent / msMax, 1.0f);
+                    float msSmoothed = OrbDummyPreviewManager.getInstance().isDummyPreviewActive()
+                            ? msPercent
+                            : OrbSmoothedValue.getSmoothedPercent(config.getId() + "_split_ms", msPercent);
+                    OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, msSmoothed, OrbColorConfig.getInstance().getShieldColor(), 2);
                 }
             }
         } else {
-            boolean hideLower = isOrb1 && TEXT_CONFIG.isHideLowerHpEsGaugeOrb1();
+            boolean hideLower = isOrb1 && TEXT_CONFIG.isHideLowerHpMsGaugeOrb1();
             float hpMax = max;
-            float esMax = isOrb1 ? getEsMaxValue(player) : 0;
+            float msMax = isOrb1 ? getMsMaxValue(player) : 0;
 
-            boolean hpIsLower = hideLower && esMax > 0 && hpMax < esMax;
-            boolean esIsLower = hideLower && esMax > 0 && hpMax >= esMax;
+            boolean hpIsLower = hideLower && msMax > 0 && hpMax < msMax;
+            boolean msIsLower = hideLower && msMax > 0 && hpMax >= msMax;
 
             if (!hpIsLower) {
                 OrbShaderRenderer.drawCircularFill(graphics, orbX, orbY, orbSize, percent, color);
             }
 
-            if (isOrb1 && !esIsLower) {
-                renderEsOverlay(graphics, orbX, orbY, orbSize, player, hpMax);
+            if (isOrb1 && !msIsLower) {
+                renderMsOverlay(graphics, orbX, orbY, orbSize, player, hpMax);
             }
         }
 
@@ -227,10 +227,10 @@ public class OrbRenderer {
 
         if ("orb_1".equals(config.getId())) {
             if (TEXT_CONFIG.isSplitOrb1()
-                    && getEsMaxValue(player) > 0) {
+                    && getMsMaxValue(player) > 0) {
                 renderSplitHpMsValues(graphics, config, player, mc, orbX, orbY, orbSize, compact, scaleFactor);
             } else {
-                renderHpEsValues(graphics, config, player, mc, orbX, orbY, orbSize, centerX, compact, scaleFactor);
+                renderHpMsValues(graphics, config, player, mc, orbX, orbY, orbSize, centerX, compact, scaleFactor);
             }
         } else if (config.getDataProvider().shouldShowValue()) {
             float current = config.getDataProvider().getCurrentValue(player);
@@ -248,16 +248,16 @@ public class OrbRenderer {
         }
     }
 
-    private static void renderHpEsValues(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc,
+    private static void renderHpMsValues(GuiGraphics graphics, OrbConfig config, Player player, Minecraft mc,
             int orbX, int orbY, int orbSize, float centerX, boolean compact, float scaleFactor) {
         float hpCurrent = config.getDataProvider().getCurrentValue(player);
         float hpMax = config.getDataProvider().getMaxValue(player);
-        float esCurrent = getEsCurrentValue(player);
-        float esMax = getEsMaxValue(player);
+        float msCurrent = getMsCurrentValue(player);
+        float msMax = getMsMaxValue(player);
 
         int whiteColor = 0xFFFFFFFF;
 
-        if (esMax <= 0) {
+        if (msMax <= 0) {
             String text = formatValuePair((int) hpCurrent, (int) hpMax, "/", compact);
             float textScale = config.getDataProvider().getTextScale() * scaleFactor;
             renderCenteredScaledText(graphics, mc, text, centerX, orbY + orbSize / 2f, textScale, whiteColor, TEXT_CONFIG.isOrbTextShadow());
@@ -266,15 +266,15 @@ public class OrbRenderer {
 
         float baseProviderScale = config.getDataProvider().getTextScale();
         float hpScale = baseProviderScale * TEXT_CONFIG.getTextScale();
-        float esScale = baseProviderScale * TEXT_CONFIG.getEsTextScale();
+        float msScale = baseProviderScale * TEXT_CONFIG.getMsTextScale();
 
-        boolean hpIsLarger = hpMax >= esMax;
-        float largerScale = hpIsLarger ? hpScale : esScale;
-        float smallerBaseScale = hpIsLarger ? esScale : hpScale;
-        float largerCurrent = hpIsLarger ? hpCurrent : esCurrent;
-        float largerMax = hpIsLarger ? hpMax : esMax;
-        float smallerCurrent = hpIsLarger ? esCurrent : hpCurrent;
-        float smallerMax = hpIsLarger ? esMax : hpMax;
+        boolean hpIsLarger = hpMax >= msMax;
+        float largerScale = hpIsLarger ? hpScale : msScale;
+        float smallerBaseScale = hpIsLarger ? msScale : hpScale;
+        float largerCurrent = hpIsLarger ? hpCurrent : msCurrent;
+        float largerMax = hpIsLarger ? hpMax : msMax;
+        float smallerCurrent = hpIsLarger ? msCurrent : hpCurrent;
+        float smallerMax = hpIsLarger ? msMax : hpMax;
 
         float centerY = orbY + orbSize / 2f;
         boolean hideSmaller = TEXT_CONFIG.isHideOrb1SmallerValue();
@@ -302,29 +302,29 @@ public class OrbRenderer {
             int orbX, int orbY, int orbSize, boolean compact, float scaleFactor) {
         float hpCurrent = config.getDataProvider().getCurrentValue(player);
         float hpMax = config.getDataProvider().getMaxValue(player);
-        float esCurrent = getEsCurrentValue(player);
-        float esMax = getEsMaxValue(player);
+        float msCurrent = getMsCurrentValue(player);
+        float msMax = getMsMaxValue(player);
 
         float halfSize = orbSize / 2f;
         float baseScale = config.getDataProvider().getTextScale() * COMPACT_SCALE_RATIO;
         float hpTextScale = baseScale * TEXT_CONFIG.getTextScale();
-        float esTextScale = baseScale * TEXT_CONFIG.getEsTextScale();
+        float msTextScale = baseScale * TEXT_CONFIG.getMsTextScale();
 
         String hpText = formatValuePair((int) hpCurrent, (int) hpMax, "/", compact);
         float hpCenterX = orbX + halfSize / 2f;
         float centerY = orbY + orbSize / 2f;
         renderCenteredScaledText(graphics, mc, hpText, hpCenterX, centerY, hpTextScale, 0xFFFFFFFF, TEXT_CONFIG.isOrbTextShadow());
 
-        if (esMax > 0 && !TEXT_CONFIG.isHideOrb1SmallerValue()) {
-            String msText = formatValuePair((int) esCurrent, (int) esMax, "/", compact);
+        if (msMax > 0 && !TEXT_CONFIG.isHideOrb1SmallerValue()) {
+            String msText = formatValuePair((int) msCurrent, (int) msMax, "/", compact);
             float msCenterX = orbX + halfSize + halfSize / 2f;
-            renderCenteredScaledText(graphics, mc, msText, msCenterX, centerY, esTextScale, 0xFFFFFFFF, TEXT_CONFIG.isOrbTextShadow());
+            renderCenteredScaledText(graphics, mc, msText, msCenterX, centerY, msTextScale, 0xFFFFFFFF, TEXT_CONFIG.isOrbTextShadow());
         }
     }
 
     /**
      * オーブ上部に数値を表示するモード。
-     * 左グループ(HP/ES/Energy): 経験値バー左端に左揃え、縦3行。
+     * 左グループ(HP/MS/Energy): 経験値バー左端に左揃え、縦3行。
      * 右グループ(マナ): 経験値バー右端に右揃えの1行。
      * 全ての数値は同じスケール（textScale × dataProvider.getTextScale）。
      */
@@ -345,9 +345,9 @@ public class OrbRenderer {
         if ("orb_1".equals(config.getId())) {
             float hpCurrent = config.getDataProvider().getCurrentValue(player);
             float hpMax = config.getDataProvider().getMaxValue(player);
-            float esCurrent = getEsCurrentValue(player);
-            float esMax = getEsMaxValue(player);
-            boolean showEs = esMax > 0 && !TEXT_CONFIG.isHideOrb1SmallerValue();
+            float msCurrent = getMsCurrentValue(player);
+            float msMax = getMsMaxValue(player);
+            boolean showMs = msMax > 0 && !TEXT_CONFIG.isHideOrb1SmallerValue();
 
             if (isIntegrated) {
                 float subCurrent = OrbDataProviders.ORB_3.getCurrentValue(player);
@@ -355,7 +355,7 @@ public class OrbRenderer {
                 boolean showSub = OrbRegistry.isOrbVisible(player, OrbType.ORB_3);
 
                 int totalLines = 1;
-                if (showEs) totalLines++;
+                if (showMs) totalLines++;
                 if (showSub && subMax > 0) totalLines++;
 
                 String hpText = formatValuePair((int) hpCurrent, (int) hpMax, "/", compact);
@@ -371,23 +371,23 @@ public class OrbRenderer {
                     currentLine--;
                 }
 
-                if (showEs) {
-                    String esText = formatValuePair((int) esCurrent, (int) esMax, "/", compact);
-                    renderLeftAlignedScaledText(graphics, mc, esText, leftX,
+                if (showMs) {
+                    String msText = formatValuePair((int) msCurrent, (int) msMax, "/", compact);
+                    renderLeftAlignedScaledText(graphics, mc, msText, leftX,
                             firstLineCenterY - currentLine * linePitch, scale, whiteColor, shadow);
                 }
             } else {
                 int totalLines = 1;
-                if (showEs) totalLines++;
+                if (showMs) totalLines++;
 
                 String hpText = formatValuePair((int) hpCurrent, (int) hpMax, "/", compact);
                 renderLeftAlignedScaledText(graphics, mc, hpText, leftX,
                         firstLineCenterY - (totalLines - 1) * linePitch, scale, whiteColor, shadow);
 
                 int currentLine = totalLines - 2;
-                if (showEs) {
-                    String esText = formatValuePair((int) esCurrent, (int) esMax, "/", compact);
-                    renderLeftAlignedScaledText(graphics, mc, esText, leftX,
+                if (showMs) {
+                    String msText = formatValuePair((int) msCurrent, (int) msMax, "/", compact);
+                    renderLeftAlignedScaledText(graphics, mc, msText, leftX,
                             firstLineCenterY - currentLine * linePitch, scale, whiteColor, shadow);
                 }
             }
@@ -441,14 +441,14 @@ public class OrbRenderer {
                 overlayPercent, config.getOverlayColor());
     }
 
-    private static float getEsCurrentValue(Player player) {
+    private static float getMsCurrentValue(Player player) {
         if (OrbDummyPreviewManager.getInstance().isDummyPreviewActive()) {
             return 100.0f;
         }
         return ModDataProviderRegistry.getValue(player, DataType.ORB_1_OVERLAY_CURRENT);
     }
 
-    private static float getEsMaxValue(Player player) {
+    private static float getMsMaxValue(Player player) {
         if (OrbDummyPreviewManager.getInstance().isDummyPreviewActive()) {
             return 100.0f;
         }
@@ -456,31 +456,31 @@ public class OrbRenderer {
     }
 
     /**
-     * エナジーシールド（ES）オーバーレイを描画（HJUD Mod方式または重ね合わせ方式）
+     * マジックシールド（MS）オーバーレイを描画（HJUD Mod方式または重ね合わせ方式）
      */
-    private static void renderEsOverlay(GuiGraphics graphics, int x, int y, int size, Player player, float hpMax) {
-        float currentEs = getEsCurrentValue(player);
-        float maxEs = getEsMaxValue(player);
+    private static void renderMsOverlay(GuiGraphics graphics, int x, int y, int size, Player player, float hpMax) {
+        float currentMs = getMsCurrentValue(player);
+        float maxMs = getMsMaxValue(player);
 
-        if (maxEs <= 0 || currentEs <= 0) {
+        if (maxMs <= 0 || currentMs <= 0) {
             return;
         }
 
-        float esPercent = Math.min(currentEs / maxEs, 1.0f);
+        float msPercent = Math.min(currentMs / maxMs, 1.0f);
         if (!OrbDummyPreviewManager.getInstance().isDummyPreviewActive()) {
-            esPercent = OrbSmoothedValue.getSmoothedPercent("orb_1_es", esPercent);
+            msPercent = OrbSmoothedValue.getSmoothedPercent("orb_1_ms", msPercent);
         }
-        if (esPercent <= 0) {
+        if (msPercent <= 0) {
             return;
         }
 
-        if (TEXT_CONFIG.isOverlapHpEsOrb1()) {
+        if (TEXT_CONFIG.isOverlapHpMsOrb1()) {
             float calculatedHpMax = hpMax > 0 ? hpMax : 100.0f;
-            float ratio = maxEs / (calculatedHpMax + maxEs);
+            float ratio = maxMs / (calculatedHpMax + maxMs);
             float overlapWidth = Math.min(0.75f, Math.max(1.0f / 6.0f, ratio));
-            OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, OrbColorConfig.getInstance().getShieldColor(), 3, overlapWidth);
+            OrbShaderRenderer.drawCircularFill(graphics, x, y, size, msPercent, OrbColorConfig.getInstance().getShieldColor(), 3, overlapWidth);
         } else {
-            OrbShaderRenderer.drawCircularFill(graphics, x, y, size, esPercent, OrbColorConfig.getInstance().getShieldColor());
+            OrbShaderRenderer.drawCircularFill(graphics, x, y, size, msPercent, OrbColorConfig.getInstance().getShieldColor());
         }
     }
 

@@ -25,8 +25,8 @@ public class MercenarySyncS2C {
     private final int level;
     private final float health;
     private final float maxHealth;
-    private final float energyShield;
-    private final float maxEnergyShield;
+    private final float magicShield;
+    private final float maxMagicShield;
     private final List<SkillData> skills;
 
     public record SkillData(
@@ -44,14 +44,14 @@ public class MercenarySyncS2C {
         this.level = 1;
         this.health = 0;
         this.maxHealth = 0;
-        this.energyShield = 0;
-        this.maxEnergyShield = 0;
+        this.magicShield = 0;
+        this.maxMagicShield = 0;
         this.skills = new ArrayList<>();
     }
 
     public MercenarySyncS2C(String classId, String name, int level,
                            float health, float maxHealth,
-                           float energyShield, float maxEnergyShield,
+                           float magicShield, float maxMagicShield,
                            List<SkillData> skills) {
         this.hasMercenary = true;
         this.classId = classId != null ? classId : "";
@@ -59,8 +59,8 @@ public class MercenarySyncS2C {
         this.level = Math.max(1, level);
         this.health = health;
         this.maxHealth = maxHealth;
-        this.energyShield = energyShield;
-        this.maxEnergyShield = maxEnergyShield;
+        this.magicShield = magicShield;
+        this.maxMagicShield = maxMagicShield;
         this.skills = skills != null ? skills : new ArrayList<>();
     }
 
@@ -76,8 +76,8 @@ public class MercenarySyncS2C {
             buf.writeInt(msg.level);
             buf.writeFloat(msg.health);
             buf.writeFloat(msg.maxHealth);
-            buf.writeFloat(msg.energyShield);
-            buf.writeFloat(msg.maxEnergyShield);
+            buf.writeFloat(msg.magicShield);
+            buf.writeFloat(msg.maxMagicShield);
             buf.writeInt(msg.skills.size());
             for (SkillData skill : msg.skills) {
                 buf.writeUtf(skill.spellId(), 128);
@@ -99,8 +99,8 @@ public class MercenarySyncS2C {
         int level = buf.readInt();
         float health = buf.readFloat();
         float maxHealth = buf.readFloat();
-        float energyShield = buf.readFloat();
-        float maxEnergyShield = buf.readFloat();
+        float magicShield = buf.readFloat();
+        float maxMagicShield = buf.readFloat();
         int skillCount = buf.readInt();
         List<SkillData> skills = new ArrayList<>(skillCount);
         for (int i = 0; i < skillCount; i++) {
@@ -111,7 +111,7 @@ public class MercenarySyncS2C {
             int total = buf.readInt();
             skills.add(new SkillData(spellId, onCd, progress, remaining, total));
         }
-        return new MercenarySyncS2C(classId, name, level, health, maxHealth, energyShield, maxEnergyShield, skills);
+        return new MercenarySyncS2C(classId, name, level, health, maxHealth, magicShield, maxMagicShield, skills);
     }
 
     public String getClassId() { return classId; }
@@ -119,8 +119,12 @@ public class MercenarySyncS2C {
     public int getLevel() { return level; }
     public float getHealth() { return health; }
     public float getMaxHealth() { return maxHealth; }
-    public float getEnergyShield() { return energyShield; }
-    public float getMaxEnergyShield() { return maxEnergyShield; }
+    public float getMagicShield() { return magicShield; }
+    public float getMaxMagicShield() { return maxMagicShield; }
+    @Deprecated
+    public float getEnergyShield() { return magicShield; }
+    @Deprecated
+    public float getMaxEnergyShield() { return maxMagicShield; }
     public List<SkillData> getSkills() { return skills; }
 
     public static void handle(MercenarySyncS2C msg, Supplier<NetworkEvent.Context> ctxSupplier) {
@@ -161,8 +165,8 @@ public class MercenarySyncS2C {
                     msg.level,
                     msg.health,
                     msg.maxHealth,
-                    msg.energyShield,
-                    msg.maxEnergyShield,
+                    msg.magicShield,
+                    msg.maxMagicShield,
                     skillInfos
             );
 

@@ -223,13 +223,13 @@ public class BuffOverlayRenderer implements IRenderCommand {
 
         // 3. プログレスバー描画 (高さ2px, 左右1px拡大して幅26px, アイコンの手前・枠より後ろに描画)
         MercenaryDisplayInfo merc = effect.getMercenaryInfo();
-        boolean hasES = merc != null && merc.maxEnergyShield() > 0;
+        boolean hasMS = merc != null && merc.maxMagicShield() > 0;
 
         int barX = x + 2;
         int barMaxW = 26;
 
-        if (hasES) {
-            // ESが存在する場合: プログレスバーを二本で表示 (各2px)
+        if (hasMS) {
+            // MSが存在する場合: プログレスバーを二本で表示 (各2px)
             // 上段 HPバー (元の位置: y+28..29, 高さ2px)
             int hpBarY = y + 28;
             graphics.fill(barX, hpBarY, barX + barMaxW, hpBarY + 2, 0x80000000);
@@ -239,16 +239,16 @@ public class BuffOverlayRenderer implements IRenderCommand {
                 graphics.fill(barX, hpBarY, barX + hpW, hpBarY + 2, 0xFF43A047);
             }
 
-            // 下段 ESバー (y+31..32, 高さ2px)
-            int esBarY = y + 31;
-            graphics.fill(barX, esBarY, barX + barMaxW, esBarY + 2, 0x80000000);
-            float esPct = Math.max(0.0f, Math.min(1.0f, merc.energyShield() / merc.maxEnergyShield()));
-            int esW = (int) (barMaxW * esPct);
-            if (esW > 0) {
-                graphics.fill(barX, esBarY, barX + esW, esBarY + 2, 0xFF00B0FF);
+            // 下段 MSバー (y+31..32, 高さ2px)
+            int msBarY = y + 31;
+            graphics.fill(barX, msBarY, barX + barMaxW, msBarY + 2, 0x80000000);
+            float msPct = Math.max(0.0f, Math.min(1.0f, merc.magicShield() / merc.maxMagicShield()));
+            int msW = (int) (barMaxW * msPct);
+            if (msW > 0) {
+                graphics.fill(barX, msBarY, barX + msW, msBarY + 2, 0xFF00B0FF);
             }
         } else {
-            // ESが存在しない場合: HPバーを下に+2px拡大 (y+28..31, 高さ4px)
+            // MSが存在しない場合: HPバーを下に+2px拡大 (y+28..31, 高さ4px)
             int hpBarY = y + 28;
             graphics.fill(barX, hpBarY, barX + barMaxW, hpBarY + 4, 0x80000000);
             float hpPct = (merc != null && merc.maxHealth() > 0) ? Math.max(0.0f, Math.min(1.0f, merc.health() / merc.maxHealth())) : 0.0f;
