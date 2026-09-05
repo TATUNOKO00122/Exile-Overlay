@@ -272,11 +272,11 @@ public class BuffOverlayRenderer implements IRenderCommand {
         boolean isSimple = EquipmentDisplayConfig.getInstance().isSimpleBuffStackDisplay();
         String customStackText = effect.getCustomStackText();
         String stackText = customStackText != null ? customStackText : toRoman(stacks);
-        float stackScale = isSimple ? 1.0f : 0.8f;
+        float stackScale = isSimple ? 1.1f : 0.9f;
         int stackTextWidth = HudFontHelper.getTextWidth(mc.font, stackText);
 
-        float badgeCenterX = x + FRAME_WIDTH - 5;
-        float badgeCenterY = y + 7;
+        float badgeCenterX = x + FRAME_WIDTH - 5.6f;
+        float badgeCenterY = y + 7.5f;
         float textX = badgeCenterX - (stackTextWidth * stackScale) / 2.0f;
         float textY = badgeCenterY - (mc.font.lineHeight * stackScale) / 2.0f;
 
