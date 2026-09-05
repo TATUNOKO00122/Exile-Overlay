@@ -62,7 +62,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean showSkillCooldownNumber = true;
     private boolean showSkillSummonCount = true;
     private boolean enableOrbNoise = true;
-    private boolean enableLiquidShadow = false;
+    private boolean enableLiquidShadow = true;
     private boolean enableOrbInnerShadow = true;
     private boolean simpleSkillKeybindDisplay = true;
     private boolean simpleSkillChargeSummonDisplay = true;
@@ -319,7 +319,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.showSkillCooldownNumber = true;
         this.showSkillSummonCount = true;
         this.enableOrbNoise = true;
-        this.enableLiquidShadow = false;
+        this.enableLiquidShadow = true;
         this.enableOrbInnerShadow = true;
         this.simpleSkillKeybindDisplay = true;
         this.simpleSkillChargeSummonDisplay = true;

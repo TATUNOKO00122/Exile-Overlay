@@ -64,7 +64,8 @@ public class OrbTab implements IConfigTab {
                     };
                     return Component.translatable("exile_overlay.config.orb_text_position", Component.translatable(key));
                 },
-                Component.translatable("exile_overlay.config.orb_text_position.tooltip")
+                Component.translatable("exile_overlay.config.orb_text_position.tooltip"),
+                screen::rebuildCurrentTab
         ));
 
         entries.add(new BooleanConfigEntry(
@@ -85,16 +86,9 @@ public class OrbTab implements IConfigTab {
                 orbConfig::setOrbTextShadow
         ));
 
-        // 3. テキストサイズ設定
-        if (orbConfig.getTextPosition() == OrbTextConfig.OrbTextPosition.CENTER) {
-            entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.text_scale",
-                    orbConfig::getTextScale,
-                    orbConfig::setTextScale,
-                    0.5f, 4.0f
-            ));
-        } else {
-            // ABOVE / ABOVE_INTEGRATED モード用の独立スケール
+        // 3. テキストサイズ・位置調整スライダー
+        boolean aboveMode = orbConfig.getTextPosition() != OrbTextConfig.OrbTextPosition.CENTER;
+        if (aboveMode) {
             entries.add(new FloatSliderConfigEntry(
                     "exile_overlay.config.above_text_scale",
                     orbConfig::getAboveTextScale,
@@ -102,18 +96,36 @@ public class OrbTab implements IConfigTab {
                     0.5f, 4.0f
             ));
 
+            if (orbConfig.getTextPosition() == OrbTextConfig.OrbTextPosition.ABOVE) {
+                entries.add(new FloatSliderConfigEntry(
+                        "exile_overlay.config.energy_text_scale",
+                        orbConfig::getEnergyTextScale,
+                        orbConfig::setEnergyTextScale,
+                        0.5f, 4.0f
+                ));
+            }
+
             entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.above_orb_offset_x",
-                    orbConfig::getAboveIndividualOrbOffsetX,
-                    orbConfig::setAboveIndividualOrbOffsetX,
-                    -100.0f, 100.0f
+                    "exile_overlay.config.orb_text_above_offset_x",
+                    orbConfig::getAboveOrbOffsetX,
+                    orbConfig::setAboveOrbOffsetX,
+                    -250.0f, 250.0f,
+                    "%.1f"
             ));
 
             entries.add(new FloatSliderConfigEntry(
-                    "exile_overlay.config.above_orb_offset_y",
-                    orbConfig::getAboveIndividualOrbOffsetY,
-                    orbConfig::setAboveIndividualOrbOffsetY,
-                    -100.0f, 100.0f
+                    "exile_overlay.config.orb_text_above_offset",
+                    orbConfig::getAboveOrbOffsetY,
+                    orbConfig::setAboveOrbOffsetY,
+                    -150.0f, 150.0f,
+                    "%.1f"
+            ));
+        } else {
+            entries.add(new FloatSliderConfigEntry(
+                    "exile_overlay.config.text_scale",
+                    orbConfig::getTextScale,
+                    orbConfig::setTextScale,
+                    0.5f, 4.0f
             ));
 
             entries.add(new FloatSliderConfigEntry(
@@ -179,6 +191,12 @@ public class OrbTab implements IConfigTab {
                 "exile_overlay.config.enable_orb_noise",
                 equipConfig::isEnableOrbNoise,
                 equipConfig::setEnableOrbNoise
+        ));
+
+        entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.enable_liquid_shadow",
+                equipConfig::isEnableLiquidShadow,
+                equipConfig::setEnableLiquidShadow
         ));
 
         entries.add(new BooleanConfigEntry(
