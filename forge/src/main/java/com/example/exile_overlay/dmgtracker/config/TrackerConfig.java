@@ -1,6 +1,8 @@
 package com.example.exile_overlay.dmgtracker.config;
 
 import com.example.exile_overlay.client.config.AbstractConfigSection;
+import com.example.exile_overlay.client.config.position.HudPosition;
+import com.example.exile_overlay.client.config.position.HudPositionManager;
 import com.google.gson.JsonObject;
 
 public class TrackerConfig extends AbstractConfigSection {
@@ -28,13 +30,24 @@ public class TrackerConfig extends AbstractConfigSection {
         INSTANCE.enabled = show;
         INSTANCE.showOverlay = show;
         INSTANCE.save();
-    }
-    public static void toggleOverlay() {
-        INSTANCE.enabled = !INSTANCE.enabled;
-        if (INSTANCE.enabled) {
-            INSTANCE.showOverlay = true;
+
+        HudPosition pos = HudPositionManager.getInstance().getPosition("damage_tracker");
+        if (pos != null && pos.isVisible() != show) {
+            HudPositionManager.getInstance().setPosition("damage_tracker", pos.withVisible(show));
+            HudPositionManager.getInstance().save();
         }
+    }
+    public static boolean toggleOverlay() {
+        INSTANCE.enabled = !INSTANCE.enabled;
+        INSTANCE.showOverlay = INSTANCE.enabled;
         INSTANCE.save();
+
+        HudPosition pos = HudPositionManager.getInstance().getPosition("damage_tracker");
+        if (pos != null && pos.isVisible() != INSTANCE.enabled) {
+            HudPositionManager.getInstance().setPosition("damage_tracker", pos.withVisible(INSTANCE.enabled));
+            HudPositionManager.getInstance().save();
+        }
+        return INSTANCE.enabled;
     }
     public static int getMaxSkillsShown() { return INSTANCE.maxSkillsShown; }
     public void setMaxSkillsShown(int maxSkillsShown) {

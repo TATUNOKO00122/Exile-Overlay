@@ -320,6 +320,8 @@
   "exile_overlay.config.filter_settings.tooltip": "Нажмите для раскрытия/сворачивания",
   "key.exile_overlay.toggle_dmg_tracker": "Переключить отображение отслеживания урона",
   "key.exile_overlay.reset_dmg_tracker": "Сбросить отслеживание урона",
+  "exile_overlay.tracker.toggled.on": "Отслеживание урона: ВКЛ",
+  "exile_overlay.tracker.toggled.off": "Отслеживание урона: ВЫКЛ",
   "section.exile_overlay.orb_color": "Настройки цвета сфер",
   "exile_overlay.config.open_orb_color_editor": "Открыть редактор цвета сфер",
   "exile_overlay.config.open_orb_color_editor.tooltip": "Настройка цвета сфер с предварительным просмотром HUD",

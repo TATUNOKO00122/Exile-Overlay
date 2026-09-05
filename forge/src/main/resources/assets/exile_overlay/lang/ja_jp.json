@@ -320,6 +320,8 @@
   "exile_overlay.config.filter_settings.tooltip": "クリックで展開/折りたたみ",
   "key.exile_overlay.toggle_dmg_tracker": "ダメージトラッカー ON/OFF切替",
   "key.exile_overlay.reset_dmg_tracker": "ダメージトラッカーリセット",
+  "exile_overlay.tracker.toggled.on": "ダメージトラッカー: ON",
+  "exile_overlay.tracker.toggled.off": "ダメージトラッカー: OFF",
   "section.exile_overlay.orb_color": "オーブカラー設定",
   "exile_overlay.config.open_orb_color_editor": "オーブカラーエディタを開く",
   "exile_overlay.config.open_orb_color_editor.tooltip": "実際のHUDを見ながらオーブの色を調整します",

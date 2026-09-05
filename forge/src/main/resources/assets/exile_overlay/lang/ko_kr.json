@@ -320,6 +320,8 @@
   "exile_overlay.config.filter_settings.tooltip": "클릭하여 펼치기/접기",
   "key.exile_overlay.toggle_dmg_tracker": "데미지 추적기 오버레이 토글",
   "key.exile_overlay.reset_dmg_tracker": "데미지 추적기 초기화",
+  "exile_overlay.tracker.toggled.on": "데미지 추적기: 켜짐",
+  "exile_overlay.tracker.toggled.off": "데미지 추적기: 꺼짐",
   "section.exile_overlay.orb_color": "구체 색상 설정",
   "exile_overlay.config.open_orb_color_editor": "구체 색상 편집기 열기",
   "exile_overlay.config.open_orb_color_editor.tooltip": "실제 HUD를 보면서 구체 색상을 조정합니다",

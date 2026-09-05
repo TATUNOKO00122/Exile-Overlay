@@ -19,8 +19,10 @@ import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
 import com.example.exile_overlay.dmgtracker.network.TrackerActionC2S;
 import com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -167,10 +169,14 @@ public class ExileOverlayForgeClient {
             if (mc.player.tickCount % 40 == 0) {
                 ClientAilmentTracker.getInstance().cleanup();
             }
+            while (toggleOverlayKey != null && toggleOverlayKey.consumeClick()) {
+                boolean newState = TrackerConfig.toggleOverlay();
+                Component msg = Component.translatable(
+                        newState ? "exile_overlay.tracker.toggled.on" : "exile_overlay.tracker.toggled.off"
+                ).withStyle(newState ? ChatFormatting.GREEN : ChatFormatting.RED);
+                mc.player.displayClientMessage(msg, true);
+            }
             if (TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
-                while (toggleOverlayKey != null && toggleOverlayKey.consumeClick()) {
-                    TrackerConfig.toggleOverlay();
-                }
                 while (resetTrackerKey != null && resetTrackerKey.consumeClick()) {
                     NetworkHandler.CHANNEL.sendToServer(new TrackerActionC2S(TrackerActionC2S.ACTION_RESET));
                 }

@@ -320,6 +320,8 @@
   "exile_overlay.config.filter_settings.tooltip": "点击以展开/收起",
   "key.exile_overlay.toggle_dmg_tracker": "切换伤害追踪器覆盖显示",
   "key.exile_overlay.reset_dmg_tracker": "重置伤害追踪器",
+  "exile_overlay.tracker.toggled.on": "伤害追踪器: 开启",
+  "exile_overlay.tracker.toggled.off": "伤害追踪器: 关闭",
   "section.exile_overlay.orb_color": "球体颜色设置",
   "exile_overlay.config.open_orb_color_editor": "打开球体颜色编辑器",
   "exile_overlay.config.open_orb_color_editor.tooltip": "在实时预览 HUD 的同时调整球体颜色",

@@ -148,13 +148,14 @@ public class DamageTrackerOverlay implements IRenderCommand {
             grandTotal = 12345.0;
             dps = 1234.5;
         } else {
-            return;
+            rows = Collections.emptyList();
+            grandTotal = 0.0;
+            dps = 0.0;
         }
 
         int topN = TrackerConfig.getMaxSkillsShown();
         var font = mc.font;
         int count = Math.min(rows.size(), topN);
-        if (count == 0 && !isConfig) return;
 
         String dmgStr = FormatUtil.fmt(grandTotal);
         String dpsStr = dps > 0 ? FormatUtil.fmt(dps) + "/s" : "0/s";
@@ -190,7 +191,6 @@ public class DamageTrackerOverlay implements IRenderCommand {
         if (isConfig) {
             count = Math.max(1, count);
         }
-        if (count <= 0) return;
 
         int boxH = PADDING + headerH + count * (ROW_H + ROW_GAP) + PADDING;
 
@@ -212,84 +212,86 @@ public class DamageTrackerOverlay implements IRenderCommand {
         g.drawString(font, headerRight, boxW - PADDING - font.width(headerRight), ty, dpsColor, true);
         ty += headerH;
 
-        int contentLeft = PADDING;
-        int contentRight = boxW - PADDING;
+        if (count > 0) {
+            int contentLeft = PADDING;
+            int contentRight = boxW - PADDING;
 
-        double topDamage = rows.get(0).totalDamage;
+            double topDamage = rows.get(0).totalDamage;
 
-        Set<String> activeKeys = new HashSet<>();
-        for (int i = 0; i < count; i++) {
-            activeKeys.add(rows.get(i).skillId);
-        }
-        animRatio.keySet().retainAll(activeKeys);
+            Set<String> activeKeys = new HashSet<>();
+            for (int i = 0; i < count; i++) {
+                activeKeys.add(rows.get(i).skillId);
+            }
+            animRatio.keySet().retainAll(activeKeys);
 
-        for (int i = 0; i < count; i++) {
-            TrackerSyncS2C.SkillStatsEntry r = rows.get(i);
+            for (int i = 0; i < count; i++) {
+                TrackerSyncS2C.SkillStatsEntry r = rows.get(i);
 
-            double ratio = topDamage > 0 ? r.totalDamage / topDamage : 0;
-            float prev = animRatio.getOrDefault(r.skillId, 0f);
-            float lerped = animate(prev, (float) ratio);
-            animRatio.put(r.skillId, lerped);
+                double ratio = topDamage > 0 ? r.totalDamage / topDamage : 0;
+                float prev = animRatio.getOrDefault(r.skillId, 0f);
+                float lerped = animate(prev, (float) ratio);
+                animRatio.put(r.skillId, lerped);
 
-            int cursorX = contentLeft;
+                int cursorX = contentLeft;
 
-            if (!r.rawSpellId.isEmpty()) {
-                try {
-                    ResourceLocation icon = Spell.getIconLoc(r.rawSpellId);
-                    if (icon != null && VALID_ICON_CACHE.computeIfAbsent(icon, key -> mc.getResourceManager().getResource(key).isPresent())) {
-                        RenderSystem.enableBlend();
-                        RenderSystem.setShaderTexture(0, icon);
-                        int iconY = ty + (ROW_H - ICON_S) / 2;
-                        g.blit(icon, cursorX, iconY, 0, 0, ICON_S, ICON_S, ICON_S, ICON_S);
-                        RenderSystem.disableBlend();
+                if (!r.rawSpellId.isEmpty()) {
+                    try {
+                        ResourceLocation icon = Spell.getIconLoc(r.rawSpellId);
+                        if (icon != null && VALID_ICON_CACHE.computeIfAbsent(icon, key -> mc.getResourceManager().getResource(key).isPresent())) {
+                            RenderSystem.enableBlend();
+                            RenderSystem.setShaderTexture(0, icon);
+                            int iconY = ty + (ROW_H - ICON_S) / 2;
+                            g.blit(icon, cursorX, iconY, 0, 0, ICON_S, ICON_S, ICON_S, ICON_S);
+                            RenderSystem.disableBlend();
+                        }
+                    } catch (Throwable t) {
+                        LOGGER.debug("Failed to render spell icon for: {}", r.rawSpellId, t);
                     }
-                } catch (Throwable t) {
-                    LOGGER.debug("Failed to render spell icon for: {}", r.rawSpellId, t);
                 }
-            }
-            cursorX += ICON_S;
+                cursorX += ICON_S;
 
-            int barLeft = cursorX;
-            int barAreaW = contentRight - barLeft;
-            int barW = (int) Math.round(barAreaW * lerped);
+                int barLeft = cursorX;
+                int barAreaW = contentRight - barLeft;
+                int barW = (int) Math.round(barAreaW * lerped);
 
-            // 属性別セグメントバー描画
-            if (!r.elementDamage.isEmpty() && r.totalDamage > 0) {
-                // ダメージ降順でソートして安定した描画順を保つ
-                List<Map.Entry<String, Double>> sorted = new ArrayList<>(r.elementDamage.entrySet());
-                sorted.sort(Map.Entry.<String, Double>comparingByValue().reversed());
+                // 属性別セグメントバー描画
+                if (!r.elementDamage.isEmpty() && r.totalDamage > 0) {
+                    // ダメージ降順でソートして安定した描画順を保つ
+                    List<Map.Entry<String, Double>> sorted = new ArrayList<>(r.elementDamage.entrySet());
+                    sorted.sort(Map.Entry.<String, Double>comparingByValue().reversed());
 
-                int segX = barLeft;
-                int remaining = barW;
-                for (int si = 0; si < sorted.size(); si++) {
-                    Map.Entry<String, Double> el = sorted.get(si);
-                    boolean isLast = (si == sorted.size() - 1);
-                    // 最後のセグメントは余りをそのまま使って端数ピクセルの誤差を吸収する
-                    int segW = isLast ? remaining : (int) Math.round(barW * (el.getValue() / r.totalDamage));
-                    if (segW <= 0) continue;
-                    int segColor = (BAR_ALPHA << 24) | (ElementColors.colorFor(el.getKey()) & 0x00FFFFFF);
-                    g.fill(segX, ty, segX + segW, ty + ROW_H, segColor);
-                    segX += segW;
-                    remaining -= segW;
+                    int segX = barLeft;
+                    int remaining = barW;
+                    for (int si = 0; si < sorted.size(); si++) {
+                        Map.Entry<String, Double> el = sorted.get(si);
+                        boolean isLast = (si == sorted.size() - 1);
+                        // 最後のセグメントは余りをそのまま使って端数ピクセルの誤差を吸収する
+                        int segW = isLast ? remaining : (int) Math.round(barW * (el.getValue() / r.totalDamage));
+                        if (segW <= 0) continue;
+                        int segColor = (BAR_ALPHA << 24) | (ElementColors.colorFor(el.getKey()) & 0x00FFFFFF);
+                        g.fill(segX, ty, segX + segW, ty + ROW_H, segColor);
+                        segX += segW;
+                        remaining -= segW;
+                    }
+                } else {
+                    // 属性データなし：従来の単色フォールバック
+                    int base = ElementColors.colorFor(r.dominantElement);
+                    int barColor = (BAR_ALPHA << 24) | (base & 0x00FFFFFF);
+                    g.fill(barLeft, ty, barLeft + barW, ty + ROW_H, barColor);
                 }
-            } else {
-                // 属性データなし：従来の単色フォールバック
-                int base = ElementColors.colorFor(r.dominantElement);
-                int barColor = (BAR_ALPHA << 24) | (base & 0x00FFFFFF);
-                g.fill(barLeft, ty, barLeft + barW, ty + ROW_H, barColor);
+
+                int textY = ty + (ROW_H - font.lineHeight) / 2;
+
+                String rankName = (i + 1) + ". " + resolveDisplayName(r);
+                int nameSpace = barAreaW - valW - 4;
+                String name = FormatUtil.truncate(font, rankName, nameSpace);
+                g.drawString(font, name, barLeft + 2, textY, 0xFFE8E8E8, true);
+
+                String val = rowValue(r, grandTotal);
+                g.drawString(font, val, contentRight - font.width(val), textY, VALUE_COLOR, true);
+
+                ty += ROW_H + ROW_GAP;
             }
-
-            int textY = ty + (ROW_H - font.lineHeight) / 2;
-
-            String rankName = (i + 1) + ". " + resolveDisplayName(r);
-            int nameSpace = barAreaW - valW - 4;
-            String name = FormatUtil.truncate(font, rankName, nameSpace);
-            g.drawString(font, name, barLeft + 2, textY, 0xFFE8E8E8, true);
-
-            String val = rowValue(r, grandTotal);
-            g.drawString(font, val, contentRight - font.width(val), textY, VALUE_COLOR, true);
-
-            ty += ROW_H + ROW_GAP;
         }
 
         poseStack.popPose();

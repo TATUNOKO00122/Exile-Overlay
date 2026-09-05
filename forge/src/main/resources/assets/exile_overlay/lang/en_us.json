@@ -320,6 +320,8 @@
   "exile_overlay.config.filter_settings.tooltip": "Click to expand/collapse",
   "key.exile_overlay.toggle_dmg_tracker": "Toggle Damage Tracker ON/OFF",
   "key.exile_overlay.reset_dmg_tracker": "Reset Damage Tracker",
+  "exile_overlay.tracker.toggled.on": "Damage Tracker: ON",
+  "exile_overlay.tracker.toggled.off": "Damage Tracker: OFF",
   "section.exile_overlay.orb_color": "Orb Color Settings",
   "exile_overlay.config.open_orb_color_editor": "Open Orb Color Editor",
   "exile_overlay.config.open_orb_color_editor.tooltip": "Adjust orb colors while viewing live HUD overlay.",
