@@ -5,6 +5,7 @@ import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.data.ExileEffectInfo;
 import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
+import com.example.exile_overlay.util.DurationFormatHelper;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -131,7 +132,7 @@ public class EffectRenderHelper {
         @Override
         public String getDurationText() {
             if (isInfinite()) return "**";
-            return formatDuration(getDuration() / 20);
+            return DurationFormatHelper.formatTicks(getDuration());
         }
 
         @Override
@@ -174,7 +175,10 @@ public class EffectRenderHelper {
         public int getStacks() { return info.stacks; }
 
         @Override
-        public String getDurationText() { return info.durationText; }
+        public String getDurationText() {
+            if (isInfinite()) return "";
+            return DurationFormatHelper.formatTicks(info.duration);
+        }
 
         @Override
         public void renderIcon(GuiGraphics graphics, int x, int y, int size) {
@@ -221,8 +225,7 @@ public class EffectRenderHelper {
 
         @Override
         public String getDurationText() {
-            int seconds = (currentTicks + 19) / 20;
-            return formatDuration(seconds);
+            return DurationFormatHelper.formatTicks(currentTicks);
         }
 
         @Override
@@ -685,9 +688,7 @@ public class EffectRenderHelper {
         return state.currentX;
     }
 
-    private static String formatDuration(int seconds) {
-        if (seconds >= 3600) return (seconds / 3600) + "h";
-        if (seconds >= 60) return (seconds / 60) + "m";
-        return seconds + "s";
+    public static String formatDuration(int seconds) {
+        return DurationFormatHelper.formatDuration(seconds);
     }
 }

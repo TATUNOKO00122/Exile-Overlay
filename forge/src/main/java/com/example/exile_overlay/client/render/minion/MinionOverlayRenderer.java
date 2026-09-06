@@ -473,13 +473,13 @@ public class MinionOverlayRenderer implements IRenderCommand {
         // 6. 残り時間テキスト（下部、空文字・∞の場合は非表示）
         String durationText = minion.durationText();
         if (durationText != null && !durationText.isEmpty()) {
-            float textScale = 0.5f;
+            float textScale = 0.6f;
             int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
             graphics.pose().pushPose();
             try {
-                float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2) / textScale;
-                float textY = (float) ((y + 29) + 0.4) / textScale;
+                float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2 + 0.5f) / textScale;
+                float textY = (float) (y + 29) / textScale;
 
                 graphics.pose().scale(textScale, textScale, 1.0f);
                 HudFontHelper.drawString(graphics, mc.font, durationText, (int) textX, (int) textY, 0xFFFFFFFF, false);

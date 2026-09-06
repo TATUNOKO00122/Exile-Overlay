@@ -179,13 +179,13 @@ public class BuffOverlayRenderer implements IRenderCommand {
         if (!effect.isInfinite()) {
             String durationText = effect.getDurationText();
             if (durationText != null && !durationText.isEmpty()) {
-                float textScale = 0.5f;
+                float textScale = 0.6f;
                 int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
                 graphics.pose().pushPose();
                 try {
-                    float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2) / textScale;
-                    float textY = (float) ((y + 29) + 0.4) / textScale;
+                    float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2 + 0.5f) / textScale;
+                    float textY = (float) (y + 29) / textScale;
 
                     graphics.pose().scale(textScale, textScale, 1.0f);
 

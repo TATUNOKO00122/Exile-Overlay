@@ -163,7 +163,7 @@ public final class ItemLockKeyHandler {
      */
     @SubscribeEvent
     public void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
-        String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+        String storageKey = ItemLockClientStorage.getCurrentStorageKey(event.getPlayer());
         if (storageKey != null) {
             long savedMask = ItemLockClientStorage.getLockMask(storageKey);
             LockManager.setClientLockedMask(savedMask);
@@ -178,7 +178,7 @@ public final class ItemLockKeyHandler {
      */
     @SubscribeEvent
     public void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+        String storageKey = ItemLockClientStorage.getCurrentStorageKey(event.getPlayer());
         if (storageKey != null) {
             ItemLockClientStorage.setLockMask(storageKey, LockManager.getClientLockedMask());
         }

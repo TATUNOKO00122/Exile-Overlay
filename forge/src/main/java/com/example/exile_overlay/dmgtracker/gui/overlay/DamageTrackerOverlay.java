@@ -13,13 +13,21 @@ import com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.robertx22.mine_and_slash.database.data.spells.components.Spell;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @OnlyIn(Dist.CLIENT)
@@ -48,7 +56,7 @@ public class DamageTrackerOverlay implements IRenderCommand {
     private static final Map<ResourceLocation, Boolean> VALID_ICON_CACHE = new ConcurrentHashMap<>();
 
     public record ColumnWidths(int maxDmgW, int maxDpsW, int maxPctW, int totalW) {
-        public static ColumnWidths calculate(net.minecraft.client.gui.Font font, int count,
+        public static ColumnWidths calculate(Font font, int count,
                                               List<TrackerSyncS2C.SkillStatsEntry> rows,
                                               double grandTotal, boolean inCombat, boolean showDps) {
             int maxDmgW = 0;
@@ -373,24 +381,6 @@ public class DamageTrackerOverlay implements IRenderCommand {
     private static float animate(float current, float target) {
         if (Math.abs(target - current) < 0.002f) return target;
         return current + (target - current) * 0.2f;
-    }
-
-    private static String rowValue(TrackerSyncS2C.SkillStatsEntry r, double grandTotal) {
-        TrackerSyncS2C data = TrackerSyncS2C.ClientTrackerData.get();
-        boolean inCombat = data != null && data.isInCombat();
-        return rowValue(r, grandTotal, inCombat);
-    }
-
-    private static String rowValue(TrackerSyncS2C.SkillStatsEntry r, double grandTotal, boolean inCombat) {
-        double pct = grandTotal > 0 ? r.totalDamage / grandTotal * 100 : 0;
-        String dmgStr = FormatUtil.fmt(r.totalDamage);
-        String pctStr = String.format("%.0f%%", pct);
-        if (TrackerConfig.isShowIndividualDps()) {
-            float skillDps = inCombat ? r.dps : 0f;
-            String dpsStr = (skillDps > 0 ? FormatUtil.fmt(skillDps) : "0") + "/s";
-            return dmgStr + "  " + dpsStr + "  " + pctStr;
-        }
-        return dmgStr + "  " + pctStr;
     }
 
     public static String resolveDisplayName(TrackerSyncS2C.SkillStatsEntry entry) {

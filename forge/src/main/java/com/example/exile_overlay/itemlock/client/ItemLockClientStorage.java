@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.Connection;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -44,9 +45,17 @@ public final class ItemLockClientStorage {
      * 現在の接続先とプレイヤーに応じた一意なストレージキーを生成
      */
     public static String getCurrentStorageKey() {
+        return getCurrentStorageKey(null);
+    }
+
+    /**
+     * 指定プレイヤーおよび現在の接続先に応じた一意なストレージキーを生成
+     */
+    public static String getCurrentStorageKey(Player player) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return null;
-        return getStorageKey(mc, mc.player.getStringUUID());
+        Player targetPlayer = player != null ? player : mc.player;
+        if (targetPlayer == null) return null;
+        return getStorageKey(mc, targetPlayer.getStringUUID());
     }
 
     /**

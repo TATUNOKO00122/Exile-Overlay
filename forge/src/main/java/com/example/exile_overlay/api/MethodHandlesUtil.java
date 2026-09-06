@@ -3,6 +3,7 @@ package com.example.exile_overlay.api;
 import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
 import com.example.exile_overlay.api.data.MinionDisplayInfo;
 import com.example.exile_overlay.api.data.MobEffectInfo;
+import com.example.exile_overlay.util.DurationFormatHelper;
 import com.example.exile_overlay.client.render.minion.MercenaryClientCache;
 import com.example.exile_overlay.dmgtracker.network.AilmentSyncS2C;
 import com.example.exile_overlay.dmgtracker.network.MercenarySyncS2C;
@@ -2026,7 +2027,7 @@ public class MethodHandlesUtil {
                     int ticksLeft = getEffectTicksLeft(instanceData);
                     int stacks = getEffectStacks(instanceData);
                     boolean isInfinite = isEffectInfinite(instanceData);
-                    String durationText = getEffectDurationString(instanceData);
+                    String durationText = isInfinite ? "" : DurationFormatHelper.formatTicks(ticksLeft);
 
                     String spellId = "";
                     if (GET_SPELL_ID != null) {
