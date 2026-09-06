@@ -2700,6 +2700,7 @@ public class MethodHandlesUtil {
      */
     public static MercenaryDisplayInfo getActiveMercenary(Player player) {
         if (!isMercenarySupported() || player == null) return null;
-        return MercenaryClientCache.get();
+        if (!player.level().isClientSide()) return null;
+        return DistExecutor.unsafeCallWhenOn(Dist.CLIENT, () -> () -> MercenaryClientCache.get());
     }
 }

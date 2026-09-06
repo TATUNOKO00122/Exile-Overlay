@@ -11,7 +11,6 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.network.NetworkConstants;
 
 /**
  * Exile Overlay MOD メインエントリーポイント
@@ -23,10 +22,7 @@ public final class ExileOverlayMod {
     public ExileOverlayMod() {
         // サーバー・クライアント両方で接続を許可（オプショナルMOD設定）
         ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
-                () -> new IExtensionPoint.DisplayTest(
-                        () -> NetworkConstants.IGNORESERVERONLY,
-                        (remoteVersion, isFromServer) -> true
-                ));
+                () -> IExtensionPoint.DisplayTest.IGNORE_ALL_VERSION.get());
 
         // 物理クライアント専用の初期化処理（Dedicated Server環境でのNoClassDefFoundErrorを防止）
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientSetup::init);

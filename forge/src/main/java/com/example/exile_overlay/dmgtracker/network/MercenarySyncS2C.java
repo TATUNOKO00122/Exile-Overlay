@@ -175,7 +175,11 @@ public class MercenarySyncS2C {
     }
 
     public static void sendToPlayer(ServerPlayer player, MercenarySyncS2C packet) {
-        if (player == null || packet == null) return;
-        NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (player == null || packet == null || player.connection == null || player.connection.connection == null) return;
+        if (!NetworkHandler.CHANNEL.isRemotePresent(player.connection.connection)) return;
+        try {
+            NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        } catch (Exception ignored) {
+        }
     }
 }

@@ -8,6 +8,8 @@ import com.example.exile_overlay.dmgtracker.util.SkillIdResolver;
 import com.robertx22.mine_and_slash.uncommon.enumclasses.Elements;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
@@ -59,9 +61,14 @@ public class TrackerSyncS2C {
     }
 
     public static void sendToPlayer(ServerPlayer player) {
-        PlayerTrackerData data = DamageTrackerManager.getTracker(player.getUUID());
-        TrackerSyncS2C packet = new TrackerSyncS2C(data);
-        NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        if (player == null || player.connection == null || player.connection.connection == null) return;
+        if (!NetworkHandler.CHANNEL.isRemotePresent(player.connection.connection)) return;
+        try {
+            PlayerTrackerData data = DamageTrackerManager.getTracker(player.getUUID());
+            TrackerSyncS2C packet = new TrackerSyncS2C(data);
+            NetworkHandler.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        } catch (Exception ignored) {
+        }
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -131,9 +138,15 @@ public class TrackerSyncS2C {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         if (ctx.get().getDirection() != net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) return;
         ctx.get().enqueueWork(() -> {
-            ClientTrackerData.set(this);
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPayloadHandler.handle(this));
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    private static final class ClientPayloadHandler {
+        private static void handle(TrackerSyncS2C packet) {
+            ClientTrackerData.set(packet);
+        }
     }
 
     public List<SkillStatsEntry> getEntries() { return entries; }

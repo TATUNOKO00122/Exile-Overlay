@@ -85,12 +85,16 @@ public final class LockManager {
     }
 
     public static void syncToClient(ServerPlayer player) {
-        if (player == null) return;
-        long mask = getServerLockedMask(player);
-        NetworkHandler.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
-                new LockSlotSyncS2C(mask)
-        );
+        if (player == null || player.connection == null || player.connection.connection == null) return;
+        if (!NetworkHandler.CHANNEL.isRemotePresent(player.connection.connection)) return;
+        try {
+            long mask = getServerLockedMask(player);
+            NetworkHandler.CHANNEL.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new LockSlotSyncS2C(mask)
+            );
+        } catch (Exception ignored) {
+        }
     }
 
     // ==========================================

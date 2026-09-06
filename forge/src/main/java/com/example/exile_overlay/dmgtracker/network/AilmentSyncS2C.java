@@ -82,7 +82,10 @@ public class AilmentSyncS2C {
     }
 
     public static void sendToTracking(Entity entity, AilmentSyncS2C packet) {
-        if (entity == null || packet == null) return;
-        NetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
+        if (entity == null || packet == null || entity.level().isClientSide()) return;
+        try {
+            NetworkHandler.CHANNEL.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> entity), packet);
+        } catch (Exception ignored) {
+        }
     }
 }
