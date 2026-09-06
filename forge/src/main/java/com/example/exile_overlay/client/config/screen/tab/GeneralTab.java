@@ -1,5 +1,6 @@
 package com.example.exile_overlay.client.config.screen.tab;
 
+import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.client.config.ExileOverlayConfigManager;
 import com.example.exile_overlay.client.config.position.HudPosition;
 import com.example.exile_overlay.client.config.position.HudPositionManager;
@@ -12,6 +13,8 @@ import com.example.exile_overlay.client.config.screen.entry.FloatSliderConfigEnt
 import com.example.exile_overlay.client.config.screen.entry.IntSliderConfigEntry;
 import com.example.exile_overlay.client.config.screen.entry.SectionHeaderEntry;
 import com.example.exile_overlay.client.render.DayCounterConfig;
+import com.example.exile_overlay.dmgtracker.config.TrackerConfig;
+import com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -93,10 +96,10 @@ public class GeneralTab implements IConfigTab {
         ));
 
         // 4. ダメージトラッカー（サーバー側導入時）
-        if (com.example.exile_overlay.dmgtracker.network.TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
+        if (TrackerSyncS2C.ClientTrackerData.serverHasMod()) {
             entries.add(new SectionHeaderEntry("section.exile_overlay.damage_tracker"));
 
-            com.example.exile_overlay.dmgtracker.config.TrackerConfig trackerConfig = com.example.exile_overlay.dmgtracker.config.TrackerConfig.getInstance();
+            TrackerConfig trackerConfig = TrackerConfig.getInstance();
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.damage_tracker_enabled",
                     trackerConfig::isEnabled,
@@ -108,7 +111,7 @@ public class GeneralTab implements IConfigTab {
 
             entries.add(new IntSliderConfigEntry(
                     "exile_overlay.config.damage_tracker_max_skills",
-                    com.example.exile_overlay.dmgtracker.config.TrackerConfig::getMaxSkillsShown,
+                    TrackerConfig::getMaxSkillsShown,
                     trackerConfig::setMaxSkillsShown,
                     1, 20,
                     val -> Component.translatable("exile_overlay.config.damage_tracker_max_skills", val)
@@ -116,16 +119,18 @@ public class GeneralTab implements IConfigTab {
 
             entries.add(new BooleanConfigEntry(
                     "exile_overlay.config.damage_tracker_show_individual_dps",
-                    com.example.exile_overlay.dmgtracker.config.TrackerConfig::isShowIndividualDps,
+                    TrackerConfig::isShowIndividualDps,
                     trackerConfig::setShowIndividualDps
             ));
 
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.damage_tracker_exclude_mercenary",
-                    com.example.exile_overlay.dmgtracker.config.TrackerConfig::isExcludeMercenaryDamage,
-                    trackerConfig::setExcludeMercenaryDamage,
-                    Component.translatable("exile_overlay.config.damage_tracker_exclude_mercenary.tooltip")
-            ));
+            if (MethodHandlesUtil.isMercenarySupported()) {
+                entries.add(new BooleanConfigEntry(
+                        "exile_overlay.config.damage_tracker_exclude_mercenary",
+                        TrackerConfig::isExcludeMercenaryDamage,
+                        trackerConfig::setExcludeMercenaryDamage,
+                        Component.translatable("exile_overlay.config.damage_tracker_exclude_mercenary.tooltip")
+                ));
+            }
         }
 
         return entries;

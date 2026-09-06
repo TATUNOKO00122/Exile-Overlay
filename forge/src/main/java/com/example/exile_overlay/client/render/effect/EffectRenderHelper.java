@@ -1,6 +1,7 @@
 package com.example.exile_overlay.client.render.effect;
 
 import com.example.exile_overlay.client.config.BuffOverlayFilterConfig;
+import com.example.exile_overlay.client.config.EquipmentDisplayConfig;
 import com.example.exile_overlay.api.MethodHandlesUtil;
 import com.example.exile_overlay.api.data.ExileEffectInfo;
 import com.example.exile_overlay.api.data.MercenaryDisplayInfo;
@@ -177,7 +178,12 @@ public class EffectRenderHelper {
         @Override
         public String getDurationText() {
             if (isInfinite()) return "";
-            return DurationFormatHelper.formatTicks(info.duration);
+            if (EquipmentDisplayConfig.getInstance().isBuffDurationColonFormat()) {
+                return DurationFormatHelper.formatTicksColon(info.duration);
+            }
+            return (info.durationText != null && !info.durationText.isEmpty())
+                    ? info.durationText
+                    : DurationFormatHelper.formatTicksLegacy(info.duration);
         }
 
         @Override

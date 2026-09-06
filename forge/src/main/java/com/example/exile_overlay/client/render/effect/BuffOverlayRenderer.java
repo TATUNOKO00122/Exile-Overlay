@@ -179,13 +179,18 @@ public class BuffOverlayRenderer implements IRenderCommand {
         if (!effect.isInfinite()) {
             String durationText = effect.getDurationText();
             if (durationText != null && !durationText.isEmpty()) {
-                float textScale = 0.6f;
+                boolean colonFormat = EquipmentDisplayConfig.getInstance().isBuffDurationColonFormat();
+                float textScale = colonFormat ? 0.6f : 0.5f;
                 int textWidth = HudFontHelper.getTextWidth(mc.font, durationText);
 
                 graphics.pose().pushPose();
                 try {
-                    float textX = (x + (FRAME_WIDTH - textWidth * textScale) / 2 + 0.5f) / textScale;
-                    float textY = (float) (y + 29) / textScale;
+                    float textX = colonFormat
+                            ? (x + (FRAME_WIDTH - textWidth * textScale) / 2 + 0.5f) / textScale
+                            : (x + (FRAME_WIDTH - textWidth * textScale) / 2 + 1.0f) / textScale;
+                    float textY = colonFormat
+                            ? (float) (y + 29) / textScale
+                            : (float) ((y + 29) + 0.4) / textScale;
 
                     graphics.pose().scale(textScale, textScale, 1.0f);
 

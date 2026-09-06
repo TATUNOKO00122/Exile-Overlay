@@ -2027,7 +2027,10 @@ public class MethodHandlesUtil {
                     int ticksLeft = getEffectTicksLeft(instanceData);
                     int stacks = getEffectStacks(instanceData);
                     boolean isInfinite = isEffectInfinite(instanceData);
-                    String durationText = isInfinite ? "" : DurationFormatHelper.formatTicks(ticksLeft);
+                    String durationText = isInfinite ? "" : getEffectDurationString(instanceData);
+                    if (!isInfinite && (durationText == null || durationText.isEmpty())) {
+                        durationText = DurationFormatHelper.formatTicks(ticksLeft);
+                    }
 
                     String spellId = "";
                     if (GET_SPELL_ID != null) {

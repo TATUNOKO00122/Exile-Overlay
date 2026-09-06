@@ -180,6 +180,12 @@ public class HudDisplayTab implements IConfigTab {
         entries.add(new SectionHeaderEntry("section.exile_overlay.buff_overlay_filters"));
 
         entries.add(new BooleanConfigEntry(
+                "exile_overlay.config.buff_duration_colon_format",
+                equipConfig::isBuffDurationColonFormat,
+                equipConfig::setBuffDurationColonFormat
+        ));
+
+        entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.simple_buff_stack",
                 equipConfig::isSimpleBuffStackDisplay,
                 equipConfig::setSimpleBuffStackDisplay

@@ -84,11 +84,13 @@ public class ExtensionsTab implements IConfigTab {
                     }
             ));
 
-            entries.add(new BooleanConfigEntry(
-                    "exile_overlay.config.exclude_dummy_boss_bar",
-                    config::isExcludeDummyBossBar,
-                    config::setExcludeDummyBossBar
-            ));
+            if (ModList.get().isLoaded("mnsdummy")) {
+                entries.add(new BooleanConfigEntry(
+                        "exile_overlay.config.exclude_dummy_boss_bar",
+                        config::isExcludeDummyBossBar,
+                        config::setExcludeDummyBossBar
+                ));
+            }
         }
 
         // 2. Botania 連携

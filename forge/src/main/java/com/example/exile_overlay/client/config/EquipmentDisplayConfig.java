@@ -68,6 +68,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean simpleSkillChargeSummonDisplay = true;
     private boolean simpleSkillChargeMaxDisplay = false;
     private boolean simpleBuffStackDisplay = false;
+    private boolean buffDurationColonFormat = false;
     private CooldownDisplayType cooldownDisplayType = CooldownDisplayType.VERTICAL;
 
     private EquipmentDisplayConfig() {
@@ -138,6 +139,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         if (obj.has("simpleSkillChargeSummonDisplay")) simpleSkillChargeSummonDisplay = obj.get("simpleSkillChargeSummonDisplay").getAsBoolean();
         if (obj.has("simpleSkillChargeMaxDisplay")) simpleSkillChargeMaxDisplay = obj.get("simpleSkillChargeMaxDisplay").getAsBoolean();
         if (obj.has("simpleBuffStackDisplay")) simpleBuffStackDisplay = obj.get("simpleBuffStackDisplay").getAsBoolean();
+        if (obj.has("buffDurationColonFormat")) buffDurationColonFormat = obj.get("buffDurationColonFormat").getAsBoolean();
         if (obj.has("cooldownDisplayType")) {
             try {
                 cooldownDisplayType = CooldownDisplayType.valueOf(obj.get("cooldownDisplayType").getAsString());
@@ -181,6 +183,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         obj.addProperty("simpleSkillChargeSummonDisplay", simpleSkillChargeSummonDisplay);
         obj.addProperty("simpleSkillChargeMaxDisplay", simpleSkillChargeMaxDisplay);
         obj.addProperty("simpleBuffStackDisplay", simpleBuffStackDisplay);
+        obj.addProperty("buffDurationColonFormat", buffDurationColonFormat);
         obj.addProperty("cooldownDisplayType", cooldownDisplayType.name());
     }
 
@@ -277,6 +280,9 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     public boolean isSimpleBuffStackDisplay() { return simpleBuffStackDisplay; }
     public void setSimpleBuffStackDisplay(boolean simple) { this.simpleBuffStackDisplay = simple; }
 
+    public boolean isBuffDurationColonFormat() { return buffDurationColonFormat; }
+    public void setBuffDurationColonFormat(boolean format) { this.buffDurationColonFormat = format; }
+
     public CooldownDisplayType getCooldownDisplayType() { return cooldownDisplayType; }
     public void setCooldownDisplayType(CooldownDisplayType type) {
         if (type != null) {
@@ -325,6 +331,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.simpleSkillChargeSummonDisplay = true;
         this.simpleSkillChargeMaxDisplay = false;
         this.simpleBuffStackDisplay = false;
+        this.buffDurationColonFormat = false;
         this.cooldownDisplayType = CooldownDisplayType.VERTICAL;
     }
 }
