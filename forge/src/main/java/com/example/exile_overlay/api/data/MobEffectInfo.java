@@ -1,6 +1,5 @@
 package com.example.exile_overlay.api.data;
 
-import com.example.exile_overlay.util.DurationFormatHelper;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -28,7 +27,10 @@ public class MobEffectInfo {
 
     public String getDurationText() {
         if (isInfinite) return "";
-        return DurationFormatHelper.formatTicks(displayTicksLeft);
+        int seconds = Math.max(0, displayTicksLeft / 20);
+        if (seconds <= 0) return "0s";
+        if (seconds >= 60) return (seconds / 60) + "m";
+        return seconds + "s";
     }
 
     public boolean isExpired() {

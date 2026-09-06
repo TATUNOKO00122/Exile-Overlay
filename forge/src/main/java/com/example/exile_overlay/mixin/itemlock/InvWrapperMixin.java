@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
@@ -38,6 +39,24 @@ public abstract class InvWrapperMixin {
             }
         } catch (Exception ignored) {
             // 安全第一: 例外時は通常処理を継続
+        }
+    }
+
+    @Inject(method = "setStackInSlot", at = @At("HEAD"), cancellable = true, remap = false)
+    private void exileOverlay$preventLockedSlotSetStack(int slot, ItemStack stack, CallbackInfo ci) {
+        try {
+            Container container = this.getInv();
+            if (container instanceof Inventory playerInv && playerInv.player != null) {
+                if (slot >= 0 && slot < ItemLockHelper.INVENTORY_SIZE) {
+                    boolean locked = playerInv.player.level().isClientSide()
+                            ? LockManager.isClientSlotLocked(slot)
+                            : LockManager.isServerSlotLocked(playerInv.player, slot);
+                    if (locked) {
+                        ci.cancel();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
         }
     }
 }

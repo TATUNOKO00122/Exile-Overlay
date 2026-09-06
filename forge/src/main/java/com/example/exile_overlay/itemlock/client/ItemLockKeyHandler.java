@@ -16,6 +16,7 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.glfw.GLFW;
 
@@ -50,9 +51,9 @@ public final class ItemLockKeyHandler {
     }
 
     /**
-     * コンテナ画面でのマウス操作インターセプト
+     * コンテナ画面でのマウス操作インターセプト（最高優先度）
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onScreenMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -86,10 +87,39 @@ public final class ItemLockKeyHandler {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onScreenMouseRelease(ScreenEvent.MouseButtonReleased.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        if (event.getScreen() instanceof AbstractContainerScreen<?> containerScreen) {
+            Slot slot = containerScreen.getSlotUnderMouse();
+            int slotIdx = ItemLockHelper.getPlayerSlotIndex(slot, mc.player);
+            if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onScreenMouseDrag(ScreenEvent.MouseDragged.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        if (event.getScreen() instanceof AbstractContainerScreen<?> containerScreen) {
+            Slot slot = containerScreen.getSlotUnderMouse();
+            int slotIdx = ItemLockHelper.getPlayerSlotIndex(slot, mc.player);
+            if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
     /**
-     * コンテナ画面でのキーボード操作インターセプト（Qキードロップ、数字キー入れ替え、オフハンドFキー入れ替え）
+     * コンテナ画面でのキーボード操作インターセプト（最高優先度）
+     * TrashSlotのDeleteキー/Shift+Delete、Qキードロップ、数字キー入れ替え、オフハンドFキー等すべてのMOD・バニラ操作を遮断
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onScreenKeyPressed(ScreenEvent.KeyPressed.Pre event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
@@ -104,30 +134,25 @@ public final class ItemLockKeyHandler {
         int keyCode = event.getKeyCode();
         int scanCode = event.getScanCode();
 
-        // 1. Qキーによるドロップ防止
-        if (mc.options.keyDrop.matches(keyCode, scanCode)) {
-            if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
+        // 1. ロック対象スロット上にマウスがある場合、安全な画面閉じる操作やロック切り替え以外の全キー入力を遮断
+        if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
+            boolean isCloseKey = (keyCode == GLFW.GLFW_KEY_ESCAPE) || mc.options.keyInventory.matches(keyCode, scanCode);
+            KeyMapping toggleKey = ExileOverlayForgeClient.toggleItemLockKey;
+            boolean isToggleKey = toggleKey != null && !toggleKey.isUnbound() && toggleKey.matches(keyCode, scanCode);
+
+            if (!isCloseKey && !isToggleKey) {
                 event.setCanceled(true);
                 return;
             }
         }
 
-        // 2. ホットバー数字キー（1〜9）での入れ替え防止
+        // 2. ホットバー数字キー（1〜9）での入れ替え先がロックされている場合の遮断
         for (int i = 0; i < mc.options.keyHotbarSlots.length; i++) {
             if (mc.options.keyHotbarSlots[i].matches(keyCode, scanCode)) {
-                // ホバー中スロットまたは入れ替え先スロットがロックされている場合は禁止
-                if ((slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) || LockManager.isClientSlotLocked(i)) {
+                if (LockManager.isClientSlotLocked(i)) {
                     event.setCanceled(true);
                     return;
                 }
-            }
-        }
-
-        // 3. オフハンドキー（Fキー）での入れ替え防止
-        if (mc.options.keySwapOffhand.matches(keyCode, scanCode)) {
-            if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
-                event.setCanceled(true);
-                return;
             }
         }
     }

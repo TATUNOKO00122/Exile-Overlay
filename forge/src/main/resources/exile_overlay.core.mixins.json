@@ -15,7 +15,9 @@
   ],
   "mixins": [
     "itemlock.InvWrapperMixin",
-    "itemlock.InventoryMixin"
+    "itemlock.InventoryMixin",
+    "itemlock.SlotMixin",
+    "itemlock.AbstractContainerMenuMixin"
   ],
   "injectors": {
     "defaultRequire": 1
