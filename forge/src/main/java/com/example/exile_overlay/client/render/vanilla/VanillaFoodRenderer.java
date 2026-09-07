@@ -255,7 +255,7 @@ public class VanillaFoodRenderer implements IRenderCommand {
         return new HudRenderMetadata(
             CoordinateSystem.TOP_LEFT_BASED,
             new Insets(0, 0, 0, 0),
-            new Insets(0, 0, 0, 0)
+            new Insets(2, 2, 2, 2)
         );
     }
 }

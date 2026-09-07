@@ -25,6 +25,11 @@ public class SpellKeyHelper {
     private static KeyMapping[] cachedSpellKeys = null;
     private static long lastSearchTime = 0L;
 
+    public static void invalidateCache() {
+        cachedSpellKeys = null;
+        lastSearchTime = 0L;
+    }
+
     public static String getSpellKeyText(int slot) {
         long now = System.currentTimeMillis();
         if (cachedSpellKeys == null || (now - lastSearchTime > SEARCH_INTERVAL_MS)) {
@@ -33,7 +38,7 @@ public class SpellKeyHelper {
         }
 
         if (cachedSpellKeys != null && slot >= 0 && slot < cachedSpellKeys.length) {
-            KeyMapping key = cachedSpellKeys[slot];
+            KeyMapping key;
 
             boolean swappingEnabled = MethodHandlesUtil.isHotbarSwappingEnabled();
             if (swappingEnabled) {
@@ -45,15 +50,9 @@ public class SpellKeyHelper {
                 if (!onSecond && !isFirstHalf) return "";
 
                 int keySlot = onSecond ? slot - 4 : slot;
-                if (keySlot >= 0 && keySlot < cachedSpellKeys.length) {
-                    key = cachedSpellKeys[keySlot];
-                }
+                key = (keySlot >= 0 && keySlot < cachedSpellKeys.length) ? cachedSpellKeys[keySlot] : null;
             } else {
-                // ホットバー切り替え設定がOFFの場合：IS_ON_SECONd_HOTBARがtrueになっていればfalseに自動補正
-                if (MethodHandlesUtil.isOnSecondHotbar()) {
-                    MethodHandlesUtil.setOnSecondHotbar(false);
-                }
-                // 全8スロットにそれぞれのバインドキーを表示
+                // ホットバー切り替え設定がOFFの場合：全8スロットにそれぞれのバインドキーを表示
                 key = cachedSpellKeys[slot];
             }
 
@@ -69,6 +68,7 @@ public class SpellKeyHelper {
 
     private static boolean isUnbound(KeyMapping key) {
         if (key == null) return true;
+        if (key.isUnbound()) return true;
         var boundKey = key.getKey();
         return boundKey.getType() == InputConstants.Type.KEYSYM && boundKey.getValue() == -1;
     }

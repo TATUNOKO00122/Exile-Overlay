@@ -86,7 +86,7 @@ public class ExpAccumulatorRenderer implements IRenderCommand {
         return new HudRenderMetadata(
                 CoordinateSystem.TOP_LEFT_BASED,
                 new Insets(0, 0, 0, 0),
-                new Insets(0, 0, 0, 0)
+                new Insets(4, 4, 4, 4)
         );
     }
 

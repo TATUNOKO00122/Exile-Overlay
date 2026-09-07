@@ -9,22 +9,21 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * クライアントからサーバーへ、特定スロットのロック切り替えを要求するパケット。
+ * クライアントからサーバーへ、アイテムロックスロットのマスクを同期するパケット。
  */
 public class LockSlotC2S {
-    public static final int SYNC_REQUEST_SLOT = -1;
-    private final int slot;
+    private final long mask;
 
-    public LockSlotC2S(int slot) {
-        this.slot = slot;
+    public LockSlotC2S(long mask) {
+        this.mask = mask;
     }
 
     public void encode(FriendlyByteBuf buf) {
-        buf.writeVarInt(slot);
+        buf.writeLong(this.mask);
     }
 
     public static LockSlotC2S decode(FriendlyByteBuf buf) {
-        return new LockSlotC2S(buf.readVarInt());
+        return new LockSlotC2S(buf.readLong());
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
@@ -33,11 +32,7 @@ public class LockSlotC2S {
             ServerPlayer player = ctx.get().getSender();
             if (player == null) return;
 
-            if (slot == SYNC_REQUEST_SLOT) {
-                LockManager.syncToClient(player);
-            } else {
-                LockManager.toggleServerSlotLock(player, slot);
-            }
+            LockManager.setServerLockedMaskNbtOnly(player, this.mask);
         });
         ctx.get().setPacketHandled(true);
     }

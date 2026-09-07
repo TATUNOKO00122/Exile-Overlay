@@ -515,11 +515,16 @@ public class TargetInfoRenderer implements IRenderCommand {
     }
 
     @Override
+    public int getConfigHeight() {
+        return 20;
+    }
+
+    @Override
     public HudRenderMetadata getRenderMetadata() {
         return new HudRenderMetadata(
             CoordinateSystem.CENTER_BASED,
-            new Insets(0, 0, 0, 0),
-            new Insets(0, 0, 0, 0)
+            new Insets(8, 0, 0, 0),
+            new Insets(2, 2, 2, 2)
         );
     }
 }

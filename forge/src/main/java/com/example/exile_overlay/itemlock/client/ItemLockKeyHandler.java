@@ -70,12 +70,14 @@ public final class ItemLockKeyHandler {
         if (event.getButton() == 0 && isToggleKeyDown()) {
             event.setCanceled(true);
             LockManager.toggleClientSlotLock(slotIdx);
+            long updatedMask = LockManager.getClientLockedMask();
             String storageKey = ItemLockClientStorage.getCurrentStorageKey();
             if (storageKey != null) {
-                ItemLockClientStorage.setLockMask(storageKey, LockManager.getClientLockedMask());
+                ItemLockClientStorage.setLockMask(storageKey, updatedMask);
+                ItemLockClientStorage.save();
             }
             if (ItemLockClientStorage.isServerModPresent()) {
-                NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(slotIdx));
+                NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(updatedMask));
             }
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.2f));
             return;
@@ -116,48 +118,6 @@ public final class ItemLockKeyHandler {
     }
 
     /**
-     * コンテナ画面でのキーボード操作インターセプト（最高優先度）
-     * TrashSlotのDeleteキー/Shift+Delete、Qキードロップ、数字キー入れ替え、オフハンドFキー等すべてのMOD・バニラ操作を遮断
-     */
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onScreenKeyPressed(ScreenEvent.KeyPressed.Pre event) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-
-        if (!(event.getScreen() instanceof AbstractContainerScreen<?> containerScreen)) {
-            return;
-        }
-
-        Slot slot = containerScreen.getSlotUnderMouse();
-        int slotIdx = ItemLockHelper.getPlayerSlotIndex(slot, mc.player);
-
-        int keyCode = event.getKeyCode();
-        int scanCode = event.getScanCode();
-
-        // 1. ロック対象スロット上にマウスがある場合、安全な画面閉じる操作やロック切り替え以外の全キー入力を遮断
-        if (slotIdx >= 0 && LockManager.isClientSlotLocked(slotIdx)) {
-            boolean isCloseKey = (keyCode == GLFW.GLFW_KEY_ESCAPE) || mc.options.keyInventory.matches(keyCode, scanCode);
-            KeyMapping toggleKey = ExileOverlayForgeClient.toggleItemLockKey;
-            boolean isToggleKey = toggleKey != null && !toggleKey.isUnbound() && toggleKey.matches(keyCode, scanCode);
-
-            if (!isCloseKey && !isToggleKey) {
-                event.setCanceled(true);
-                return;
-            }
-        }
-
-        // 2. ホットバー数字キー（1〜9）での入れ替え先がロックされている場合の遮断
-        for (int i = 0; i < mc.options.keyHotbarSlots.length; i++) {
-            if (mc.options.keyHotbarSlots[i].matches(keyCode, scanCode)) {
-                if (LockManager.isClientSlotLocked(i)) {
-                    event.setCanceled(true);
-                    return;
-                }
-            }
-        }
-    }
-
-    /**
      * 通常画面（インベントリを閉じた状態）でのQキードロップおよびオフハンドFキー入れ替え防止
      */
     @SubscribeEvent
@@ -184,7 +144,7 @@ public final class ItemLockKeyHandler {
     }
 
     /**
-     * ワールド参加時に接続先に応じたロック状態を復元し、サーバーにMODが存在する場合のみ同期を要求
+     * ワールド参加時に接続先に応じたロック状態を復元し、サーバーが存在すれば同期
      */
     @SubscribeEvent
     public void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
@@ -192,9 +152,9 @@ public final class ItemLockKeyHandler {
         if (storageKey != null) {
             long savedMask = ItemLockClientStorage.getLockMask(storageKey);
             LockManager.setClientLockedMask(savedMask);
-        }
-        if (ItemLockClientStorage.isServerModPresent()) {
-            NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(LockSlotC2S.SYNC_REQUEST_SLOT));
+            if (savedMask != 0L && ItemLockClientStorage.isServerModPresent()) {
+                NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(savedMask));
+            }
         }
     }
 

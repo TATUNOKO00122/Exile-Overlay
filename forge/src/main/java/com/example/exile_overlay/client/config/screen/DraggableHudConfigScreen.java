@@ -36,7 +36,9 @@ public class DraggableHudConfigScreen extends Screen {
 
     private static final int BACKGROUND_COLOR = 0x1A000000;
     private static final int GRID_COLOR = 0x33FFFFFF;
-    private static final int SELECTION_COLOR = 0xFFFFFF00;
+    private static final int COLOR_SELECTED_BORDER = 0xFF00FF88;
+    private static final int COLOR_VISIBLE_BORDER = 0xFF00E9FF;
+    private static final int COLOR_HIDDEN_BORDER = 0xFFFF4466;
     private static final int SNAP_GUIDE_COLOR = 0xFFFF5555;
     private static final int SNAP_GUIDE_ALPHA = 0x66;
     private static final int SNAP_DISTANCE = 10;
@@ -44,11 +46,12 @@ public class DraggableHudConfigScreen extends Screen {
     private static final float MAX_SCALE = 4.0f;
     private static final float SCALE_STEP = 0.1f;
     private static final int TOGGLE_BUTTON_MIN_SIZE = 5;
-    private static final int TOGGLE_BUTTON_MAX_SIZE = 7;
-    private static final int TOGGLE_BUTTON_COLOR_VISIBLE = 0xFF44FF44;
-    private static final int TOGGLE_BUTTON_COLOR_HIDDEN = 0xFFFF4444;
-    private static final int ORIENTATION_BUTTON_COLOR = 0xFF4444FF;
-    private static final int ORIENTATION_BUTTON_COLOR_ACTIVE = 0xFFFF4444;
+    private static final int TOGGLE_BUTTON_MAX_SIZE = 5;
+    private static final int TOGGLE_BUTTON_COLOR_VISIBLE = 0xFFE0E0E0;
+    private static final int TOGGLE_BUTTON_COLOR_HIDDEN = 0xFF505050;
+    private static final int ORIENTATION_BUTTON_COLOR = 0xFF64B5F6;
+    private static final int ORIENTATION_BUTTON_COLOR_ACTIVE = 0xFFFF9800;
+    private static final int MINI_BUTTON_BORDER_COLOR = 0xFF333333;
 
     private static final long HELP_DISPLAY_MS = 3000L;
     private static final long HELP_FADE_MS = 2000L;
@@ -319,14 +322,22 @@ public class DraggableHudConfigScreen extends Screen {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        int baseAlpha = element == selectedElement ? 0x66 : 0x33;
-        if (!isVisible) {
-            baseAlpha = 0x22;
+        int borderColor;
+        int fillRgb;
+        if (element == selectedElement) {
+            borderColor = COLOR_SELECTED_BORDER;
+            fillRgb = 0x00FF88;
+        } else if (isVisible) {
+            borderColor = COLOR_VISIBLE_BORDER;
+            fillRgb = 0x00E9FF;
+        } else {
+            borderColor = COLOR_HIDDEN_BORDER;
+            fillRgb = 0xFF4466;
         }
-        int color = (baseAlpha << 24) | (isVisible ? 0x4444FF : 0xFF4444);
-        graphics.fill(left, top, left + renderWidth, top + renderHeight, color);
 
-        graphics.renderOutline(left, top, renderWidth, renderHeight, isVisible ? 0x88FFFFFF : 0xFF888888);
+        int fillAlpha = element == selectedElement ? 0x24 : 0x14;
+        graphics.fill(left, top, left + renderWidth, top + renderHeight, (fillAlpha << 24) | fillRgb);
+        drawThickBorder(graphics, left, top, renderWidth, renderHeight, 2, borderColor);
 
         String key = element.getKey();
         if ("boss_hp_bar".equals(key) || "gateway_boss_bar".equals(key) || "damage_tracker".equals(key)) {
@@ -337,6 +348,19 @@ public class DraggableHudConfigScreen extends Screen {
         renderOrientationButton(graphics, element);
 
         RenderSystem.disableBlend();
+    }
+
+    private static void drawThickBorder(GuiGraphics graphics, int x, int y, int width, int height, int thickness, int color) {
+        graphics.fill(x + 1, y, x + width - 1, y + thickness, color);
+        graphics.fill(x + 1, y + height - thickness, x + width - 1, y + height, color);
+        graphics.fill(x, y + 1, x + thickness, y + height - 1, color);
+        graphics.fill(x + width - thickness, y + 1, x + width, y + height - 1, color);
+
+        // 内角に1px追加して角のラインを滑らかにする
+        graphics.fill(x + thickness, y + thickness, x + thickness + 1, y + thickness + 1, color);
+        graphics.fill(x + width - thickness - 1, y + thickness, x + width - thickness, y + thickness + 1, color);
+        graphics.fill(x + thickness, y + height - thickness - 1, x + thickness + 1, y + height - thickness, color);
+        graphics.fill(x + width - thickness - 1, y + height - thickness - 1, x + width - thickness, y + height - thickness, color);
     }
 
     private void renderElementLabel(GuiGraphics graphics, DraggableElement element,
@@ -368,11 +392,8 @@ public class DraggableHudConfigScreen extends Screen {
     private void renderToggleButton(GuiGraphics graphics, DraggableElement element) {
         int[] btnPos = element.getToggleButtonPosition(this.width, this.height);
         int btnSize = element.getToggleButtonSize();
-        boolean isVisible = element.isVisible();
-
-        int btnColor = isVisible ? TOGGLE_BUTTON_COLOR_VISIBLE : TOGGLE_BUTTON_COLOR_HIDDEN;
-        graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
-        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0x88FFFFFF);
+        int btnColor = element.isVisible() ? TOGGLE_BUTTON_COLOR_VISIBLE : TOGGLE_BUTTON_COLOR_HIDDEN;
+        renderMiniButton(graphics, btnPos[0], btnPos[1], btnSize, btnColor, MINI_BUTTON_BORDER_COLOR);
     }
 
     private void renderOrientationButton(GuiGraphics graphics, DraggableElement element) {
@@ -382,11 +403,16 @@ public class DraggableHudConfigScreen extends Screen {
 
         int[] btnPos = element.getOrientationButtonPosition(this.width, this.height);
         int btnSize = element.getOrientationButtonSize();
-        boolean isHorizontal = element.isHorizontal();
+        int btnColor = element.isHorizontal() ? ORIENTATION_BUTTON_COLOR_ACTIVE : ORIENTATION_BUTTON_COLOR;
+        renderMiniButton(graphics, btnPos[0], btnPos[1], btnSize, btnColor, MINI_BUTTON_BORDER_COLOR);
+    }
 
-        int btnColor = isHorizontal ? ORIENTATION_BUTTON_COLOR_ACTIVE : ORIENTATION_BUTTON_COLOR;
-        graphics.fill(btnPos[0], btnPos[1], btnPos[0] + btnSize, btnPos[1] + btnSize, btnColor);
-        graphics.renderOutline(btnPos[0], btnPos[1], btnSize, btnSize, 0x88FFFFFF);
+    private static void renderMiniButton(GuiGraphics graphics, int x, int y, int size, int fillColor, int borderColor) {
+        graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, fillColor);
+        graphics.fill(x + 1, y, x + size - 1, y + 1, borderColor);
+        graphics.fill(x + 1, y + size - 1, x + size - 1, y + size, borderColor);
+        graphics.fill(x, y + 1, x + 1, y + size - 1, borderColor);
+        graphics.fill(x + size - 1, y + 1, x + size, y + size - 1, borderColor);
     }
 
     private int calculateHelpAlpha() {
@@ -817,8 +843,8 @@ public class DraggableHudConfigScreen extends Screen {
             int left;
             int top;
             if (metadata.isTopLeftBased()) {
-                left = anchorX + scaledOffsetLeft;
-                top = anchorY + scaledOffsetTop;
+                left = anchorX - scaledExpansionLeft + scaledOffsetLeft;
+                top = anchorY - scaledExpansionTop + scaledOffsetTop;
             } else if (metadata.isBottomCenterBased()) {
                 left = anchorX - scaledWidth / 2 - scaledExpansionLeft + scaledOffsetLeft;
                 top = anchorY - scaledHeight - scaledExpansionTop + scaledOffsetTop;
@@ -911,7 +937,7 @@ public class DraggableHudConfigScreen extends Screen {
             IRenderCommand.HudRenderMetadata metadata = getRenderMetadata();
 
             int[] bounds = calculateBounds(pos[0], pos[1], baseWidth, baseHeight, scale, metadata);
-            return new int[]{bounds[0], bounds[1]};
+            return new int[]{bounds[0] + 1, bounds[1] + 1};
         }
 
         boolean isToggleButtonHit(int mouseX, int mouseY, int screenWidth, int screenHeight) {

@@ -374,22 +374,15 @@ public class BuffOverlayRenderer implements IRenderCommand {
     @Override
     public int getConfigWidth() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null) {
-            return FRAME_WIDTH * 3 + 2;
-        }
-        List<EffectRenderHelper.DisplayableEffect> effects =
-                EffectRenderHelper.getFilteredEffects(mc.player, CONFIG_KEY);
-        int count = effects.size();
-
-        if (count <= 0) {
-            return FRAME_WIDTH * 3 + 2;
+        int count = 1;
+        if (mc.player != null) {
+            List<EffectRenderHelper.DisplayableEffect> effects =
+                    EffectRenderHelper.getFilteredEffects(mc.player, CONFIG_KEY);
+            count = Math.max(1, effects.size());
         }
         return FRAME_WIDTH * count + (count - 1);
     }
 
-    /**
-     * 設定画面用の高さを取得
-     */
     @Override
     public int getConfigHeight() {
         return FRAME_HEIGHT;
@@ -404,9 +397,9 @@ public class BuffOverlayRenderer implements IRenderCommand {
     @Override
     public HudRenderMetadata getRenderMetadata() {
         return new HudRenderMetadata(
-                CoordinateSystem.TOP_LEFT_BASED, // 左上基準
-                new Insets(0, 0, 0, 0), // オフセットなし
-                new Insets(0, 0, 0, 0) // 拡張なし
+                CoordinateSystem.TOP_LEFT_BASED,
+                new Insets(0, 0, 0, 0),
+                new Insets(2, 2, 0, 0)
         );
     }
 }

@@ -83,8 +83,8 @@ public interface IRenderCommand {
         int left;
         int top;
         if (metadata.isTopLeftBased()) {
-            left = x + offset.left;
-            top = y + offset.top;
+            left = x - expansion.left + offset.left;
+            top = y - expansion.top + offset.top;
         } else if (metadata.isBottomCenterBased()) {
             left = x - width / 2 - expansion.left + offset.left;
             top = y - height - expansion.top + offset.top;

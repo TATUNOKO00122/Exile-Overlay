@@ -32,49 +32,46 @@ public class SnapCalculator {
      * @param expansionRight 右方向の拡張領域
      * @return 境界制限後のX座標
      */
-    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased, int expansionLeft, int expansionRight) {
+    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased) {
         if (isCenterBased) {
-            int minX = elementWidth / 2 + expansionLeft;
-            int maxX = screenWidth - elementWidth / 2 - expansionRight;
+            int minX = elementWidth / 2;
+            int maxX = screenWidth - elementWidth / 2;
             if (minX > maxX) return screenWidth / 2;
             return Math.max(minX, Math.min(rawX, maxX));
         } else {
-            int minX = expansionLeft;
-            int maxX = screenWidth - elementWidth - expansionRight;
+            int minX = 0;
+            int maxX = screenWidth - elementWidth;
             if (minX > maxX) return screenWidth / 2 - elementWidth / 2;
             return Math.max(minX, Math.min(rawX, maxX));
         }
     }
 
-    /**
-     * Y座標を画面境界内に制限
-     *
-     * @param rawY 生のY座標
-     * @param elementHeight 要素の高さ
-     * @param isBottomBased trueの場合Yは底辺
-     * @param isCenterBased trueの場合Yは中心
-     * @param expansionTop 上方向の拡張領域
-     * @param expansionBottom 下方向の拡張領域
-     * @return 境界制限後のY座標
-     */
-    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased, boolean isCenterBased,
-                          int expansionTop, int expansionBottom) {
+    public int applySnapX(int rawX, int elementWidth, boolean isCenterBased, int expansionLeft, int expansionRight) {
+        return applySnapX(rawX, elementWidth, isCenterBased);
+    }
+
+    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased, boolean isCenterBased) {
         if (isBottomBased) {
-            int minY = elementHeight + expansionTop;
-            int maxY = screenHeight - expansionBottom;
+            int minY = elementHeight;
+            int maxY = screenHeight;
             if (minY > maxY) return screenHeight / 2;
             return Math.max(minY, Math.min(rawY, maxY));
         } else if (isCenterBased) {
-            int minY = elementHeight / 2 + expansionTop;
-            int maxY = screenHeight - elementHeight / 2 - expansionBottom;
+            int minY = elementHeight / 2;
+            int maxY = screenHeight - elementHeight / 2;
             if (minY > maxY) return screenHeight / 2;
             return Math.max(minY, Math.min(rawY, maxY));
         } else {
-            int minY = expansionTop;
-            int maxY = screenHeight - elementHeight - expansionBottom;
+            int minY = 0;
+            int maxY = screenHeight - elementHeight;
             if (minY > maxY) return screenHeight / 2 - elementHeight / 2;
             return Math.max(minY, Math.min(rawY, maxY));
         }
+    }
+
+    public int applySnapY(int rawY, int elementHeight, boolean isBottomBased, boolean isCenterBased,
+                          int expansionTop, int expansionBottom) {
+        return applySnapY(rawY, elementHeight, isBottomBased, isCenterBased);
     }
 
     /**
@@ -123,10 +120,8 @@ public class SnapCalculator {
         boolean isBottomY = metadata.isBottomCenterBased();
         boolean isCenterY = metadata.isCenterBased();
 
-        IRenderCommand.Insets expansion = metadata.getExpansion();
-
-        int clampedX = applySnapX(rawX, elementWidth, isCenterX, expansion.left, expansion.right);
-        int clampedY = applySnapY(rawY, elementHeight, isBottomY, isCenterY, expansion.top, expansion.bottom);
+        int clampedX = applySnapX(rawX, elementWidth, isCenterX);
+        int clampedY = applySnapY(rawY, elementHeight, isBottomY, isCenterY);
 
         return new SnapResult(clampedX, clampedY,
                               Collections.emptyList(),

@@ -110,4 +110,22 @@ public abstract class InventoryMixin {
         } catch (Exception ignored) {
         }
     }
+
+    @Inject(method = "setItem", at = @At("HEAD"), cancellable = true)
+    private void exileOverlay$preventLockedSetItem(int slot, ItemStack stack, CallbackInfo ci) {
+        try {
+            if (this.player != null && slot >= 0 && slot < ItemLockHelper.INVENTORY_SIZE) {
+                boolean locked = this.player.level().isClientSide()
+                        ? LockManager.isClientSlotLocked(slot)
+                        : LockManager.isServerSlotLocked(this.player, slot);
+                if (locked) {
+                    ItemStack current = this.items.get(slot);
+                    if (!current.isEmpty() && (stack.isEmpty() || !ItemStack.matches(current, stack))) {
+                        ci.cancel();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
 }

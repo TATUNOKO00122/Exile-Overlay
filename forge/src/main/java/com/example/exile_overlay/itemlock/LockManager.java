@@ -86,7 +86,10 @@ public final class LockManager {
 
     public static void syncToClient(ServerPlayer player) {
         if (player == null || player.connection == null || player.connection.connection == null) return;
-        if (!NetworkHandler.CHANNEL.isRemotePresent(player.connection.connection)) return;
+        boolean canSend = player.server.isSingleplayer()
+                || player.connection.connection.isMemoryConnection()
+                || NetworkHandler.CHANNEL.isRemotePresent(player.connection.connection);
+        if (!canSend) return;
         try {
             long mask = getServerLockedMask(player);
             NetworkHandler.CHANNEL.send(

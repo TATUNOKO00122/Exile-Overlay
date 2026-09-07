@@ -2,6 +2,7 @@ package com.example.exile_overlay.itemlock.client;
 
 import com.example.exile_overlay.dmgtracker.network.NetworkHandler;
 import com.example.exile_overlay.itemlock.LockManager;
+import com.example.exile_overlay.itemlock.network.LockSlotC2S;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -183,6 +184,7 @@ public final class ItemLockClientStorage {
      */
     public static boolean isServerModPresent() {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.isSingleplayer()) return true;
         if (mc.getConnection() == null) return false;
         Connection connection = mc.getConnection().getConnection();
         if (connection == null) return false;
@@ -194,10 +196,26 @@ public final class ItemLockClientStorage {
     }
 
     public static void handleSync(long lockedMask) {
-        LockManager.setClientLockedMask(lockedMask);
         String storageKey = getCurrentStorageKey();
-        if (storageKey != null) {
-            setLockMask(storageKey, lockedMask);
+        if (lockedMask != 0L) {
+            LockManager.setClientLockedMask(lockedMask);
+            if (storageKey != null) {
+                setLockMask(storageKey, lockedMask);
+                save();
+            }
+        } else {
+            // サーバー側マスクが0の場合、クライアント側の保存済みマスクがあればサーバーへ反映
+            if (storageKey != null) {
+                long localMask = getLockMask(storageKey);
+                if (localMask != 0L) {
+                    LockManager.setClientLockedMask(localMask);
+                    if (isServerModPresent()) {
+                        NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(localMask));
+                    }
+                    return;
+                }
+            }
+            LockManager.setClientLockedMask(0L);
         }
     }
 }

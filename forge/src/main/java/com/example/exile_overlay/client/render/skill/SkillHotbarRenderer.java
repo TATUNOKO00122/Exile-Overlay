@@ -138,11 +138,6 @@ public class SkillHotbarRenderer implements IRenderCommand {
             return;
         }
 
-        // ホットバー切り替え設定がOFFの場合、M&Sのトグルフラグがtrueになっていればfalseに自動リセット
-        if (!MethodHandlesUtil.isHotbarSwappingEnabled() && MethodHandlesUtil.isOnSecondHotbar()) {
-            MethodHandlesUtil.setOnSecondHotbar(false);
-        }
-
         HudPosition position = getPosition();
         boolean horizontal = position.isHorizontal();
 
@@ -638,7 +633,7 @@ public class SkillHotbarRenderer implements IRenderCommand {
         return new HudRenderMetadata(
                 CoordinateSystem.CENTER_BASED,
                 new Insets(0, 0, 0, 0),
-                new Insets(2, 2, 2, 2)
+                new Insets(5, 5, 4, 5)
         );
     }
 }
