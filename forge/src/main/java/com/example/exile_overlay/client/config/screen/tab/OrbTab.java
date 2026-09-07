@@ -187,6 +187,8 @@ public class OrbTab implements IConfigTab {
         ));
 
         // 5. ビジュアルエフェクト
+        entries.add(new SectionHeaderEntry("section.exile_overlay.orb_visual"));
+
         entries.add(new BooleanConfigEntry(
                 "exile_overlay.config.enable_orb_noise",
                 equipConfig::isEnableOrbNoise,

@@ -379,6 +379,7 @@
   "exile_overlay.config.none": "없음",
   "exile_overlay.config.kill_counter_timeout": "자동 초기화 시간: %s초",
   "exile_overlay.config.kill_counter_timeout.tooltip": "지정된 시간 동안 처치가 없으면 킬 카운트를 초기화합니다",
+  "section.exile_overlay.orb_visual": "비주얼",
   "section.exile_overlay.orb_smooth": "스무딩",
   "exile_overlay.config.smooth_increase": "증가 시 스무딩: %s",
   "exile_overlay.config.smooth_increase.tooltip": "수치가 증가할 때(예: 회복 시) 시각적 변화를 부드럽게 합니다",

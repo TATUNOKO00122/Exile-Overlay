@@ -18,7 +18,7 @@ public class BuffOverlayFilterConfig extends AbstractConfigSection {
 
     public static class OverlayFilter {
         public boolean showMinions = true;
-        public boolean showMercenary = true;
+        public boolean showMercenary = false;
         public boolean sortByDuration = false;
 
         public static OverlayFilter createDefaultAll() {

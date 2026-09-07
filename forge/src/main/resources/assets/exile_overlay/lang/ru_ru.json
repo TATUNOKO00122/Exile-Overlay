@@ -379,6 +379,7 @@
   "exile_overlay.config.none": "Нет",
   "exile_overlay.config.kill_counter_timeout": "Время автосброса: %sс",
   "exile_overlay.config.kill_counter_timeout.tooltip": "Сбросить счетчик убийств, если убийств не было в течение указанного времени",
+  "section.exile_overlay.orb_visual": "Визуальные эффекты",
   "section.exile_overlay.orb_smooth": "Сглаживание",
   "exile_overlay.config.smooth_increase": "Сглаживание при увеличении: %s",
   "exile_overlay.config.smooth_increase.tooltip": "Сглаживать визуальные изменения при увеличении значений (например, при лечении)",

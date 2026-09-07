@@ -379,6 +379,7 @@
   "exile_overlay.config.none": "None",
   "exile_overlay.config.kill_counter_timeout": "Auto-reset Time: %ss",
   "exile_overlay.config.kill_counter_timeout.tooltip": "Reset the kill count if no kills occur for the specified seconds",
+  "section.exile_overlay.orb_visual": "Visual",
   "section.exile_overlay.orb_smooth": "Smoothing",
   "exile_overlay.config.smooth_increase": "Smooth Increase: %s",
   "exile_overlay.config.smooth_increase.tooltip": "Smooth the visual change when values increase (e.g. during recovery)",

@@ -61,7 +61,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
     private boolean showEmptySkillSlots = false;
     private boolean showSkillCooldownNumber = true;
     private boolean showSkillSummonCount = true;
-    private boolean enableOrbNoise = true;
+    private boolean enableOrbNoise = false;
     private boolean enableLiquidShadow = true;
     private boolean enableOrbInnerShadow = true;
     private boolean simpleSkillKeybindDisplay = true;
@@ -324,7 +324,7 @@ public class EquipmentDisplayConfig extends AbstractConfigSection {
         this.showEmptySkillSlots = false;
         this.showSkillCooldownNumber = true;
         this.showSkillSummonCount = true;
-        this.enableOrbNoise = true;
+        this.enableOrbNoise = false;
         this.enableLiquidShadow = true;
         this.enableOrbInnerShadow = true;
         this.simpleSkillKeybindDisplay = true;

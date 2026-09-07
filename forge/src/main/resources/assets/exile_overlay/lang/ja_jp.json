@@ -379,6 +379,7 @@
   "exile_overlay.config.none": "なし",
   "exile_overlay.config.kill_counter_timeout": "自動リセット時間: %s秒",
   "exile_overlay.config.kill_counter_timeout.tooltip": "キルが発生しないまま指定秒数が経過するとカウントをリセットします",
+  "section.exile_overlay.orb_visual": "ビジュアル",
   "section.exile_overlay.orb_smooth": "スムージング",
   "exile_overlay.config.smooth_increase": "増加時スムージング: %s",
   "exile_overlay.config.smooth_increase.tooltip": "回復時などに数値が増加する際の変化を滑らかにします",

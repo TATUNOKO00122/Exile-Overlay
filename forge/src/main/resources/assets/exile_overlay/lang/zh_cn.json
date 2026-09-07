@@ -379,6 +379,7 @@
   "exile_overlay.config.none": "无",
   "exile_overlay.config.kill_counter_timeout": "自动重置时间: %s秒",
   "exile_overlay.config.kill_counter_timeout.tooltip": "如果在指定秒数内没有击杀，则重置击杀数",
+  "section.exile_overlay.orb_visual": "视觉效果",
   "section.exile_overlay.orb_smooth": "平滑处理",
   "exile_overlay.config.smooth_increase": "平滑增加: %s",
   "exile_overlay.config.smooth_increase.tooltip": "当数值增加时（例如在恢复时），平滑视觉变化",
