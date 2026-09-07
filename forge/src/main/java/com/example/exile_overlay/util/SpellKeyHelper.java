@@ -6,6 +6,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.settings.KeyModifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,19 @@ public class SpellKeyHelper {
             if (isUnbound(key)) return "";
 
             if (key != null) {
+                var boundKey = key.getKey();
+                if (boundKey.getType() == InputConstants.Type.MOUSE) {
+                    String mouseText = "M" + (boundKey.getValue() + 1);
+                    KeyModifier modifier = key.getKeyModifier();
+                    if (modifier == KeyModifier.SHIFT) {
+                        return "s+" + mouseText;
+                    } else if (modifier == KeyModifier.CONTROL) {
+                        return "c+" + mouseText;
+                    } else if (modifier == KeyModifier.ALT) {
+                        return "a+" + mouseText;
+                    }
+                    return mouseText;
+                }
                 return key.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT);
             }
         }

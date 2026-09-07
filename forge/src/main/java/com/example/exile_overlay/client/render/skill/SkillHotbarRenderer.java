@@ -68,20 +68,25 @@ public class SkillHotbarRenderer implements IRenderCommand {
     private static final int CHARGE_COLOR_PARTIAL = 0xFFFFFF00;
     private static final int CHARGE_COLOR_EMPTY = 0xFFFF4444;
 
-    private static final String[] KEY_MODIFIERS = {"LEFT SHIFT", "RIGHT SHIFT", "SHIFT",
-            "左SHIFT", "右SHIFT", "シフト",
+    private static final String[] KEY_MODIFIERS = {
+            "LEFT SHIFT", "RIGHT SHIFT", "SHIFT", "左 SHIFT", "右 SHIFT", "左SHIFT", "右SHIFT", "シフト",
             "LEFT CONTROL", "RIGHT CONTROL", "CONTROL", "LEFT CTRL", "RIGHT CTRL", "CTRL",
-            "左CTRL", "右CTRL", "左CONTROL", "右CONTROL", "コントロール",
-            "LEFT ALT", "RIGHT ALT", "ALT",
-            "左ALT", "右ALT", "オルト"};
-    private static final String[] KEY_MOD_REPLACEMENTS = {"s", "s", "s", "s", "s", "s",
-            "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c",
-            "a", "a", "a", "a", "a", "a"};
+            "左 CONTROL", "右 CONTROL", "左CONTROL", "右CONTROL",
+            "左 CTRL", "右 CTRL", "左CTRL", "右CTRL", "コントロール",
+            "LEFT ALT", "RIGHT ALT", "ALT", "左 ALT", "右 ALT", "左ALT", "右ALT", "オルト"
+    };
+    private static final String[] KEY_MOD_REPLACEMENTS = {
+            "s", "s", "s", "s", "s", "s", "s", "s",
+            "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c", "c",
+            "a", "a", "a", "a", "a", "a", "a", "a"
+    };
     private static final String[][] KEY_MAPPINGS = {
             {"MOUSE BUTTON", "M"}, {"マウスボタン", "M"}, {"マウス", "M"},
             {"BUTTON", "M"}, {"ボタン", "M"},
+            {"鼠标按键", "M"}, {"鼠标按钮", "M"}, {"滑鼠按鈕", "M"}, {"滑鼠側鍵", "M"},
+            {"按键", "M"}, {"按鈕", "M"}, {"鼠标", "M"}, {"滑鼠", "M"},
             {"CAPS LOCK", "Caps"}, {"キャプスロック", "Caps"},
-            {"BACKSPACE", "Bksp"}, {"バックスペース", "Bksp"},
+            {"BACKSPACE", "Bksp"}, {"バックスペース", "Bksp"}, {"退格", "Bksp"},
             {"ESCAPE", "Esc"}, {"エスケープ", "Esc"},
             {"PAGE UP", "PgUp"}, {"ページアップ", "PgUp"},
             {"PAGE DOWN", "PgDn"}, {"ページダウン", "PgDn"},
@@ -92,10 +97,10 @@ public class SkillHotbarRenderer implements IRenderCommand {
             {"ARROW LEFT", "←"}, {"ARROW RIGHT", "→"},
             {"INSERT", "Ins"}, {"インサート", "Ins"},
             {"DELETE", "Del"}, {"デリート", "Del"},
-            {"ENTER", "Ent"},
+            {"ENTER", "Ent"}, {"回车", "Ent"},
             {"PAUSE", "Pau"},
-            {"SPACE", "Sp"}, {"スペース", "Sp"},
-            {"NUMPAD", "N"},
+            {"SPACE", "Sp"}, {"スペース", "Sp"}, {"空格", "Sp"},
+            {"NUMPAD", "N"}, {"小键盘", "N"},
             {"DIGIT", ""},
             {"WORLD", "W"},
     };
