@@ -186,6 +186,8 @@
   "hud.exile_overlay.kill_counter": "Счетчик убийств",
   "hud.exile_overlay.exp_accumulator": "Полученный опыт",
   "hud.exile_overlay.dungeon_timer": "Таймер подземелья",
+  "hud.exile_overlay.target_mob_name": "Информация о цели",
+  "hud.exile_overlay.skill_buff_overlay": "Баффы навыков",
   "profession.exile_overlay.salvaging": "Утилизация",
   "profession.exile_overlay.mining": "Горное дело",
   "profession.exile_overlay.farming": "Земледелие",
@@ -396,6 +398,10 @@
   "exile_overlay.jei.applicable_gears": "Применимое снаряжение:",
   "exile_overlay.jei.only_one_per_item": "Только 1 такой аффикс на предмет",
   "exile_overlay.jei.one_of_a_kind": "Несовместимо с другими аффиксами группы %s",
+  "exile_overlay.jei.id": "ID: %s",
+  "exile_overlay.jei.weight": "Вес: %s",
+  "exile_overlay.jei.stats_range": "Характеристики / Диапазон:",
+  "exile_overlay.jei.requirements": "Требования:",
   "section.exile_overlay.item_lock": "Блокировка предметов",
   "key.exile_overlay.toggle_item_lock": "Блокировка слота (удерживать + клик)"
 }

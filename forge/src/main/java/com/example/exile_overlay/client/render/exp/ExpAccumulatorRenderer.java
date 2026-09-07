@@ -151,7 +151,7 @@ public class ExpAccumulatorRenderer implements IRenderCommand {
                 float animScale = isEditing ? 1.0f : manager.getProfScaleMultiplier();
 
                 if (expVal > 0 && alpha > 0.001f) {
-                    Component profNameComp = isEditing ? Component.literal("Salvaging") : manager.getActiveProfDisplayName();
+                    Component profNameComp = isEditing ? Component.translatable("profession.exile_overlay.salvaging") : manager.getActiveProfDisplayName();
                     String profName = profNameComp.getString();
 
                     String profStr = String.format(Locale.ROOT, "+%d %s Exp (%.1f%%)", expVal, profName, percentage);

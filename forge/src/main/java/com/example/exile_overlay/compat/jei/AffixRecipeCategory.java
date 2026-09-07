@@ -191,12 +191,12 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
             // Title: Affix Name & Slot
             String slotName = recipe.getSlot().name();
             tooltip.add(entry.getDisplayName().copy().append(" (" + slotName + ")").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
-            tooltip.add(Component.literal("ID: " + entry.getGuid()).withStyle(ChatFormatting.DARK_GRAY));
-            tooltip.add(Component.literal("Weight: " + entry.getWeight()).withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("exile_overlay.jei.id", entry.getGuid()).withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.translatable("exile_overlay.jei.weight", entry.getWeight()).withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.empty());
 
             // Stats / Min-Max Range
-            tooltip.add(Component.literal("Stats / Range:").withStyle(ChatFormatting.WHITE));
+            tooltip.add(Component.translatable("exile_overlay.jei.stats_range").withStyle(ChatFormatting.WHITE));
             for (Component stat : entry.getRawStatLines()) {
                 tooltip.add(Component.literal(" • ").withStyle(ChatFormatting.GRAY).append(stat));
             }
@@ -204,7 +204,7 @@ public class AffixRecipeCategory implements IRecipeCategory<AffixRecipe> {
             // Requirements
             if (!entry.getRequirementLines().isEmpty()) {
                 tooltip.add(Component.empty());
-                tooltip.add(Component.literal("Requirements:").withStyle(ChatFormatting.WHITE));
+                tooltip.add(Component.translatable("exile_overlay.jei.requirements").withStyle(ChatFormatting.WHITE));
                 for (Component req : entry.getRequirementLines()) {
                     tooltip.add(req);
                 }

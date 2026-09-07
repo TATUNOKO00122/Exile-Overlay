@@ -186,6 +186,8 @@
   "hud.exile_overlay.kill_counter": "キルカウンター",
   "hud.exile_overlay.exp_accumulator": "獲得EXP",
   "hud.exile_overlay.dungeon_timer": "ダンジョンタイマー",
+  "hud.exile_overlay.target_mob_name": "ターゲット情報",
+  "hud.exile_overlay.skill_buff_overlay": "スキルバフ",
   "profession.exile_overlay.salvaging": "サルベージ",
   "profession.exile_overlay.mining": "採掘",
   "profession.exile_overlay.farming": "農業",
@@ -396,6 +398,10 @@
   "exile_overlay.jei.applicable_gears": "付与可能な装備:",
   "exile_overlay.jei.only_one_per_item": "1つのアイテムにつき1つのみ付与可能",
   "exile_overlay.jei.one_of_a_kind": "同グループ(%s)のAffixと重複不可",
+  "exile_overlay.jei.id": "ID: %s",
+  "exile_overlay.jei.weight": "ウェイト: %s",
+  "exile_overlay.jei.stats_range": "ステータス / 変動範囲:",
+  "exile_overlay.jei.requirements": "必要条件:",
   "section.exile_overlay.item_lock": "アイテムロック",
   "key.exile_overlay.toggle_item_lock": "スロットロック切り替え (長押し+クリック)"
 }

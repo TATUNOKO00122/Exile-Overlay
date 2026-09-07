@@ -186,6 +186,8 @@
   "hud.exile_overlay.kill_counter": "击杀计数器",
   "hud.exile_overlay.exp_accumulator": "获得经验",
   "hud.exile_overlay.dungeon_timer": "副本计时器",
+  "hud.exile_overlay.target_mob_name": "目标信息",
+  "hud.exile_overlay.skill_buff_overlay": "技能增益",
   "profession.exile_overlay.salvaging": "分解回收",
   "profession.exile_overlay.mining": "采矿",
   "profession.exile_overlay.farming": "农业",
@@ -396,6 +398,10 @@
   "exile_overlay.jei.applicable_gears": "适用装备:",
   "exile_overlay.jei.only_one_per_item": "每件物品仅限1个此词缀",
   "exile_overlay.jei.one_of_a_kind": "无法与同组（%s）的词缀共存",
+  "exile_overlay.jei.id": "ID: %s",
+  "exile_overlay.jei.weight": "权重: %s",
+  "exile_overlay.jei.stats_range": "属性 / 范围:",
+  "exile_overlay.jei.requirements": "需求:",
   "section.exile_overlay.item_lock": "物品锁定",
   "key.exile_overlay.toggle_item_lock": "切换槽位锁定 (按住+点击)"
 }

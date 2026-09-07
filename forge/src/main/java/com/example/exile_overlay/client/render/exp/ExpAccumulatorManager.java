@@ -23,7 +23,7 @@ public final class ExpAccumulatorManager {
     private static final float PEAK_SCALE = 1.30f;         // ポップ時の最大拡大倍率
 
     // デフォルトの生活職フォールバック表示名
-    private static final Component DEFAULT_PROF_NAME = Component.literal("Salvaging");
+    private static final Component DEFAULT_PROF_NAME = Component.translatable("profession.exile_overlay.salvaging");
 
     // ==================== 戦闘EXP (Combat Slot) ====================
     private int combatAccumulatedExp = 0;

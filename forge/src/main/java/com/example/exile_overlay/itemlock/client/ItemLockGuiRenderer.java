@@ -31,7 +31,9 @@ public final class ItemLockGuiRenderer {
      */
     public static void renderLockIcon(GuiGraphics graphics, int x, int y) {
         RenderSystem.enableBlend();
+        RenderSystem.disableDepthTest();
         graphics.blit(LOCK_ICON, x, y, 0, 0, 8, 8, 8, 8);
+        RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
     }
 

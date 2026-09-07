@@ -186,6 +186,8 @@
   "hud.exile_overlay.kill_counter": "Kill Counter",
   "hud.exile_overlay.exp_accumulator": "EXP Gained",
   "hud.exile_overlay.dungeon_timer": "Dungeon Timer",
+  "hud.exile_overlay.target_mob_name": "Target Info",
+  "hud.exile_overlay.skill_buff_overlay": "Skill Buffs",
   "profession.exile_overlay.salvaging": "Salvaging",
   "profession.exile_overlay.mining": "Mining",
   "profession.exile_overlay.farming": "Farming",
@@ -396,6 +398,10 @@
   "exile_overlay.jei.applicable_gears": "Applicable Gears:",
   "exile_overlay.jei.only_one_per_item": "Only 1 of this affix per item",
   "exile_overlay.jei.one_of_a_kind": "Exclusive with other %s affixes",
+  "exile_overlay.jei.id": "ID: %s",
+  "exile_overlay.jei.weight": "Weight: %s",
+  "exile_overlay.jei.stats_range": "Stats / Range:",
+  "exile_overlay.jei.requirements": "Requirements:",
   "section.exile_overlay.item_lock": "Item Lock",
   "key.exile_overlay.toggle_item_lock": "Toggle Slot Lock (Hold + Click)"
 }

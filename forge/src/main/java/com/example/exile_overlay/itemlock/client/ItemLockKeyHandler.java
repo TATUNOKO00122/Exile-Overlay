@@ -16,6 +16,7 @@ import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.glfw.GLFW;
@@ -69,6 +70,9 @@ public final class ItemLockKeyHandler {
         // 設定キー + 左クリック: ロック状態の切り替え
         if (event.getButton() == 0 && isToggleKeyDown()) {
             event.setCanceled(true);
+            if (slot.getItem().isEmpty() && !LockManager.isClientSlotLocked(slotIdx)) {
+                return;
+            }
             LockManager.toggleClientSlotLock(slotIdx);
             long updatedMask = LockManager.getClientLockedMask();
             String storageKey = ItemLockClientStorage.getCurrentStorageKey();
@@ -154,6 +158,28 @@ public final class ItemLockKeyHandler {
             LockManager.setClientLockedMask(savedMask);
             if (savedMask != 0L && ItemLockClientStorage.isServerModPresent()) {
                 NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(savedMask));
+            }
+        }
+    }
+
+    /**
+     * クライアントTickで空スロットのロック状態を自動解除し、必要に応じて保存・同期
+     */
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+
+        if (LockManager.cleanupEmptyClientSlots(mc.player)) {
+            long updatedMask = LockManager.getClientLockedMask();
+            String storageKey = ItemLockClientStorage.getCurrentStorageKey();
+            if (storageKey != null) {
+                ItemLockClientStorage.setLockMask(storageKey, updatedMask);
+                ItemLockClientStorage.save();
+            }
+            if (ItemLockClientStorage.isServerModPresent()) {
+                NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(updatedMask));
             }
         }
     }

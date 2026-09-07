@@ -35,6 +35,13 @@ public final class LockManager {
         return mask ^ (1L << slot);
     }
 
+    public static long clearBit(long mask, int slot) {
+        if (slot < 0 || slot >= ItemLockHelper.INVENTORY_SIZE) {
+            return mask;
+        }
+        return mask & ~(1L << slot);
+    }
+
     // ==========================================
     // サーバーサイド処理
     // ==========================================
@@ -84,6 +91,24 @@ public final class LockManager {
         setServerLockedMask(player, updated);
     }
 
+    public static boolean cleanupEmptyServerSlots(ServerPlayer player) {
+        if (player == null) return false;
+        long currentMask = getServerLockedMask(player);
+        if (currentMask == 0L) return false;
+
+        long newMask = currentMask;
+        for (int i = 0; i < ItemLockHelper.INVENTORY_SIZE; i++) {
+            if (isBitSet(newMask, i) && player.getInventory().getItem(i).isEmpty()) {
+                newMask = clearBit(newMask, i);
+            }
+        }
+        if (newMask != currentMask) {
+            setServerLockedMask(player, newMask);
+            return true;
+        }
+        return false;
+    }
+
     public static void syncToClient(ServerPlayer player) {
         if (player == null || player.connection == null || player.connection.connection == null) return;
         boolean canSend = player.server.isSingleplayer()
@@ -119,6 +144,22 @@ public final class LockManager {
     public static void toggleClientSlotLock(int slot) {
         if (slot < 0 || slot >= ItemLockHelper.INVENTORY_SIZE) return;
         clientLockedMask = toggleBit(clientLockedMask, slot);
+    }
+
+    public static boolean cleanupEmptyClientSlots(Player player) {
+        if (player == null || clientLockedMask == 0L) return false;
+        long currentMask = clientLockedMask;
+        long newMask = currentMask;
+        for (int i = 0; i < ItemLockHelper.INVENTORY_SIZE; i++) {
+            if (isBitSet(newMask, i) && player.getInventory().getItem(i).isEmpty()) {
+                newMask = clearBit(newMask, i);
+            }
+        }
+        if (newMask != currentMask) {
+            clientLockedMask = newMask;
+            return true;
+        }
+        return false;
     }
 
     public static void resetClient() {

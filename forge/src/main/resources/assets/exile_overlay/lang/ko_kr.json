@@ -186,6 +186,8 @@
   "hud.exile_overlay.kill_counter": "처치 카운터",
   "hud.exile_overlay.exp_accumulator": "획득 EXP",
   "hud.exile_overlay.dungeon_timer": "던전 타이머",
+  "hud.exile_overlay.target_mob_name": "타겟 정보",
+  "hud.exile_overlay.skill_buff_overlay": "스킬 버프",
   "profession.exile_overlay.salvaging": "인양",
   "profession.exile_overlay.mining": "채광",
   "profession.exile_overlay.farming": "농사",
@@ -396,6 +398,10 @@
   "exile_overlay.jei.applicable_gears": "적용 가능한 장비:",
   "exile_overlay.jei.only_one_per_item": "아이템당 이 접사는 1개만 부여 가능",
   "exile_overlay.jei.one_of_a_kind": "동일 그룹(%s)의 접사와 중복 불가",
+  "exile_overlay.jei.id": "ID: %s",
+  "exile_overlay.jei.weight": "가중치: %s",
+  "exile_overlay.jei.stats_range": "스탯 / 변동 범위:",
+  "exile_overlay.jei.requirements": "요구 조건:",
   "section.exile_overlay.item_lock": "아이템 잠금",
   "key.exile_overlay.toggle_item_lock": "슬롯 잠금 전환 (누른 상태로 클릭)"
 }
