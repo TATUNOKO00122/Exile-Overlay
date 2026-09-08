@@ -39,6 +39,7 @@ public final class ItemLockClientStorage {
     private static final Path CONFIG_FILE = FMLPaths.CONFIGDIR.get().resolve("exile_overlay/item_locks.json");
     private static final Map<String, Long> LOCK_CACHE = new HashMap<>();
     private static boolean loaded = false;
+    private static volatile String activeStorageKey = null;
 
     private ItemLockClientStorage() {}
 
@@ -55,8 +56,19 @@ public final class ItemLockClientStorage {
     public static String getCurrentStorageKey(Player player) {
         Minecraft mc = Minecraft.getInstance();
         Player targetPlayer = player != null ? player : mc.player;
-        if (targetPlayer == null) return null;
-        return getStorageKey(mc, targetPlayer.getStringUUID());
+        if (targetPlayer == null) {
+            return activeStorageKey;
+        }
+        String key = getStorageKey(mc, targetPlayer.getStringUUID());
+        if (key != null && !key.startsWith("unknown")) {
+            activeStorageKey = key;
+            return key;
+        }
+        return activeStorageKey != null ? activeStorageKey : key;
+    }
+
+    public static void clearActiveKey() {
+        activeStorageKey = null;
     }
 
     /**

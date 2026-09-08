@@ -152,6 +152,7 @@ public final class ItemLockKeyHandler {
      */
     @SubscribeEvent
     public void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        LockManager.resetClientItemTracking();
         String storageKey = ItemLockClientStorage.getCurrentStorageKey(event.getPlayer());
         if (storageKey != null) {
             long savedMask = ItemLockClientStorage.getLockMask(storageKey);
@@ -160,6 +161,14 @@ public final class ItemLockKeyHandler {
                 NetworkHandler.CHANNEL.sendToServer(new LockSlotC2S(savedMask));
             }
         }
+    }
+
+    /**
+     * リスポーンやディメンション移動時のアイテム追跡リセット
+     */
+    @SubscribeEvent
+    public void onClone(ClientPlayerNetworkEvent.Clone event) {
+        LockManager.resetClientItemTracking();
     }
 
     /**
@@ -193,6 +202,7 @@ public final class ItemLockKeyHandler {
         if (storageKey != null) {
             ItemLockClientStorage.setLockMask(storageKey, LockManager.getClientLockedMask());
         }
+        ItemLockClientStorage.clearActiveKey();
         LockManager.resetClient();
     }
 }

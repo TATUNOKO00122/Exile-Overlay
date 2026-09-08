@@ -7,6 +7,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * アイテムロックスロットの管理クラス（サーバー・クライアント共通）。
  * 64bit整数のビットマスクにより、スロット0〜35のロック状態を管理する。
@@ -14,6 +18,8 @@ import net.minecraft.world.entity.player.Player;
 public final class LockManager {
     public static final String NBT_TAG_KEY = "exile_overlay_itemlocks";
     private static volatile long clientLockedMask = 0L;
+    private static volatile long clientItemPresentMask = 0L;
+    private static final Map<UUID, Long> SERVER_ITEM_PRESENT_MAP = new ConcurrentHashMap<>();
 
     private LockManager() {}
 
@@ -91,17 +97,34 @@ public final class LockManager {
         setServerLockedMask(player, updated);
     }
 
+    public static void resetServerItemTracking(Player player) {
+        if (player != null) {
+            SERVER_ITEM_PRESENT_MAP.remove(player.getUUID());
+        }
+    }
+
     public static boolean cleanupEmptyServerSlots(ServerPlayer player) {
-        if (player == null) return false;
+        if (player == null || player.isDeadOrDying()) return false;
         long currentMask = getServerLockedMask(player);
         if (currentMask == 0L) return false;
 
+        long prevPresent = SERVER_ITEM_PRESENT_MAP.getOrDefault(player.getUUID(), 0L);
+        long newPresent = 0L;
         long newMask = currentMask;
+
         for (int i = 0; i < ItemLockHelper.INVENTORY_SIZE; i++) {
-            if (isBitSet(newMask, i) && player.getInventory().getItem(i).isEmpty()) {
-                newMask = clearBit(newMask, i);
+            boolean hasItem = !player.getInventory().getItem(i).isEmpty();
+            if (hasItem) {
+                newPresent |= (1L << i);
+            } else if ((prevPresent & (1L << i)) != 0L) {
+                if (isBitSet(newMask, i)) {
+                    newMask = clearBit(newMask, i);
+                }
             }
         }
+
+        SERVER_ITEM_PRESENT_MAP.put(player.getUUID(), newPresent);
+
         if (newMask != currentMask) {
             setServerLockedMask(player, newMask);
             return true;
@@ -146,15 +169,31 @@ public final class LockManager {
         clientLockedMask = toggleBit(clientLockedMask, slot);
     }
 
+    public static void resetClientItemTracking() {
+        clientItemPresentMask = 0L;
+    }
+
     public static boolean cleanupEmptyClientSlots(Player player) {
-        if (player == null || clientLockedMask == 0L) return false;
+        if (player == null || clientLockedMask == 0L || player.isDeadOrDying()) return false;
+
         long currentMask = clientLockedMask;
         long newMask = currentMask;
+        long newPresentMask = 0L;
+
         for (int i = 0; i < ItemLockHelper.INVENTORY_SIZE; i++) {
-            if (isBitSet(newMask, i) && player.getInventory().getItem(i).isEmpty()) {
-                newMask = clearBit(newMask, i);
+            boolean hasItem = !player.getInventory().getItem(i).isEmpty();
+            if (hasItem) {
+                newPresentMask |= (1L << i);
+            } else if ((clientItemPresentMask & (1L << i)) != 0L) {
+                // 直前までアイテムが存在していたスロットが空になった場合のみロック解除
+                if (isBitSet(newMask, i)) {
+                    newMask = clearBit(newMask, i);
+                }
             }
         }
+
+        clientItemPresentMask = newPresentMask;
+
         if (newMask != currentMask) {
             clientLockedMask = newMask;
             return true;
@@ -164,5 +203,6 @@ public final class LockManager {
 
     public static void resetClient() {
         clientLockedMask = 0L;
+        clientItemPresentMask = 0L;
     }
 }

@@ -20,6 +20,7 @@ public final class ItemLockServerHandler {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.resetServerItemTracking(player);
             LockManager.syncToClient(player);
         }
     }
@@ -27,6 +28,7 @@ public final class ItemLockServerHandler {
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.resetServerItemTracking(player);
             LockManager.syncToClient(player);
         }
     }
@@ -36,13 +38,22 @@ public final class ItemLockServerHandler {
         // 死亡リスポーンまたはディメンション移動時にNBTデータを引き継ぐ（パケット送信はRespawn/ChangedDimensionで行う）
         if (event.getEntity() instanceof ServerPlayer newPlayer) {
             LockManager.copyServerLockedMask(event.getOriginal(), newPlayer);
+            LockManager.resetServerItemTracking(newPlayer);
         }
     }
 
     @SubscribeEvent
     public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            LockManager.resetServerItemTracking(player);
             LockManager.syncToClient(player);
+        }
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() != null) {
+            LockManager.resetServerItemTracking(event.getEntity());
         }
     }
 
